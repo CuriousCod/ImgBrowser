@@ -19,6 +19,10 @@ namespace ImgBrowser
 
         public string[] fileEntries;
 
+        // Mouse position
+        public int currentPositionX = 0;
+        public int currentPositionY = 0;
+
         public Form1()
         {
             InitializeComponent();
@@ -38,15 +42,18 @@ namespace ImgBrowser
 
         private void pictureBox1_MouseWheel(object sender, MouseEventArgs e)
         {
-            if (e.Delta > 0)
-            {
-                browseForward();
+            if (pictureBox1.SizeMode != PictureBoxSizeMode.AutoSize) 
+            { 
+                if (e.Delta > 0)
+                {
+                    browseForward();
+                }
+                else if (e.Delta < 0)
+                {
+                    browseBackward();
+                }
             }
-            else if (e.Delta < 0)
-            {
-                browseBackward();
-            }
-            
+
         }
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
@@ -65,16 +72,18 @@ namespace ImgBrowser
             {
                 updateFileList();
             }
-            /*
+            
             else if (e.KeyCode.ToString() == "Up")
             {
-                PictureBoxZoom(Image.FromFile(@""), new Size(3, 3));
+                panel1.VerticalScroll.Value += 2;
+               // PictureBoxZoom(Image.FromFile(@""), new Size(3, 3));
             }
             else if (e.KeyCode.ToString() == "Down")
             {
-                PictureBoxZoom(Image.FromFile(@""), new Size(1, 1));
+                panel1.HorizontalScroll.Value += 2;
+                // PictureBoxZoom(Image.FromFile(@""), new Size(1, 1));
             }
-            */
+            
         }
         private void browseForward()
         {
@@ -134,7 +143,7 @@ namespace ImgBrowser
 
         private string[] updateFileList()
         {
-
+            // TODO F5 on empty image crashes app
             IEnumerable<string> files = Directory.EnumerateFiles(Path.GetDirectoryName(pictureBox1.ImageLocation), "*.*", SearchOption.TopDirectoryOnly)
             .Where(s => s.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".png", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".gif", StringComparison.OrdinalIgnoreCase));
 
@@ -176,6 +185,21 @@ namespace ImgBrowser
                 {
                     this.FormBorderStyle = FormBorderStyle.None;
                     this.WindowState = FormWindowState.Maximized;
+                }
+            }
+            else if (me.Button.ToString() == "Right")
+            {
+                if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
+                {
+                    panel1.HorizontalScroll.Value = 0;
+                    panel1.VerticalScroll.Value = 0;
+                    pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+                    pictureBox1.Dock = DockStyle.Fill;
+                }
+                else if ((pictureBox1.Image.Width > this.Width) || (pictureBox1.Image.Height > this.Height))
+                {
+                    pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
+                    pictureBox1.Dock = DockStyle.None;
                 }
             }
         }
@@ -226,6 +250,74 @@ namespace ImgBrowser
         {
             // Change cursor graphic
             e.Effect = DragDropEffects.Move;
+        }
+
+        private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
+        {
+            /*
+            if (e.Button.ToString() == "Left")
+            {
+                //Console.WriteLine(pictureBox1.Width);
+                //Console.WriteLine(pictureBox1.Height);
+                //Console.WriteLine(e.X);
+                double valueX = (double)e.X / (double)pictureBox1.Width * panel1.Width;
+                double valueY = (double)e.Y / (double)pictureBox1.Height * panel1.Height;
+                Console.WriteLine(valueX);
+                Console.WriteLine(valueY);
+                //Console.WriteLine(e.Y / pictureBox1.Height * 100);
+                Console.WriteLine(panel1.VerticalScroll.Maximum);
+                panel1.HorizontalScroll.Value = (int)valueX;
+                panel1.VerticalScroll.Value = (int)valueY;
+            }
+            */
+
+        }
+
+        private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
+        {
+            int directionX;
+            int directionY;
+
+            if (e.Button.ToString() == "Left")
+            { 
+                // Grab mouse X direction
+                double deltaDirection = currentPositionX - e.X;
+                directionX = deltaDirection > 0 ? -1 : 1;
+                currentPositionX = e.X;
+                Console.WriteLine("X: " + directionX);
+
+                // Move image based on direction
+                if ((directionX == 1) && (panel1.HorizontalScroll.Value + 5 <= panel1.HorizontalScroll.Maximum))
+                {
+                    panel1.HorizontalScroll.Value += 5;
+                }
+                else if (panel1.HorizontalScroll.Value - 5 >= panel1.HorizontalScroll.Minimum)
+                {
+                    panel1.HorizontalScroll.Value -= 5;
+                }
+
+                // Grab mouse Y direction
+                deltaDirection = currentPositionY - e.Y;
+                directionY = deltaDirection > 0 ? -1 : 1;
+                currentPositionX = e.Y;
+                Console.WriteLine("Y: " + directionY);
+
+                // Move image based on direction
+                if ((directionY == 1) && (panel1.VerticalScroll.Value + 5 <= panel1.VerticalScroll.Maximum))
+                {
+                    panel1.VerticalScroll.Value += 5;
+                }
+                else if (panel1.VerticalScroll.Value - 5 >= panel1.VerticalScroll.Minimum)
+                {
+                    panel1.VerticalScroll.Value -= 5;
+                }
+            }
+            else
+            {
+                currentPositionX = e.X;
+                currentPositionY = e.Y;
+            }
+
         }
     }
 }
