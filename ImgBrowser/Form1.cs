@@ -9,12 +9,16 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Drawing.Drawing2D;
 
 namespace ImgBrowser
 {
 
     public partial class Form1 : Form
     {
+
+        public string[] fileEntries;
+
         public Form1()
         {
             InitializeComponent();
@@ -47,8 +51,8 @@ namespace ImgBrowser
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
         {
-            //Console.WriteLine(e.KeyCode);
-
+            Console.WriteLine(e.KeyCode);
+            // TODO Turn this into case
             if (e.KeyCode.ToString() == "Left")
             {
                 browseBackward();
@@ -57,11 +61,27 @@ namespace ImgBrowser
             {
                 browseForward();
             }
+            else if (e.KeyCode.ToString() == "F5")
+            {
+                updateFileList();
+            }
+            /*
+            else if (e.KeyCode.ToString() == "Up")
+            {
+                PictureBoxZoom(Image.FromFile(@""), new Size(3, 3));
+            }
+            else if (e.KeyCode.ToString() == "Down")
+            {
+                PictureBoxZoom(Image.FromFile(@""), new Size(1, 1));
+            }
+            */
         }
         private void browseForward()
         {
-            if (pictureBox1.ImageLocation != "") { 
-                string[] fileEntries = listFiles(Path.GetDirectoryName(pictureBox1.ImageLocation));
+            if (pictureBox1.ImageLocation != "") {
+
+                //string[] fileEntries = listFiles(Path.GetDirectoryName(pictureBox1.ImageLocation));
+                //string[] fileEntries = asd;
 
                 //Console.WriteLine(pictureBox1.ImageLocation);
 
@@ -77,6 +97,8 @@ namespace ImgBrowser
                 {
                     pictureBox1.ImageLocation = fileEntries[0];
                 }
+
+                updateFormName();
             }
         }
 
@@ -84,7 +106,7 @@ namespace ImgBrowser
         {
             if (pictureBox1.ImageLocation != "")
             {
-                string[] fileEntries = listFiles(Path.GetDirectoryName(pictureBox1.ImageLocation));
+                //string[] fileEntries = listFiles(Path.GetDirectoryName(pictureBox1.ImageLocation));
 
                 //Console.WriteLine(pictureBox1.ImageLocation);
 
@@ -100,13 +122,29 @@ namespace ImgBrowser
                 {
                     pictureBox1.ImageLocation = fileEntries[fileEntries.Length - 1];
                 }
+
+                updateFormName();
             }
         }
 
-        //TODO This function rechecks all the files whenever moving to next/previous file -> Inefficient
+        private void updateFormName()
+        {
+            this.Text = "ImgBrowser - " + Path.GetFileName(pictureBox1.ImageLocation);
+        }
+
+        private string[] updateFileList()
+        {
+
+            IEnumerable<string> files = Directory.EnumerateFiles(Path.GetDirectoryName(pictureBox1.ImageLocation), "*.*", SearchOption.TopDirectoryOnly)
+            .Where(s => s.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".png", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".gif", StringComparison.OrdinalIgnoreCase));
+
+            return files.ToArray();
+        }
+
+        /*
         private string[] listFiles(string dir)
         {
-            //string[] fileEntries = Directory.GetFiles(@"G:\MEGA\Pics\new\move\Other\UMP9\");
+            //string[] fileEntries = Directory.GetFiles(@"");
             var files = Directory.EnumerateFiles(dir, "*.*", SearchOption.TopDirectoryOnly)
                 .Where(s => s.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".png", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".gif", StringComparison.OrdinalIgnoreCase));
 
@@ -114,6 +152,7 @@ namespace ImgBrowser
 
             return fileEntries;
         }
+        */
 
         private void pictureBox1_Click(object sender, EventArgs e)
         {
@@ -135,11 +174,9 @@ namespace ImgBrowser
                 }
                 else
                 {
-                    //pictureBox1.Dock = DockStyle.Fill;
                     this.FormBorderStyle = FormBorderStyle.None;
                     this.WindowState = FormWindowState.Maximized;
                 }
-
             }
         }
 
@@ -155,8 +192,20 @@ namespace ImgBrowser
             if (cmdArgs.Length > 1)
             {
                 pictureBox1.ImageLocation = cmdArgs[1];
+                updateFormName();
+                fileEntries = updateFileList();
             }
-            
+
+        }
+
+        // TODO This barely works atm
+        public void PictureBoxZoom(Image img, Size size)
+        {
+            Bitmap bm = new Bitmap(img, Convert.ToInt32(img.Width * size.Width), Convert.ToInt32(img.Height * size.Height));
+            Graphics grap = Graphics.FromImage(bm);
+            grap.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            pictureBox1.SizeMode = PictureBoxSizeMode.CenterImage;
+            pictureBox1.Image = bm;
         }
 
         private void Form1_DragDrop(object sender, DragEventArgs e)
@@ -167,6 +216,9 @@ namespace ImgBrowser
             if (files[0].Contains(".jpg")|| files[0].Contains(".png")|| files[0].Contains(".gif"))
             {
                 pictureBox1.ImageLocation = files[0];
+
+                updateFormName();
+                fileEntries = updateFileList();
             }
         }
 
