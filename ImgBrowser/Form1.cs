@@ -265,8 +265,14 @@ namespace ImgBrowser
 
             if (e.Button.ToString() == "Left")
             {
-                currentPositionX = e.X;
-                currentPositionY = e.Y;
+                currentPositionX = Cursor.Position.X;
+                currentPositionY = Cursor.Position.Y;
+
+                if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
+                {
+                    pictureBox1.Cursor = Cursors.Cross;
+                }
+                
 
                 /*
                 //Console.WriteLine(pictureBox1.Width);
@@ -298,7 +304,7 @@ namespace ImgBrowser
 
             if (e.Button.ToString() == "Left")
             {
-                if (e.X - scrollOffsetX> currentPositionX)
+                if (Cursor.Position.X - scrollOffsetX > currentPositionX)
                 {
                     if (panel1.HorizontalScroll.Value + scrollOffsetX * 0.1 <= panel1.HorizontalScroll.Maximum)
                     {
@@ -310,7 +316,7 @@ namespace ImgBrowser
                     }
 
                 }
-                else if (e.X + scrollOffsetX < currentPositionX)
+                else if (Cursor.Position.X + scrollOffsetX < currentPositionX)
                 {
                     if (panel1.HorizontalScroll.Value - scrollOffsetX * 0.1 >= panel1.HorizontalScroll.Minimum)
                     {
@@ -323,7 +329,7 @@ namespace ImgBrowser
 
                 }
 
-                if (e.Y - scrollOffsetY > currentPositionY)
+                if (Cursor.Position.Y - scrollOffsetY > currentPositionY)
                 {
                     if (panel1.VerticalScroll.Value + scrollOffsetY * 0.1 <= panel1.VerticalScroll.Maximum)
                     {
@@ -334,7 +340,7 @@ namespace ImgBrowser
                         panel1.VerticalScroll.Value = panel1.VerticalScroll.Maximum;
                     }
                 }
-                else if (e.Y + scrollOffsetY < currentPositionY)
+                else if (Cursor.Position.Y + scrollOffsetY < currentPositionY)
                 {
                     if (panel1.VerticalScroll.Value - scrollOffsetY * 0.1 >= panel1.VerticalScroll.Minimum)
                     {
@@ -388,6 +394,11 @@ namespace ImgBrowser
                 //currentPositionY = e.Y;
             }
 
+        }
+
+        private void pictureBox1_MouseUp(object sender, MouseEventArgs e)
+        {
+            pictureBox1.Cursor = Cursors.Arrow;
         }
     }
 }
