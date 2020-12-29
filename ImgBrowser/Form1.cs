@@ -72,7 +72,7 @@ namespace ImgBrowser
             {
                 updateFileList();
             }
-            
+            /*
             else if (e.KeyCode.ToString() == "Up")
             {
                 panel1.VerticalScroll.Value += 2;
@@ -83,7 +83,12 @@ namespace ImgBrowser
                 panel1.HorizontalScroll.Value += 2;
                 // PictureBoxZoom(Image.FromFile(@""), new Size(1, 1));
             }
-            
+            */
+            else if (e.KeyCode.ToString() == "Add")
+            {
+                PictureBoxZoom(pictureBox1.Image, new Size(1, 1));
+            }
+
         }
         private void browseForward()
         {
@@ -233,11 +238,29 @@ namespace ImgBrowser
         // TODO This barely works atm
         public void PictureBoxZoom(Image img, Size size)
         {
-            Bitmap bm = new Bitmap(img, Convert.ToInt32(img.Width * size.Width), Convert.ToInt32(img.Height * size.Height));
-            Graphics grap = Graphics.FromImage(bm);
-            grap.InterpolationMode = InterpolationMode.HighQualityBicubic;
-            pictureBox1.SizeMode = PictureBoxSizeMode.CenterImage;
-            pictureBox1.Image = bm;
+            //Bitmap bm = new Bitmap(img, Convert.ToInt32(img.Width * size.Width), Convert.ToInt32(img.Height * size.Height));
+            //Bitmap bm = new Bitmap(img, Convert.ToInt32(img.Width * 1.5), Convert.ToInt32(img.Height * 1.5));
+
+            //https://stackoverflow.com/questions/1922040/how-to-resize-an-image-c-sharp
+
+            // The bitmap and the graphic will both need to be resized
+            Bitmap resized = new Bitmap(Convert.ToInt32(img.Width * 1.5), Convert.ToInt32(img.Height * 1.5));
+            
+            using (Graphics grap = Graphics.FromImage(resized))
+            {
+                grap.CompositingMode = CompositingMode.SourceCopy;
+                grap.CompositingQuality = CompositingQuality.HighQuality;
+                grap.InterpolationMode = InterpolationMode.Bicubic;
+                //grap.SmoothingMode = SmoothingMode.HighQuality;
+                grap.PixelOffsetMode = PixelOffsetMode.HighQuality;
+
+                grap.DrawImage(img, 0, 0, Convert.ToInt32(img.Width * 1.5), Convert.ToInt32(img.Height * 1.5));
+            }
+            
+            pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
+            pictureBox1.Dock = DockStyle.None;
+            pictureBox1.Image = resized;
+            
         }
 
         private void Form1_DragDrop(object sender, DragEventArgs e)
@@ -251,6 +274,7 @@ namespace ImgBrowser
 
                 updateFormName();
                 fileEntries = updateFileList();
+                pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
             }
         }
 
