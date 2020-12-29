@@ -144,10 +144,18 @@ namespace ImgBrowser
         private string[] updateFileList()
         {
             // TODO F5 on empty image crashes app
-            IEnumerable<string> files = Directory.EnumerateFiles(Path.GetDirectoryName(pictureBox1.ImageLocation), "*.*", SearchOption.TopDirectoryOnly)
-            .Where(s => s.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".png", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".gif", StringComparison.OrdinalIgnoreCase));
-
-            return files.ToArray();
+            if (pictureBox1.ImageLocation != "")
+            {
+                IEnumerable<string> files = Directory.EnumerateFiles(Path.GetDirectoryName(pictureBox1.ImageLocation), "*.*", SearchOption.TopDirectoryOnly)
+                .Where(s => s.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".png", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".gif", StringComparison.OrdinalIgnoreCase));
+                return files.ToArray();
+            }
+            else
+            {
+                string[] files = new string[0];
+                return files;
+            }
+            
         }
 
         /*
@@ -187,7 +195,7 @@ namespace ImgBrowser
                     this.WindowState = FormWindowState.Maximized;
                 }
             }
-            else if (me.Button.ToString() == "Right")
+            else if ((me.Button.ToString() == "Right") && (pictureBox1.ImageLocation != ""))
             {
                 if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
                 {
@@ -254,9 +262,13 @@ namespace ImgBrowser
 
         private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
         {
-            /*
+
             if (e.Button.ToString() == "Left")
             {
+                currentPositionX = e.X;
+                currentPositionY = e.Y;
+
+                /*
                 //Console.WriteLine(pictureBox1.Width);
                 //Console.WriteLine(pictureBox1.Height);
                 //Console.WriteLine(e.X);
@@ -268,18 +280,75 @@ namespace ImgBrowser
                 Console.WriteLine(panel1.VerticalScroll.Maximum);
                 panel1.HorizontalScroll.Value = (int)valueX;
                 panel1.VerticalScroll.Value = (int)valueY;
+                */
             }
-            */
+            
 
         }
 
         private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
         {
-            int directionX;
-            int directionY;
+            //int directionX;
+            //int directionY;
+
+            // Add some leeway to mouse movement
+            // Also used to make scroll speed dynamic
+            double scrollOffsetX = pictureBox1.Width * 0.04;
+            double scrollOffsetY = pictureBox1.Height * 0.04;
 
             if (e.Button.ToString() == "Left")
-            { 
+            {
+                if (e.X - scrollOffsetX> currentPositionX)
+                {
+                    if (panel1.HorizontalScroll.Value + scrollOffsetX * 0.1 <= panel1.HorizontalScroll.Maximum)
+                    {
+                        panel1.HorizontalScroll.Value += (int)(scrollOffsetX * 0.1);
+                    }
+                    else
+                    {
+                        panel1.HorizontalScroll.Value = panel1.HorizontalScroll.Maximum;
+                    }
+
+                }
+                else if (e.X + scrollOffsetX < currentPositionX)
+                {
+                    if (panel1.HorizontalScroll.Value - scrollOffsetX * 0.1 >= panel1.HorizontalScroll.Minimum)
+                    {
+                        panel1.HorizontalScroll.Value -= (int)(scrollOffsetX * 0.1);
+                    }
+                    else
+                    {
+                        panel1.HorizontalScroll.Value = panel1.HorizontalScroll.Minimum;
+                    }
+
+                }
+
+                if (e.Y - scrollOffsetY > currentPositionY)
+                {
+                    if (panel1.VerticalScroll.Value + scrollOffsetY * 0.1 <= panel1.VerticalScroll.Maximum)
+                    {
+                        panel1.VerticalScroll.Value += (int)(scrollOffsetY * 0.1);
+                    }
+                    else
+                    {
+                        panel1.VerticalScroll.Value = panel1.VerticalScroll.Maximum;
+                    }
+                }
+                else if (e.Y + scrollOffsetY < currentPositionY)
+                {
+                    if (panel1.VerticalScroll.Value - scrollOffsetY * 0.1 >= panel1.VerticalScroll.Minimum)
+                    {
+                        panel1.VerticalScroll.Value -= (int)(scrollOffsetY * 0.1);
+                    }
+                    else
+                    {
+                        panel1.VerticalScroll.Value = panel1.VerticalScroll.Minimum;
+                    }
+
+                }
+
+
+                /*
                 // Grab mouse X direction
                 double deltaDirection = currentPositionX - e.X;
                 directionX = deltaDirection > 0 ? -1 : 1;
@@ -311,11 +380,12 @@ namespace ImgBrowser
                 {
                     panel1.VerticalScroll.Value -= 5;
                 }
+                */
             }
             else
             {
-                currentPositionX = e.X;
-                currentPositionY = e.Y;
+                //currentPositionX = e.X;
+                //currentPositionY = e.Y;
             }
 
         }
