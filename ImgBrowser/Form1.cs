@@ -11,6 +11,8 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Drawing.Drawing2D;
 
+// TODO fit window to image
+
 namespace ImgBrowser
 {
 
@@ -72,18 +74,18 @@ namespace ImgBrowser
             {
                 updateFileList();
             }
-            /*
-            else if (e.KeyCode.ToString() == "Up")
+            else if (e.KeyCode.ToString() == "C")
             {
-                panel1.VerticalScroll.Value += 2;
-               // PictureBoxZoom(Image.FromFile(@""), new Size(3, 3));
+                // Check for control key
+                if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
+                {
+                    if (pictureBox1.ImageLocation != "")
+                    {
+                        Clipboard.SetImage(Image.FromFile(pictureBox1.ImageLocation));
+                    }
+                }
+
             }
-            else if (e.KeyCode.ToString() == "Down")
-            {
-                panel1.HorizontalScroll.Value += 2;
-                // PictureBoxZoom(Image.FromFile(@""), new Size(1, 1));
-            }
-            */
             else if (e.KeyCode.ToString() == "Add")
             {
                 PictureBoxZoom(pictureBox1.Image, new Size(1, 1));
