@@ -25,6 +25,9 @@ namespace ImgBrowser
         public int currentPositionX = 0;
         public int currentPositionY = 0;
 
+        // If mouse middle button should restore maximized or normal sized window
+        public bool windowNormal = false;
+
         public Form1()
         {
             InitializeComponent();
@@ -189,17 +192,28 @@ namespace ImgBrowser
                     if (this.FormBorderStyle == FormBorderStyle.None)
                     {
                         this.FormBorderStyle = FormBorderStyle.Sizable;
-                        this.WindowState = FormWindowState.Maximized;
+                        if (windowNormal)
+                        {
+                            this.WindowState = FormWindowState.Normal;
+                        }
+                        else
+                        {
+                            this.WindowState = FormWindowState.Maximized;
+                        }
+                        
                     }
                     else
                     {
                         this.FormBorderStyle = FormBorderStyle.None;
+                        windowNormal = false;
                     }
                 }
                 else
                 {
                     this.FormBorderStyle = FormBorderStyle.None;
                     this.WindowState = FormWindowState.Maximized;
+                    windowNormal = true;
+
                 }
             }
             else if ((me.Button.ToString() == "Right") && (pictureBox1.ImageLocation != ""))
