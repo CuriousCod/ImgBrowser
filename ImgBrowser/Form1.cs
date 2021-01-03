@@ -65,6 +65,74 @@ namespace ImgBrowser
         {
             Console.WriteLine(e.KeyCode);
             // TODO Turn this into case
+
+            switch (e.KeyCode.ToString())
+            {
+                case "Left":
+                    browseBackward();
+                    break;
+                case "Right":
+                    browseForward();
+                    break;
+                case "F5":
+                    updateFileList();
+                    break;
+                case "F2":
+                    if (FormBorderStyle == FormBorderStyle.None)
+                    {
+                        FormBorderStyle = FormBorderStyle.Sizable;
+                    }
+                    else
+                    {
+                        // Barebones adjust window size to aspect ratio feature
+                        FormBorderStyle = FormBorderStyle.None;
+                        if (Size.Height > Size.Width)
+                        { 
+                            double aspectRatio = (double)pictureBox1.Image.Height / (double)pictureBox1.Image.Width;
+                            Size = new Size(Size.Width, (int)(aspectRatio * Size.Width));
+                        }
+                        else
+                        {
+                            double aspectRatio = (double)pictureBox1.Image.Width / (double)pictureBox1.Image.Height;
+                            Size = new Size((int)(aspectRatio * Size.Height), Size.Height);
+                        }
+                    }
+                    break;
+                // Copy image to clipboard
+                case "C":
+                    // Check for control key
+                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
+                    {
+                        if (pictureBox1.ImageLocation != "")
+                        {
+                            Clipboard.SetImage(Image.FromFile(pictureBox1.ImageLocation));
+                        }
+                    }
+                    break;
+                // Display image from clipboard
+                case "V":
+                    // Check for control key
+                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
+                    {
+                        if (Clipboard.GetImage() != null)
+                        {
+                            pictureBox1.Image = Clipboard.GetImage();
+                        }
+
+                    }
+                    break;
+                case "F1":
+                    // Set always on top
+                    TopMost = TopMost ? false : true;
+                    break;
+                case "Add":
+                    PictureBoxZoom(pictureBox1.Image, new Size(1, 1));
+                    break;
+                default:
+                    break;
+            }
+
+            /*
             if (e.KeyCode.ToString() == "Left")
             {
                 browseBackward();
@@ -76,6 +144,19 @@ namespace ImgBrowser
             else if (e.KeyCode.ToString() == "F5")
             {
                 updateFileList();
+            }
+            else if (e.KeyCode.ToString() == "H")
+            {
+                if (FormBorderStyle == FormBorderStyle.None)
+                {
+                    FormBorderStyle = FormBorderStyle.Sizable;
+                }
+                else
+                {
+                    FormBorderStyle = FormBorderStyle.None;
+                    double aspectRatio = (double)pictureBox1.Image.Height / (double)pictureBox1.Image.Width;
+                    Size = new Size(Size.Width, (int)(aspectRatio * Size.Width));
+                }
             }
             else if (e.KeyCode.ToString() == "C")
             {
@@ -93,6 +174,7 @@ namespace ImgBrowser
             {
                 PictureBoxZoom(pictureBox1.Image, new Size(1, 1));
             }
+            */
 
         }
         private void browseForward()
@@ -216,7 +298,7 @@ namespace ImgBrowser
 
                 }
             }
-            else if ((me.Button.ToString() == "Right") && (pictureBox1.ImageLocation != ""))
+            else if ((me.Button.ToString() == "Right") && (pictureBox1.Image != null))
             {
                 if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
                 {
@@ -282,16 +364,21 @@ namespace ImgBrowser
         private void Form1_DragDrop(object sender, DragEventArgs e)
         {
             string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
-            Console.WriteLine(files[0]);
+            //Console.WriteLine(files[0]);
 
-            if (files[0].Contains(".jpg")|| files[0].Contains(".png")|| files[0].Contains(".gif"))
+            if (files != null)
             {
-                pictureBox1.ImageLocation = files[0];
+                if (files[0].Contains(".jpg") || files[0].Contains(".png") || files[0].Contains(".gif"))
+                {
+                    pictureBox1.ImageLocation = files[0];
 
-                updateFormName();
-                fileEntries = updateFileList();
-                pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+                    updateFormName();
+                    fileEntries = updateFileList();
+                    pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+                }
             }
+
+
         }
 
         private void Form1_DragEnter(object sender, DragEventArgs e)
