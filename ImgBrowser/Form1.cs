@@ -11,8 +11,6 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Drawing.Drawing2D;
 
-// TODO fit window to image
-
 namespace ImgBrowser
 {
 
@@ -24,6 +22,10 @@ namespace ImgBrowser
         // Mouse position
         public int currentPositionX = 0;
         public int currentPositionY = 0;
+
+        // Frame position
+        public int frameLeft = 0;
+        public int frameTop = 0;
 
         // If mouse middle button should restore maximized or normal sized window
         public bool windowNormal = false;
@@ -119,6 +121,30 @@ namespace ImgBrowser
                             pictureBox1.Image = Clipboard.GetImage();
                         }
 
+                    }
+                    break;
+                // Rotate
+                case "R":
+                    if (pictureBox1.ImageLocation != "")
+                    {
+                        /*
+                        Bitmap img = new Bitmap(pictureBox1.Image);
+                        using (Graphics grap = Graphics.FromImage(img))
+                        {
+                            grap.TranslateTransform(img.Width / 2, img.Height / 2);
+
+                            grap.RotateTransform(90);
+
+                            grap.TranslateTransform(-img.Width / 2, -img.Height / 2);
+
+                            grap.DrawImage(img, 0, 0, pictureBox1.Image.Width, pictureBox1.Image.Height);
+                        }
+                        */
+
+                        Image img = pictureBox1.Image;
+                        img.RotateFlip(RotateFlipType.Rotate90FlipNone);
+
+                        pictureBox1.Image = img;
                     }
                     break;
                 case "F1":
@@ -267,52 +293,8 @@ namespace ImgBrowser
         {
 
             MouseEventArgs me = (MouseEventArgs)e;
-            if (me.Button.ToString() == "Middle")
-            {
-                if (this.WindowState == FormWindowState.Maximized)
-                {
-                    if (this.FormBorderStyle == FormBorderStyle.None)
-                    {
-                        this.FormBorderStyle = FormBorderStyle.Sizable;
-                        if (windowNormal)
-                        {
-                            this.WindowState = FormWindowState.Normal;
-                        }
-                        else
-                        {
-                            this.WindowState = FormWindowState.Maximized;
-                        }
-                        
-                    }
-                    else
-                    {
-                        this.FormBorderStyle = FormBorderStyle.None;
-                        windowNormal = false;
-                    }
-                }
-                else
-                {
-                    this.FormBorderStyle = FormBorderStyle.None;
-                    this.WindowState = FormWindowState.Maximized;
-                    windowNormal = true;
 
-                }
-            }
-            else if ((me.Button.ToString() == "Right") && (pictureBox1.Image != null))
-            {
-                if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
-                {
-                    panel1.HorizontalScroll.Value = 0;
-                    panel1.VerticalScroll.Value = 0;
-                    pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
-                    pictureBox1.Dock = DockStyle.Fill;
-                }
-                else if ((pictureBox1.Image.Width > this.Width) || (pictureBox1.Image.Height > this.Height))
-                {
-                    pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
-                    pictureBox1.Dock = DockStyle.None;
-                }
-            }
+            
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -395,11 +377,13 @@ namespace ImgBrowser
                 currentPositionX = Cursor.Position.X;
                 currentPositionY = Cursor.Position.Y;
 
+                frameTop = Top;
+                frameLeft = Left;
+
                 if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
                 {
                     pictureBox1.Cursor = Cursors.Cross;
                 }
-                
 
                 /*
                 //Console.WriteLine(pictureBox1.Width);
@@ -431,56 +415,63 @@ namespace ImgBrowser
 
             if (e.Button.ToString() == "Left")
             {
-                if (Cursor.Position.X - scrollOffsetX > currentPositionX)
+                if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
                 {
-                    if (panel1.HorizontalScroll.Value + scrollOffsetX * 0.1 <= panel1.HorizontalScroll.Maximum)
+                    if (Cursor.Position.X - scrollOffsetX > currentPositionX)
                     {
-                        panel1.HorizontalScroll.Value += (int)(scrollOffsetX * 0.1);
+                        if (panel1.HorizontalScroll.Value + scrollOffsetX * 0.1 <= panel1.HorizontalScroll.Maximum)
+                        {
+                            panel1.HorizontalScroll.Value += (int)(scrollOffsetX * 0.1);
+                        }
+                        else
+                        {
+                            panel1.HorizontalScroll.Value = panel1.HorizontalScroll.Maximum;
+                        }
+
                     }
-                    else
+                    else if (Cursor.Position.X + scrollOffsetX < currentPositionX)
                     {
-                        panel1.HorizontalScroll.Value = panel1.HorizontalScroll.Maximum;
+                        if (panel1.HorizontalScroll.Value - scrollOffsetX * 0.1 >= panel1.HorizontalScroll.Minimum)
+                        {
+                            panel1.HorizontalScroll.Value -= (int)(scrollOffsetX * 0.1);
+                        }
+                        else
+                        {
+                            panel1.HorizontalScroll.Value = panel1.HorizontalScroll.Minimum;
+                        }
+
                     }
 
+                    if (Cursor.Position.Y - scrollOffsetY > currentPositionY)
+                    {
+                        if (panel1.VerticalScroll.Value + scrollOffsetY * 0.1 <= panel1.VerticalScroll.Maximum)
+                        {
+                            panel1.VerticalScroll.Value += (int)(scrollOffsetY * 0.1);
+                        }
+                        else
+                        {
+                            panel1.VerticalScroll.Value = panel1.VerticalScroll.Maximum;
+                        }
+                    }
+                    else if (Cursor.Position.Y + scrollOffsetY < currentPositionY)
+                    {
+                        if (panel1.VerticalScroll.Value - scrollOffsetY * 0.1 >= panel1.VerticalScroll.Minimum)
+                        {
+                            panel1.VerticalScroll.Value -= (int)(scrollOffsetY * 0.1);
+                        }
+                        else
+                        {
+                            panel1.VerticalScroll.Value = panel1.VerticalScroll.Minimum;
+                        }
+
+                    }
                 }
-                else if (Cursor.Position.X + scrollOffsetX < currentPositionX)
+                // Move frame with mouse
+                else
                 {
-                    if (panel1.HorizontalScroll.Value - scrollOffsetX * 0.1 >= panel1.HorizontalScroll.Minimum)
-                    {
-                        panel1.HorizontalScroll.Value -= (int)(scrollOffsetX * 0.1);
-                    }
-                    else
-                    {
-                        panel1.HorizontalScroll.Value = panel1.HorizontalScroll.Minimum;
-                    }
-
+                    Location = new Point(Cursor.Position.X - currentPositionX + frameLeft, Cursor.Position.Y - currentPositionY + frameTop);
                 }
-
-                if (Cursor.Position.Y - scrollOffsetY > currentPositionY)
-                {
-                    if (panel1.VerticalScroll.Value + scrollOffsetY * 0.1 <= panel1.VerticalScroll.Maximum)
-                    {
-                        panel1.VerticalScroll.Value += (int)(scrollOffsetY * 0.1);
-                    }
-                    else
-                    {
-                        panel1.VerticalScroll.Value = panel1.VerticalScroll.Maximum;
-                    }
-                }
-                else if (Cursor.Position.Y + scrollOffsetY < currentPositionY)
-                {
-                    if (panel1.VerticalScroll.Value - scrollOffsetY * 0.1 >= panel1.VerticalScroll.Minimum)
-                    {
-                        panel1.VerticalScroll.Value -= (int)(scrollOffsetY * 0.1);
-                    }
-                    else
-                    {
-                        panel1.VerticalScroll.Value = panel1.VerticalScroll.Minimum;
-                    }
-
-                }
-
-
+                    
                 /*
                 // Grab mouse X direction
                 double deltaDirection = currentPositionX - e.X;
@@ -526,6 +517,56 @@ namespace ImgBrowser
         private void pictureBox1_MouseUp(object sender, MouseEventArgs e)
         {
             pictureBox1.Cursor = Cursors.Arrow;
+        }
+
+        private void pictureBox1_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button.ToString() == "Middle")
+            {
+                if (this.WindowState == FormWindowState.Maximized)
+                {
+                    if (this.FormBorderStyle == FormBorderStyle.None)
+                    {
+                        this.FormBorderStyle = FormBorderStyle.Sizable;
+                        if (windowNormal)
+                        {
+                            this.WindowState = FormWindowState.Normal;
+                        }
+                        else
+                        {
+                            this.WindowState = FormWindowState.Maximized;
+                        }
+
+                    }
+                    else
+                    {
+                        this.FormBorderStyle = FormBorderStyle.None;
+                        windowNormal = false;
+                    }
+                }
+                else
+                {
+                    this.FormBorderStyle = FormBorderStyle.None;
+                    this.WindowState = FormWindowState.Maximized;
+                    windowNormal = true;
+
+                }
+            }
+            else if ((e.Button.ToString() == "Right") && (pictureBox1.Image != null))
+            {
+                if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
+                {
+                    panel1.HorizontalScroll.Value = 0;
+                    panel1.VerticalScroll.Value = 0;
+                    pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+                    pictureBox1.Dock = DockStyle.Fill;
+                }
+                else if ((pictureBox1.Image.Width > this.Width) || (pictureBox1.Image.Height > this.Height))
+                {
+                    pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
+                    pictureBox1.Dock = DockStyle.None;
+                }
+            }
         }
     }
 }
