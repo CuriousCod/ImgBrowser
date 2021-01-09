@@ -1,22 +1,20 @@
 ﻿using System;
 using System.IO;
-using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Drawing.Drawing2D;
+using System.Threading;
 
 namespace ImgBrowser
 {
 
     public partial class Form1 : Form
     {
-
+        private BackgroundWorker showMessage;
         public string[] fileEntries;
 
         // Mouse position
@@ -32,9 +30,37 @@ namespace ImgBrowser
 
         public Form1()
         {
+            // Add a worker to remove messages from display after a set duration
+            showMessage = new BackgroundWorker();
+            showMessage.DoWork += new DoWorkEventHandler(showMessage_DoWork);
+            showMessage.RunWorkerCompleted += new RunWorkerCompletedEventHandler(showMessage_RunWorkerCompleted);
+            showMessage.WorkerSupportsCancellation = true;
+
             InitializeComponent();
 
+            // Adjust message label
+            messageLabel.Text = "";
+            // Get rid of message label background
+            messageLabel.Parent = pictureBox1;
+
         }
+
+        private void showMessage_DoWork(object sender, DoWorkEventArgs e)
+        {
+
+            string value = (string)e.Argument;
+            // Sleep 2 seconds to emulate getting data.
+            e.Result = value;
+            Thread.Sleep(1500);
+            //e.Result = "";
+        }
+
+        private void showMessage_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            messageLabel.Text = e.Result.ToString();
+        }
+
+
         private void Form1_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
         {
             switch (e.KeyCode)
@@ -86,17 +112,20 @@ namespace ImgBrowser
                     }
                     else
                     {
-                        // Barebones adjust window size to aspect ratio feature
-                        FormBorderStyle = FormBorderStyle.None;
-                        if (Size.Height > Size.Width)
-                        { 
-                            double aspectRatio = (double)pictureBox1.Image.Height / (double)pictureBox1.Image.Width;
-                            Size = new Size(Size.Width, (int)(aspectRatio * Size.Width));
-                        }
-                        else
+                        if (pictureBox1.Image != null)
                         {
-                            double aspectRatio = (double)pictureBox1.Image.Width / (double)pictureBox1.Image.Height;
-                            Size = new Size((int)(aspectRatio * Size.Height), Size.Height);
+                            // Barebones adjust window size to aspect ratio feature
+                            FormBorderStyle = FormBorderStyle.None;
+                            if (Size.Height > Size.Width)
+                            {
+                                double aspectRatio = (double)pictureBox1.Image.Height / (double)pictureBox1.Image.Width;
+                                Size = new Size(Size.Width, (int)(aspectRatio * Size.Width));
+                            }
+                            else
+                            {
+                                double aspectRatio = (double)pictureBox1.Image.Width / (double)pictureBox1.Image.Height;
+                                Size = new Size((int)(aspectRatio * Size.Height), Size.Height);
+                            }
                         }
                     }
                     break;
@@ -107,6 +136,7 @@ namespace ImgBrowser
                     {
                         if (pictureBox1.ImageLocation != "")
                         {
+                            // TODO This makes image file size large
                             Clipboard.SetImage(Image.FromFile(pictureBox1.ImageLocation));
                         }
                     }
@@ -149,7 +179,45 @@ namespace ImgBrowser
                     break;
                 case "F1":
                     // Set always on top
-                    TopMost = TopMost ? false : true;
+
+                    // Make sure the string fits the frame
+                    int stringWidth = TextRenderer.MeasureText("Stay on Top: False", messageLabel.Font).Width;
+
+                    while (stringWidth + 12 > Width)
+                    {
+                        messageLabel.Font = new Font(messageLabel.Font.FontFamily, messageLabel.Font.Size - 1, FontStyle.Bold);
+                        stringWidth = TextRenderer.MeasureText("Stay on Top: False", messageLabel.Font).Width;
+                    }
+
+                    while ((stringWidth - 12) * 2.8 < Width)
+                    {
+                        if (messageLabel.Font.Size >= 22) { break; }
+                        messageLabel.Font = new Font(messageLabel.Font.FontFamily, messageLabel.Font.Size + 1, FontStyle.Bold);
+                        stringWidth = TextRenderer.MeasureText("Stay on Top: False", messageLabel.Font).Width;
+
+                    }
+
+
+                    if (TopMost)
+                    {
+                        string text = "Stay on Top: False";
+
+                        messageLabel.Text = text;
+                        TopMost = false;
+
+                    }
+                    else
+                    {
+                        string text = "Stay on Top: True";
+
+                        messageLabel.Text = text;
+                        TopMost = true;
+                    }
+                    // Clear message
+                    if (showMessage.IsBusy == false)
+                    {
+                        showMessage.RunWorkerAsync("");
+                    }
                     break;
                 case "Add":
                     PictureBoxZoom(pictureBox1.Image, new Size(1, 1));
@@ -382,7 +450,7 @@ namespace ImgBrowser
 
                 if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
                 {
-                    pictureBox1.Cursor = Cursors.Cross;
+                    pictureBox1.Cursor = Cursors.SizeAll;
                 }
 
                 /*
@@ -523,6 +591,51 @@ namespace ImgBrowser
         {
             if (e.Button.ToString() == "Middle")
             {
+                if (FormBorderStyle == FormBorderStyle.None)
+                {
+                    FormBorderStyle = FormBorderStyle.Sizable;
+                }
+                else
+                {
+                    if (pictureBox1.Image != null)
+                    {
+                        // Barebones adjust window size to aspect ratio feature
+                        FormBorderStyle = FormBorderStyle.None;
+                        if (Size.Height > Size.Width)
+                        {
+                            double aspectRatio = (double)pictureBox1.Image.Height / (double)pictureBox1.Image.Width;
+                            Size = new Size(Size.Width, (int)(aspectRatio * Size.Width));
+                        }
+                        else
+                        {
+                            double aspectRatio = (double)pictureBox1.Image.Width / (double)pictureBox1.Image.Height;
+                            Size = new Size((int)(aspectRatio * Size.Height), Size.Height);
+                        }
+                    }
+                }
+                
+            }
+            else if ((e.Button.ToString() == "Right") && (pictureBox1.Image != null))
+            {
+                if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
+                {
+                    panel1.HorizontalScroll.Value = 0;
+                    panel1.VerticalScroll.Value = 0;
+                    pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+                    pictureBox1.Dock = DockStyle.Fill;
+                }
+                else if ((pictureBox1.Image.Width > this.Width) || (pictureBox1.Image.Height > this.Height))
+                {
+                    pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
+                    pictureBox1.Dock = DockStyle.None;
+                }
+            }
+        }
+
+        private void pictureBox1_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button.ToString() == "Left")
+            {
                 if (this.WindowState == FormWindowState.Maximized)
                 {
                     if (this.FormBorderStyle == FormBorderStyle.None)
@@ -552,21 +665,7 @@ namespace ImgBrowser
 
                 }
             }
-            else if ((e.Button.ToString() == "Right") && (pictureBox1.Image != null))
-            {
-                if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
-                {
-                    panel1.HorizontalScroll.Value = 0;
-                    panel1.VerticalScroll.Value = 0;
-                    pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
-                    pictureBox1.Dock = DockStyle.Fill;
-                }
-                else if ((pictureBox1.Image.Width > this.Width) || (pictureBox1.Image.Height > this.Height))
-                {
-                    pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
-                    pictureBox1.Dock = DockStyle.None;
-                }
-            }
+            
         }
     }
 }
