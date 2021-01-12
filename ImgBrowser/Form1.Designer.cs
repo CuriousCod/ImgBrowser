@@ -33,6 +33,8 @@ namespace ImgBrowser
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.messageLabelShadowTop = new System.Windows.Forms.Label();
+            this.messageLabelShadowBottom = new System.Windows.Forms.Label();
             this.messageLabel = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.panel1.SuspendLayout();
@@ -50,7 +52,6 @@ namespace ImgBrowser
             this.pictureBox1.TabIndex = 0;
             this.pictureBox1.TabStop = false;
             this.pictureBox1.MouseClick += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_MouseClick);
-            this.pictureBox1.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_MouseDoubleClick);
             this.pictureBox1.MouseDown += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_MouseDown);
             this.pictureBox1.MouseMove += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_MouseMove);
             this.pictureBox1.MouseUp += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_MouseUp);
@@ -59,6 +60,8 @@ namespace ImgBrowser
             // panel1
             // 
             this.panel1.AutoScroll = true;
+            this.panel1.Controls.Add(this.messageLabelShadowTop);
+            this.panel1.Controls.Add(this.messageLabelShadowBottom);
             this.panel1.Controls.Add(this.messageLabel);
             this.panel1.Controls.Add(this.pictureBox1);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -66,6 +69,30 @@ namespace ImgBrowser
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(800, 450);
             this.panel1.TabIndex = 1;
+            // 
+            // messageLabelShadowTop
+            // 
+            this.messageLabelShadowTop.AutoSize = true;
+            this.messageLabelShadowTop.BackColor = System.Drawing.Color.Transparent;
+            this.messageLabelShadowTop.Font = new System.Drawing.Font("Segoe UI", 22F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
+            this.messageLabelShadowTop.ForeColor = System.Drawing.SystemColors.WindowText;
+            this.messageLabelShadowTop.Location = new System.Drawing.Point(160, 137);
+            this.messageLabelShadowTop.Name = "messageLabelShadowTop";
+            this.messageLabelShadowTop.Size = new System.Drawing.Size(252, 41);
+            this.messageLabelShadowTop.TabIndex = 4;
+            this.messageLabelShadowTop.Text = "Message Display";
+            // 
+            // messageLabelShadowBottom
+            // 
+            this.messageLabelShadowBottom.AutoSize = true;
+            this.messageLabelShadowBottom.BackColor = System.Drawing.Color.Transparent;
+            this.messageLabelShadowBottom.Font = new System.Drawing.Font("Segoe UI", 22F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
+            this.messageLabelShadowBottom.ForeColor = System.Drawing.SystemColors.WindowText;
+            this.messageLabelShadowBottom.Location = new System.Drawing.Point(64, 79);
+            this.messageLabelShadowBottom.Name = "messageLabelShadowBottom";
+            this.messageLabelShadowBottom.Size = new System.Drawing.Size(252, 41);
+            this.messageLabelShadowBottom.TabIndex = 3;
+            this.messageLabelShadowBottom.Text = "Message Display";
             // 
             // messageLabel
             // 
@@ -95,6 +122,7 @@ namespace ImgBrowser
             this.DragDrop += new System.Windows.Forms.DragEventHandler(this.Form1_DragDrop);
             this.DragEnter += new System.Windows.Forms.DragEventHandler(this.Form1_DragEnter);
             this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.Form1_KeyDown);
+            this.Move += new System.EventHandler(this.Form1_Move);
             this.PreviewKeyDown += new System.Windows.Forms.PreviewKeyDownEventHandler(this.Form1_PreviewKeyDown);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.panel1.ResumeLayout(false);
@@ -108,6 +136,8 @@ namespace ImgBrowser
         private System.Windows.Forms.PictureBox pictureBox1;
         private Panel panel1;
         private Label messageLabel;
+        private Label messageLabelShadowBottom;
+        private Label messageLabelShadowTop;
     }
 }
 
