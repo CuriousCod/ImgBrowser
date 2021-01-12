@@ -62,11 +62,11 @@ namespace ImgBrowser
             messageLabelShadowTop.Parent = messageLabelShadowBottom;
 
             // Offset from offset
-            messageLabel.Location = new Point(1, 2);
+            messageLabel.Location = new Point(-3, -2);
             // Origin
             messageLabelShadowBottom.Location = new Point(11, 8);
-            // Offset from origin
-            messageLabelShadowTop.Location = new Point(-3, -4);
+            // Offset from origin, not in use, as it makes the font look messy (0,0)
+            messageLabelShadowTop.Location = new Point(0, 0);
 
         }
 
@@ -473,9 +473,8 @@ namespace ImgBrowser
 
             if (e.Button.ToString() == "Left")
 
-
             // Get mouse position for image scroll
-             currentPositionX = Cursor.Position.X;
+            currentPositionX = Cursor.Position.X;
             currentPositionY = Cursor.Position.Y;
 
             // For moving the window with mouse without ReleaseCapture();
@@ -506,7 +505,7 @@ namespace ImgBrowser
                             windowNormal = false;
                             // Restore border if window is dragged from full screen
                             showBorder = true;
-                    }
+                        }
                     }
                     else
                     {
