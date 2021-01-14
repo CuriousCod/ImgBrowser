@@ -10,6 +10,9 @@ using System.Drawing.Drawing2D;
 using System.Threading;
 using System.Runtime.InteropServices;
 
+// TODO Config for window start position
+// TODO Color picker?
+
 namespace ImgBrowser
 {
     public partial class Form1 : Form
@@ -106,11 +109,26 @@ namespace ImgBrowser
             { 
                 if (e.Delta > 0)
                 {
-                    browseForward();
+                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
+                    {
+                        pictureBoxZoom(pictureBox1.Image, new Size(1, 1));
+                    }
+                    else 
+                    { 
+                        browseForward(); 
+                    }
+                    
                 }
                 else if (e.Delta < 0)
                 {
-                    browseBackward();
+                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
+                    {
+                        pictureBoxRestore();
+                    }
+                    else
+                    {
+                        browseBackward();
+                    }
                 }
             }
 
@@ -163,6 +181,7 @@ namespace ImgBrowser
                         if (pictureBox1.ImageLocation != "")
                         {
                             // TODO This makes image file size large
+                            displayMessage("Copied to Clipboard");
                             Clipboard.SetImage(Image.FromFile(pictureBox1.ImageLocation));
                         }
                     }
@@ -203,6 +222,10 @@ namespace ImgBrowser
                         pictureBox1.Image = img;
                     }
                     break;
+
+                case "F":
+                    maxOrNormalizeWindow();
+                    break;
                 case "F1":
                     // Set always on top
 
@@ -228,31 +251,32 @@ namespace ImgBrowser
 
                     if (TopMost)
                     {
-                        string text = "Stay on Top: False";
-
-                        messageLabel.Text = text;
-                        messageLabelShadowBottom.Text = text;
-                        messageLabelShadowTop.Text = text;
+                        displayMessage("Stay on Top: False");
                         TopMost = false;
-
                     }
                     else
                     {
-                        string text = "Stay on Top: True";
-
-                        messageLabel.Text = text;
-                        messageLabelShadowBottom.Text = text;
-                        messageLabelShadowTop.Text = text;
+                        displayMessage("Stay on Top: True");
                         TopMost = true;
                     }
-                    // Clear message
-                    if (showMessage.IsBusy == false)
+
+                    break;
+                case "F11":
+                    maxOrNormalizeWindow();
+                    break;
+
+                case "Return":
+                    if ((Control.ModifierKeys & Keys.Alt) == Keys.Alt)
                     {
-                        showMessage.RunWorkerAsync("");
+                        maxOrNormalizeWindow();
                     }
                     break;
+
                 case "Add":
-                    PictureBoxZoom(pictureBox1.Image, new Size(1, 1));
+                    pictureBoxZoom(pictureBox1.Image, new Size(1, 1));
+                    break;
+                case "Subtract":
+                    pictureBoxRestore();
                     break;
                 default:
                     break;
@@ -298,11 +322,26 @@ namespace ImgBrowser
             }
             else if (e.KeyCode.ToString() == "Add")
             {
-                PictureBoxZoom(pictureBox1.Image, new Size(1, 1));
+                pictureBoxZoom(pictureBox1.Image, new Size(1, 1));
             }
             */
 
         }
+
+        private void displayMessage(string text)
+        {
+            messageLabel.Text = text;
+            messageLabelShadowBottom.Text = text;
+            messageLabelShadowTop.Text = text;
+
+            // Clear message
+            if (showMessage.IsBusy == false)
+            {
+                showMessage.RunWorkerAsync("");
+            }
+
+        }
+
         private void browseForward()
         {
             if (pictureBox1.ImageLocation != "") {
@@ -364,7 +403,9 @@ namespace ImgBrowser
             if (pictureBox1.ImageLocation != "")
             {
                 IEnumerable<string> files = Directory.EnumerateFiles(Path.GetDirectoryName(pictureBox1.ImageLocation), "*.*", SearchOption.TopDirectoryOnly)
-                .Where(s => s.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".png", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".gif", StringComparison.OrdinalIgnoreCase));
+                .Where(s => s.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".png", StringComparison.OrdinalIgnoreCase) || 
+                s.EndsWith(".gif", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase) || 
+                s.EndsWith(".tif", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".svg", StringComparison.OrdinalIgnoreCase));
                 return files.ToArray();
             }
             else
@@ -411,34 +452,50 @@ namespace ImgBrowser
                 updateFormName();
                 fileEntries = updateFileList();
             }
+            else if (Clipboard.GetImage() != null)
+            {
+                pictureBox1.Image = Clipboard.GetImage();
+            }
 
         }
 
         // TODO This barely works atm
-        public void PictureBoxZoom(Image img, Size size)
+        public void pictureBoxZoom(Image img, Size size)
         {
-            //Bitmap bm = new Bitmap(img, Convert.ToInt32(img.Width * size.Width), Convert.ToInt32(img.Height * size.Height));
-            //Bitmap bm = new Bitmap(img, Convert.ToInt32(img.Width * 1.5), Convert.ToInt32(img.Height * 1.5));
-
-            //https://stackoverflow.com/questions/1922040/how-to-resize-an-image-c-sharp
-
-            // The bitmap and the graphic will both need to be resized
-            Bitmap resized = new Bitmap(Convert.ToInt32(img.Width * 1.5), Convert.ToInt32(img.Height * 1.5));
-            
-            using (Graphics grap = Graphics.FromImage(resized))
+            if (pictureBox1.Image != null)
             {
-                grap.CompositingMode = CompositingMode.SourceCopy;
-                grap.CompositingQuality = CompositingQuality.HighQuality;
-                grap.InterpolationMode = InterpolationMode.Bicubic;
-                //grap.SmoothingMode = SmoothingMode.HighQuality;
-                grap.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                //Bitmap bm = new Bitmap(img, Convert.ToInt32(img.Width * size.Width), Convert.ToInt32(img.Height * size.Height));
+                //Bitmap bm = new Bitmap(img, Convert.ToInt32(img.Width * 1.5), Convert.ToInt32(img.Height * 1.5));
 
-                grap.DrawImage(img, 0, 0, Convert.ToInt32(img.Width * 1.5), Convert.ToInt32(img.Height * 1.5));
+                //https://stackoverflow.com/questions/1922040/how-to-resize-an-image-c-sharp
+
+                // The bitmap and the graphic will both need to be resized
+                Bitmap resized = new Bitmap(Convert.ToInt32(img.Width * 1.5), Convert.ToInt32(img.Height * 1.5));
+
+                using (Graphics grap = Graphics.FromImage(resized))
+                {
+                    grap.CompositingMode = CompositingMode.SourceCopy;
+                    grap.CompositingQuality = CompositingQuality.HighQuality;
+                    grap.InterpolationMode = InterpolationMode.Bicubic;
+                    //grap.SmoothingMode = SmoothingMode.HighQuality;
+                    grap.PixelOffsetMode = PixelOffsetMode.HighQuality;
+
+                    grap.DrawImage(img, 0, 0, Convert.ToInt32(img.Width * 1.5), Convert.ToInt32(img.Height * 1.5));
+                }
+
+                pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
+                pictureBox1.Dock = DockStyle.None;
+                pictureBox1.Image = resized;
             }
-            
-            pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
-            pictureBox1.Dock = DockStyle.None;
-            pictureBox1.Image = resized;
+
+        }
+
+        public void pictureBoxRestore()
+        {
+            if (pictureBox1.ImageLocation != null)
+            {
+                pictureBox1.ImageLocation = pictureBox1.ImageLocation;
+            }
         }
 
         private void Form1_DragDrop(object sender, DragEventArgs e)
@@ -448,7 +505,7 @@ namespace ImgBrowser
 
             if (files != null)
             {
-                if (files[0].Contains(".jpg") || files[0].Contains(".png") || files[0].Contains(".gif"))
+                if (files[0].EndsWith(".jpg") || files[0].EndsWith(".png") || files[0].EndsWith(".gif") || files[0].EndsWith(".bmp") || files[0].EndsWith(".tif") || files[0].EndsWith(".svg"))
                 {
                     pictureBox1.ImageLocation = files[0];
 
@@ -484,37 +541,7 @@ namespace ImgBrowser
             // Maximize or normalize window
             if (e.Clicks == 2)
                 {
-                    if (this.WindowState == FormWindowState.Maximized)
-                    {
-                        if (this.FormBorderStyle == FormBorderStyle.None)
-                        {
-                            this.FormBorderStyle = FormBorderStyle.Sizable;
-                            if (windowNormal)
-                            {
-                                this.WindowState = FormWindowState.Normal;
-                            }
-                            else
-                            {
-                                this.WindowState = FormWindowState.Maximized;
-                            }
-
-                        }
-                        else
-                        {
-                            this.FormBorderStyle = FormBorderStyle.None;
-                            windowNormal = false;
-                            // Restore border if window is dragged from full screen
-                            showBorder = true;
-                        }
-                    }
-                    else
-                    {
-                        this.FormBorderStyle = FormBorderStyle.None;
-                        this.WindowState = FormWindowState.Maximized;
-                        windowNormal = true;
-                        // Restore border if window is dragged from full screen
-                        showBorder = true;
-                    }
+                    maxOrNormalizeWindow();            
                 }
             else
             {
@@ -549,6 +576,40 @@ namespace ImgBrowser
             */
         }
             
+        private void maxOrNormalizeWindow()
+        {
+            if (this.WindowState == FormWindowState.Maximized)
+            {
+                if (this.FormBorderStyle == FormBorderStyle.None)
+                {
+                    this.FormBorderStyle = FormBorderStyle.Sizable;
+                    if (windowNormal)
+                    {
+                        this.WindowState = FormWindowState.Normal;
+                    }
+                    else
+                    {
+                        this.WindowState = FormWindowState.Maximized;
+                    }
+
+                }
+                else
+                {
+                    this.FormBorderStyle = FormBorderStyle.None;
+                    windowNormal = false;
+                    // Restore border if window is dragged from full screen
+                    showBorder = true;
+                }
+            }
+            else
+            {
+                this.FormBorderStyle = FormBorderStyle.None;
+                this.WindowState = FormWindowState.Maximized;
+                windowNormal = true;
+                // Restore border if window is dragged from full screen
+                showBorder = true;
+            }
+        }
 
         private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
         {
@@ -567,18 +628,6 @@ namespace ImgBrowser
 
                     if (Cursor.Position.X - scrollOffsetX > currentPositionX)
                     {
-                        if (panel1.HorizontalScroll.Value + scrollOffsetX * 0.1 <= panel1.HorizontalScroll.Maximum)
-                        {
-                            panel1.HorizontalScroll.Value += (int)(scrollOffsetX * 0.1);
-                        }
-                        else
-                        {
-                            panel1.HorizontalScroll.Value = panel1.HorizontalScroll.Maximum;
-                        }
-
-                    }
-                    else if (Cursor.Position.X + scrollOffsetX < currentPositionX)
-                    {
                         if (panel1.HorizontalScroll.Value - scrollOffsetX * 0.1 >= panel1.HorizontalScroll.Minimum)
                         {
                             panel1.HorizontalScroll.Value -= (int)(scrollOffsetX * 0.1);
@@ -589,19 +638,19 @@ namespace ImgBrowser
                         }
 
                     }
-
-                    if (Cursor.Position.Y - scrollOffsetY > currentPositionY)
+                    else if (Cursor.Position.X + scrollOffsetX < currentPositionX)
                     {
-                        if (panel1.VerticalScroll.Value + scrollOffsetY * 0.1 <= panel1.VerticalScroll.Maximum)
+                        if (panel1.HorizontalScroll.Value + scrollOffsetX * 0.1 <= panel1.HorizontalScroll.Maximum)
                         {
-                            panel1.VerticalScroll.Value += (int)(scrollOffsetY * 0.1);
+                            panel1.HorizontalScroll.Value += (int)(scrollOffsetX * 0.1);
                         }
                         else
                         {
-                            panel1.VerticalScroll.Value = panel1.VerticalScroll.Maximum;
+                            panel1.HorizontalScroll.Value = panel1.HorizontalScroll.Maximum;
                         }
                     }
-                    else if (Cursor.Position.Y + scrollOffsetY < currentPositionY)
+
+                    if (Cursor.Position.Y - scrollOffsetY > currentPositionY)
                     {
                         if (panel1.VerticalScroll.Value - scrollOffsetY * 0.1 >= panel1.VerticalScroll.Minimum)
                         {
@@ -610,6 +659,17 @@ namespace ImgBrowser
                         else
                         {
                             panel1.VerticalScroll.Value = panel1.VerticalScroll.Minimum;
+                        }
+                    }
+                    else if (Cursor.Position.Y + scrollOffsetY < currentPositionY)
+                    {
+                        if (panel1.VerticalScroll.Value + scrollOffsetY * 0.1 <= panel1.VerticalScroll.Maximum)
+                        {
+                            panel1.VerticalScroll.Value += (int)(scrollOffsetY * 0.1);
+                        }
+                        else
+                        {
+                            panel1.VerticalScroll.Value = panel1.VerticalScroll.Maximum;
                         }
 
                     }
