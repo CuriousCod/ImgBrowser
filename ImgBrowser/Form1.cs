@@ -34,7 +34,7 @@ namespace ImgBrowser
         // If border should reappear when draggin window
         public bool showBorder = false;
 
-        // Raw commands for moving window with mouse
+        // Commands for moving window with mouse
         public const int WM_NCLBUTTONDOWN = 0xA1;
         public const int HT_CAPTION = 0x2;
 
@@ -178,11 +178,11 @@ namespace ImgBrowser
                     // Check for control key
                     if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
                     {
-                        if (pictureBox1.ImageLocation != "")
+                        if (pictureBox1.Image != null)
                         {
                             // TODO This makes image file size large
                             displayMessage("Copied to Clipboard");
-                            Clipboard.SetImage(Image.FromFile(pictureBox1.ImageLocation));
+                            Clipboard.SetImage(pictureBox1.Image);
                         }
                     }
                     break;
@@ -222,7 +222,24 @@ namespace ImgBrowser
                         pictureBox1.Image = img;
                     }
                     break;
+                /* TODO WIP
+                case "I":
+                    if (pictureBox1.Image != null)
+                    {
 
+                        if (Cursor.Position.X <= pictureBox1.Right && Cursor.Position.X >= pictureBox1.Left && Cursor.Position.Y <= pictureBox1.Bottom && Cursor.Position.Y >= pictureBox1.Top)
+                        {
+                            Bitmap grabImg = new Bitmap(pictureBox1.Image);
+                            Console.WriteLine(pictureBox1.Image.Width);
+                            Console.WriteLine(grabImg.Width);
+                            Console.WriteLine(grabImg.Height);
+                            Color pixel = grabImg.GetPixel(Cursor.Position.X, Cursor.Position.Y);
+                            Console.WriteLine(pixel);
+                        }
+
+                    }
+                    break;
+                */
                 case "F":
                     maxOrNormalizeWindow();
                     break;
@@ -488,13 +505,23 @@ namespace ImgBrowser
                 pictureBox1.Image = resized;
             }
 
+            centerImage();
+
         }
 
+        // Reset Zoom
         public void pictureBoxRestore()
         {
             if (pictureBox1.ImageLocation != null)
             {
                 pictureBox1.ImageLocation = pictureBox1.ImageLocation;
+
+                panel1.HorizontalScroll.Value = 0;
+                panel1.VerticalScroll.Value = 0;
+                pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+                pictureBox1.Dock = DockStyle.Fill;
+
+                centerImage();
             }
         }
 
@@ -539,7 +566,7 @@ namespace ImgBrowser
             //frameLeft = Left;
 
             // Maximize or normalize window
-            if (e.Clicks == 2)
+            if (e.Button.ToString() == "Left" && e.Clicks == 2)
                 {
                     maxOrNormalizeWindow();            
                 }
@@ -603,6 +630,11 @@ namespace ImgBrowser
             }
             else
             {
+                panel1.HorizontalScroll.Value = 0;
+                panel1.VerticalScroll.Value = 0;
+                pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+                pictureBox1.Dock = DockStyle.Fill;
+
                 this.FormBorderStyle = FormBorderStyle.None;
                 this.WindowState = FormWindowState.Maximized;
                 windowNormal = true;
@@ -763,6 +795,7 @@ namespace ImgBrowser
             {
                 if (pictureBox1.Image != null)
                 {
+                    // Disable scrolling
                     if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
                     {
                         panel1.HorizontalScroll.Value = 0;
@@ -770,16 +803,40 @@ namespace ImgBrowser
                         pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
                         pictureBox1.Dock = DockStyle.Fill;
                     }
-                    else if ((pictureBox1.Image.Width > this.Width) || (pictureBox1.Image.Height > this.Height))
+
+                    // Scrolling for large images
+                    else if ((pictureBox1.Image.Width > Width) || (pictureBox1.Image.Height > Height))
                     {
                         pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
                         pictureBox1.Dock = DockStyle.None;
+
+                        centerImage();
                     }
                 }
                 else if (Clipboard.GetImage() != null)
                 {
                     pictureBox1.Image = Clipboard.GetImage();
                 }
+            }
+        }
+
+        private void centerImage()
+        {
+            // Calculate padding to center image
+            if (Width > pictureBox1.Image.Width)
+            {
+                pictureBox1.Left = (Width - pictureBox1.Image.Width) / 2;
+                pictureBox1.Top = 0;
+            }
+            else if (Height > pictureBox1.Image.Height)
+            {
+                pictureBox1.Top = (Height - pictureBox1.Image.Height) / 2;
+                pictureBox1.Left = 0;
+            }
+            else
+            {
+                pictureBox1.Top = 0;
+                pictureBox1.Left = 0;
             }
         }
 
