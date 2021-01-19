@@ -105,19 +105,19 @@ namespace ImgBrowser
 
         private void pictureBox1_MouseWheel(object sender, MouseEventArgs e)
         {
-            if (pictureBox1.SizeMode != PictureBoxSizeMode.AutoSize) 
-            { 
+            if (pictureBox1.SizeMode != PictureBoxSizeMode.AutoSize)
+            {
                 if (e.Delta > 0)
                 {
                     if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
                     {
                         pictureBoxZoom(pictureBox1.Image, new Size(1, 1));
                     }
-                    else 
-                    { 
-                        browseForward(); 
+                    else
+                    {
+                        browseForward();
                     }
-                    
+
                 }
                 else if (e.Delta < 0)
                 {
@@ -173,6 +173,13 @@ namespace ImgBrowser
                         }
                     }
                     break;
+                // Open image location
+                case "F3":
+                    if (pictureBox1.ImageLocation != "")
+                    {
+                        System.Diagnostics.Process.Start("explorer.exe", Path.GetDirectoryName(pictureBox1.ImageLocation));
+                    }
+                    break;
                 // Copy image to clipboard
                 case "C":
                     // Check for control key
@@ -226,6 +233,26 @@ namespace ImgBrowser
                 case "I":
                     if (pictureBox1.Image != null)
                     {
+                        float Z = getCurrentPixel();
+                        /*
+                        // Calculate picture size on screen
+
+                        Size sizey;
+                        double aspect = (double)pictureBox1.Image.Width / (double)pictureBox1.Image.Height;
+
+                        if (Size.Height > Size.Width)
+                        {
+                            double aspectRatio = (double)pictureBox1.Image.Height / (double)pictureBox1.Image.Width;
+                            sizey = new Size(Size.Width, (int)(aspectRatio * Size.Width) - 23);
+                        }
+                        else
+                        {
+                            double aspectRatio = (double)pictureBox1.Image.Width / (double)pictureBox1.Image.Height;
+                            sizey = new Size((int)(aspectRatio * Size.Height), Size.Height - 23);
+                        }
+
+                        Console.WriteLine(sizey);
+
 
                         if (Cursor.Position.X <= pictureBox1.Right && Cursor.Position.X >= pictureBox1.Left && Cursor.Position.Y <= pictureBox1.Bottom && Cursor.Position.Y >= pictureBox1.Top)
                         {
@@ -236,10 +263,9 @@ namespace ImgBrowser
                             Color pixel = grabImg.GetPixel(Cursor.Position.X, Cursor.Position.Y);
                             Console.WriteLine(pixel);
                         }
-
+                        
                     }
-                    break;
-                */
+                break;*/
                 case "F":
                     maxOrNormalizeWindow();
                     break;
@@ -286,6 +312,9 @@ namespace ImgBrowser
                     if ((Control.ModifierKeys & Keys.Alt) == Keys.Alt)
                     {
                         maxOrNormalizeWindow();
+                        //e.Handled = true;
+                        // Suppress Windows noises
+                        e.SuppressKeyPress = true;
                     }
                     break;
 
@@ -344,6 +373,59 @@ namespace ImgBrowser
             */
 
         }
+
+        private float getCurrentPixel()
+        {
+
+            int imgWidth = pictureBox1.Image.Width;
+            int imgHeight = pictureBox1.Image.Height;
+            int boxWidth = pictureBox1.Size.Width;
+            int boxHeight = pictureBox1.Size.Height;
+
+            //This variable will hold the result
+            float X = Cursor.Position.X;
+            float Y = Cursor.Position.Y;
+            //Comparing the aspect ratio of both the control and the image itself.
+            if (imgWidth / imgHeight > boxWidth / boxHeight)
+            {
+                //If true, that means that the image is stretched through the width of the control.
+                //'In other words: the image is limited by the width.
+
+                //The scale of the image in the Picture Box.
+                float scale = boxWidth / imgWidth;
+
+                //Since the image is in the middle, this code is used to determinate the empty space in the height
+                //'by getting the difference between the box height and the image actual displayed height and dividing it by 2.
+                float blankPart = (boxHeight - scale * imgHeight) / 2;
+
+                Y -= blankPart;
+
+                //Scaling the results.
+                X /= scale;
+                Y /= scale;
+            }
+            else
+            {
+                //If true, that means that the image is stretched through the height of the control.
+                //'In other words: the image is limited by the height.
+
+                //The scale of the image in the Picture Box.
+                float scale = boxHeight / imgHeight;
+
+                //Since the image is in the middle, this code is used to determinate the empty space in the width
+                //'by getting the difference between the box width and the image actual displayed width and dividing it by 2.
+                float blankPart = (boxWidth - scale * imgWidth) / 2;
+                X -= blankPart;
+
+                //Scaling the results.
+                X /= scale;
+                Y /= scale;
+            }
+            Console.WriteLine(X);
+            Console.WriteLine(Y);
+            return X;
+        }
+
 
         private void displayMessage(string text)
         {
@@ -503,9 +585,11 @@ namespace ImgBrowser
                 pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
                 pictureBox1.Dock = DockStyle.None;
                 pictureBox1.Image = resized;
+
+                centerImage();
             }
 
-            centerImage();
+
 
         }
 
@@ -532,7 +616,9 @@ namespace ImgBrowser
 
             if (files != null)
             {
-                if (files[0].EndsWith(".jpg") || files[0].EndsWith(".png") || files[0].EndsWith(".gif") || files[0].EndsWith(".bmp") || files[0].EndsWith(".tif") || files[0].EndsWith(".svg"))
+                string lowerCase = files[0].ToLower();
+
+                if (lowerCase.EndsWith(".jpg") || lowerCase.EndsWith(".png") || lowerCase.EndsWith(".gif") || lowerCase.EndsWith(".bmp") || lowerCase.EndsWith(".tif") || lowerCase.EndsWith(".svg"))
                 {
                     pictureBox1.ImageLocation = files[0];
 
@@ -822,22 +908,26 @@ namespace ImgBrowser
 
         private void centerImage()
         {
-            // Calculate padding to center image
-            if (Width > pictureBox1.Image.Width)
+            if (pictureBox1.Image != null)
             {
-                pictureBox1.Left = (Width - pictureBox1.Image.Width) / 2;
-                pictureBox1.Top = 0;
+                // Calculate padding to center image
+                if (Width > pictureBox1.Image.Width)
+                {
+                    pictureBox1.Left = (Width - pictureBox1.Image.Width) / 2;
+                    pictureBox1.Top = 0;
+                }
+                else if (Height > pictureBox1.Image.Height)
+                {
+                    pictureBox1.Top = (Height - pictureBox1.Image.Height) / 2;
+                    pictureBox1.Left = 0;
+                }
+                else
+                {
+                    pictureBox1.Top = 0;
+                    pictureBox1.Left = 0;
+                }
             }
-            else if (Height > pictureBox1.Image.Height)
-            {
-                pictureBox1.Top = (Height - pictureBox1.Image.Height) / 2;
-                pictureBox1.Left = 0;
-            }
-            else
-            {
-                pictureBox1.Top = 0;
-                pictureBox1.Left = 0;
-            }
+
         }
 
         private void Form1_Move(object sender, EventArgs e)
