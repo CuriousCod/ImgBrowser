@@ -12,6 +12,8 @@ using System.Runtime.InteropServices;
 
 // TODO Config for window start position
 // TODO Color picker?
+// TODO Chroma key / Transparency for window?
+// TODO Randomized slideshow?
 
 namespace ImgBrowser
 {
@@ -504,7 +506,8 @@ namespace ImgBrowser
                 IEnumerable<string> files = Directory.EnumerateFiles(Path.GetDirectoryName(pictureBox1.ImageLocation), "*.*", SearchOption.TopDirectoryOnly)
                 .Where(s => s.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".png", StringComparison.OrdinalIgnoreCase) || 
                 s.EndsWith(".gif", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase) || 
-                s.EndsWith(".tif", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".svg", StringComparison.OrdinalIgnoreCase));
+                s.EndsWith(".tif", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".svg", StringComparison.OrdinalIgnoreCase) || 
+                s.EndsWith(".jfif", StringComparison.OrdinalIgnoreCase));
                 return files.ToArray();
             }
             else
@@ -618,7 +621,7 @@ namespace ImgBrowser
             {
                 string lowerCase = files[0].ToLower();
 
-                if (lowerCase.EndsWith(".jpg") || lowerCase.EndsWith(".png") || lowerCase.EndsWith(".gif") || lowerCase.EndsWith(".bmp") || lowerCase.EndsWith(".tif") || lowerCase.EndsWith(".svg"))
+                if (lowerCase.EndsWith(".jpg") || lowerCase.EndsWith(".png") || lowerCase.EndsWith(".gif") || lowerCase.EndsWith(".bmp") || lowerCase.EndsWith(".tif") || lowerCase.EndsWith(".svg") || lowerCase.EndsWith(".jfif"))
                 {
                     pictureBox1.ImageLocation = files[0];
 
