@@ -22,13 +22,9 @@ namespace ImgBrowser
         private BackgroundWorker showMessage;
         public string[] fileEntries;
 
-        // For preloading images
-        //public Image nextImg;
-        //public Image prevImg;
-
         // Current image information
-        //public string imgName = "";
-        //public string imgLocation = "";
+        public string imgName = "";
+        public string imgLocation = "";
 
         // Mouse position
         public int currentPositionX = 0;
@@ -185,9 +181,9 @@ namespace ImgBrowser
                     break;
                 // Open image location
                 case "F3":
-                    if (pictureBox1.ImageLocation != "")
+                    if (imgLocation != "")
                     {
-                        System.Diagnostics.Process.Start("explorer.exe", Path.GetDirectoryName(pictureBox1.ImageLocation));
+                        System.Diagnostics.Process.Start("explorer.exe", imgLocation);
                     }
                     break;
                 // Copy image to clipboard
@@ -211,6 +207,8 @@ namespace ImgBrowser
                         if (Clipboard.GetImage() != null)
                         {
                             pictureBox1.Image = Clipboard.GetImage();
+                            imgLocation = "";
+                            imgName = "";
                         }
 
                     }
@@ -453,114 +451,82 @@ namespace ImgBrowser
 
         private void browseForward()
         {
-            if (pictureBox1.ImageLocation != "") {
+            if (imgLocation != "") {
 
                 //string[] fileEntries = listFiles(Path.GetDirectoryName(pictureBox1.ImageLocation));
                 //string[] fileEntries = asd;
                 //Console.WriteLine(pictureBox1.ImageLocation);
 
-                //int index = Array.IndexOf(fileEntries, imgLocation + "\\" + imgName);
-                int index = Array.IndexOf(fileEntries, pictureBox1.ImageLocation);
+                int index = Array.IndexOf(fileEntries, imgLocation + "\\" + imgName);
+                //int index = Array.IndexOf(fileEntries, pictureBox1.ImageLocation);
 
                 //Console.WriteLine(index);
+                Image currentImage = pictureBox1.Image;
 
                 if (index + 1 <= fileEntries.Length - 1)
                 {
-                    pictureBox1.ImageLocation = fileEntries[index + 1];
+                    pictureBox1.Image = Image.FromFile(fileEntries[index + 1]);
                     //pictureBox1.Image = nextImg;
-                    //imgLocation = Path.GetDirectoryName(fileEntries[index + 1]);
-                    //imgName = Path.GetFileName(fileEntries[index + 1]);
+                    imgLocation = Path.GetDirectoryName(fileEntries[index + 1]);
+                    imgName = Path.GetFileName(fileEntries[index + 1]);
+                    //prevImg.Dispose();
                 }
                 else
                 {
-                    pictureBox1.ImageLocation = fileEntries[0];
+                    pictureBox1.Image = Image.FromFile(fileEntries[0]);
                     //pictureBox1.Image = nextImg;                    
-                    //imgLocation = Path.GetDirectoryName(fileEntries[0]);
-                    //imgName = Path.GetFileName(fileEntries[0]);
+                    imgLocation = Path.GetDirectoryName(fileEntries[0]);
+                    imgName = Path.GetFileName(fileEntries[0]);
+                    //prevImg.Dispose();
                 }
 
+                currentImage.Dispose();
                 updateFormName();
-                //preloadImages();
             }
         }
 
         private void browseBackward()
         {
-            if (pictureBox1.ImageLocation != "")
+            if (imgLocation != "")
             {
                 //string[] fileEntries = listFiles(Path.GetDirectoryName(pictureBox1.ImageLocation));
 
-                //int index = Array.IndexOf(fileEntries, imgLocation + "\\" + imgName);
-                int index = Array.IndexOf(fileEntries, pictureBox1.ImageLocation);
+                int index = Array.IndexOf(fileEntries, imgLocation + "\\" + imgName);
+                //int index = Array.IndexOf(fileEntries, pictureBox1.ImageLocation);
 
                 //Console.WriteLine(index);
+                Image currentImage = pictureBox1.Image;
 
                 if (index - 1 >= 0)
                 {
-                    pictureBox1.ImageLocation = fileEntries[index - 1];
+                    pictureBox1.Image = Image.FromFile(fileEntries[index - 1]);
                     //pictureBox1.Image = prevImg;
-                    //imgLocation = Path.GetDirectoryName(fileEntries[index - 1]);
-                    //imgName = Path.GetFileName(fileEntries[index - 1]);
+                    imgLocation = Path.GetDirectoryName(fileEntries[index - 1]);
+                    imgName = Path.GetFileName(fileEntries[index - 1]);
+                    //nextImg.Dispose();
                 }
                 else
                 {
-                    pictureBox1.ImageLocation = fileEntries[fileEntries.Length - 1];
+                    pictureBox1.Image = Image.FromFile(fileEntries[fileEntries.Length - 1]);
                     //pictureBox1.Image = prevImg;
-                    //imgLocation = Path.GetDirectoryName(fileEntries[fileEntries.Length - 1]);
-                    //imgName = Path.GetFileName(fileEntries[fileEntries.Length - 1]);
+                    imgLocation = Path.GetDirectoryName(fileEntries[fileEntries.Length - 1]);
+                    imgName = Path.GetFileName(fileEntries[fileEntries.Length - 1]);
+                    //nextImg.Dispose();
                 }
 
+                currentImage.Dispose();
                 updateFormName();
-                //preloadImages();
             }
         }
-
-        /*
-        private void preloadImages()
-        {
-            // TODO This function causes a memory leak
-            int index = Array.IndexOf(fileEntries, imgLocation + "\\" + imgName);
-
-            if (index + 1 <= fileEntries.Length - 1)
-            {
-                nextImg = Image.FromFile(fileEntries[index + 1]);
-            }
-            else
-            {
-                nextImg = Image.FromFile(fileEntries[0]);
-            }
-
-            if (index - 1 >= 0)
-            {
-                prevImg = Image.FromFile(fileEntries[index - 1]);
-
-            }
-            else
-            {
-                prevImg = Image.FromFile(fileEntries[fileEntries.Length - 1]);
-            }
-
-        }
-        */
 
         private void updateFormName()
         {
-            Text = "ImgBrowser - " + Path.GetFileName(pictureBox1.ImageLocation);
+            Text = "ImgBrowser - " + imgName;
         }
 
         private string[] updateFileList()
         {
             
-            if (pictureBox1.ImageLocation != "")
-            {
-                IEnumerable<string> files = Directory.EnumerateFiles(Path.GetDirectoryName(pictureBox1.ImageLocation), "*.*", SearchOption.TopDirectoryOnly)
-                .Where(s => s.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".png", StringComparison.OrdinalIgnoreCase) || 
-                s.EndsWith(".gif", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase) || 
-                s.EndsWith(".tif", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".svg", StringComparison.OrdinalIgnoreCase) || 
-                s.EndsWith(".jfif", StringComparison.OrdinalIgnoreCase));
-                return files.ToArray();
-            }
-            /*
             if (imgLocation != "")
             {
                 IEnumerable<string> files = Directory.EnumerateFiles(imgLocation, "*.*", SearchOption.TopDirectoryOnly)
@@ -570,7 +536,7 @@ namespace ImgBrowser
                 s.EndsWith(".jfif", StringComparison.OrdinalIgnoreCase));
                 return files.ToArray();
             }
-            */
+            
             else
             {
                 string[] files = new string[0];
@@ -616,13 +582,12 @@ namespace ImgBrowser
             else if (Clipboard.GetImage() != null)
             {
                 pictureBox1.Image = Clipboard.GetImage();
-                //imgName = "";
-                //imgLocation = "";
+                imgName = "";
+                imgLocation = "";
             }
 
         }
 
-        // TODO This barely works atm
         public void pictureBoxZoom(Image img, Size size)
         {
             if (pictureBox1.Image != null)
@@ -633,6 +598,7 @@ namespace ImgBrowser
                 //https://stackoverflow.com/questions/1922040/how-to-resize-an-image-c-sharp
 
                 // The bitmap and the graphic will both need to be resized
+                Image currentImg = pictureBox1.Image;
                 Bitmap resized = new Bitmap(Convert.ToInt32(img.Width * 1.5), Convert.ToInt32(img.Height * 1.5));
 
                 using (Graphics grap = Graphics.FromImage(resized))
@@ -649,6 +615,7 @@ namespace ImgBrowser
                 pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
                 pictureBox1.Dock = DockStyle.None;
                 pictureBox1.Image = resized;
+                currentImg.Dispose();
 
                 centerImage();
             }
@@ -657,17 +624,19 @@ namespace ImgBrowser
 
         }
 
-        // Reset Zoom
+        // Reset Zoom, if original image can be accessed
         public void pictureBoxRestore()
         {
-            if (pictureBox1.ImageLocation != null)
+            if (imgLocation != "")
             {
-                pictureBox1.ImageLocation = pictureBox1.ImageLocation;
+                Image currentImg = pictureBox1.Image;
+                pictureBox1.Image = Image.FromFile(imgLocation + "\\" + imgName);
 
                 panel1.HorizontalScroll.Value = 0;
                 panel1.VerticalScroll.Value = 0;
                 pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
                 pictureBox1.Dock = DockStyle.Fill;
+                currentImg.Dispose();
 
                 centerImage();
             }
@@ -694,13 +663,14 @@ namespace ImgBrowser
 
         private void loadNewImg(string file)
         {
-            //imgName = Path.GetFileName(file);
-            //imgLocation = Path.GetDirectoryName(file);
-            pictureBox1.ImageLocation = file;
+            imgName = Path.GetFileName(file);
+            imgLocation = Path.GetDirectoryName(file);
+            Image img = Image.FromFile(imgLocation + "\\" + imgName);
+
+            pictureBox1.Image = img;
 
             updateFormName();
             fileEntries = updateFileList();
-            //preloadImages();
         }
 
         private void Form1_DragEnter(object sender, DragEventArgs e)
@@ -975,8 +945,8 @@ namespace ImgBrowser
                 else if (Clipboard.GetImage() != null)
                 {
                     pictureBox1.Image = Clipboard.GetImage();
-                    //imgName = "";
-                    //imgLocation = "";
+                    imgName = "";
+                    imgLocation = "";
                 }
             }
         }
