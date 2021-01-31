@@ -22,6 +22,14 @@ namespace ImgBrowser
         private BackgroundWorker showMessage;
         public string[] fileEntries;
 
+        // For preloading images
+        //public Image nextImg;
+        //public Image prevImg;
+
+        // Current image information
+        //public string imgName = "";
+        //public string imgLocation = "";
+
         // Mouse position
         public int currentPositionX = 0;
         public int currentPositionY = 0;
@@ -449,9 +457,9 @@ namespace ImgBrowser
 
                 //string[] fileEntries = listFiles(Path.GetDirectoryName(pictureBox1.ImageLocation));
                 //string[] fileEntries = asd;
-
                 //Console.WriteLine(pictureBox1.ImageLocation);
 
+                //int index = Array.IndexOf(fileEntries, imgLocation + "\\" + imgName);
                 int index = Array.IndexOf(fileEntries, pictureBox1.ImageLocation);
 
                 //Console.WriteLine(index);
@@ -459,13 +467,20 @@ namespace ImgBrowser
                 if (index + 1 <= fileEntries.Length - 1)
                 {
                     pictureBox1.ImageLocation = fileEntries[index + 1];
+                    //pictureBox1.Image = nextImg;
+                    //imgLocation = Path.GetDirectoryName(fileEntries[index + 1]);
+                    //imgName = Path.GetFileName(fileEntries[index + 1]);
                 }
                 else
                 {
                     pictureBox1.ImageLocation = fileEntries[0];
+                    //pictureBox1.Image = nextImg;                    
+                    //imgLocation = Path.GetDirectoryName(fileEntries[0]);
+                    //imgName = Path.GetFileName(fileEntries[0]);
                 }
 
                 updateFormName();
+                //preloadImages();
             }
         }
 
@@ -475,8 +490,7 @@ namespace ImgBrowser
             {
                 //string[] fileEntries = listFiles(Path.GetDirectoryName(pictureBox1.ImageLocation));
 
-                //Console.WriteLine(pictureBox1.ImageLocation);
-
+                //int index = Array.IndexOf(fileEntries, imgLocation + "\\" + imgName);
                 int index = Array.IndexOf(fileEntries, pictureBox1.ImageLocation);
 
                 //Console.WriteLine(index);
@@ -484,23 +498,59 @@ namespace ImgBrowser
                 if (index - 1 >= 0)
                 {
                     pictureBox1.ImageLocation = fileEntries[index - 1];
+                    //pictureBox1.Image = prevImg;
+                    //imgLocation = Path.GetDirectoryName(fileEntries[index - 1]);
+                    //imgName = Path.GetFileName(fileEntries[index - 1]);
                 }
                 else
                 {
                     pictureBox1.ImageLocation = fileEntries[fileEntries.Length - 1];
+                    //pictureBox1.Image = prevImg;
+                    //imgLocation = Path.GetDirectoryName(fileEntries[fileEntries.Length - 1]);
+                    //imgName = Path.GetFileName(fileEntries[fileEntries.Length - 1]);
                 }
 
                 updateFormName();
+                //preloadImages();
             }
         }
 
+        /*
+        private void preloadImages()
+        {
+            // TODO This function causes a memory leak
+            int index = Array.IndexOf(fileEntries, imgLocation + "\\" + imgName);
+
+            if (index + 1 <= fileEntries.Length - 1)
+            {
+                nextImg = Image.FromFile(fileEntries[index + 1]);
+            }
+            else
+            {
+                nextImg = Image.FromFile(fileEntries[0]);
+            }
+
+            if (index - 1 >= 0)
+            {
+                prevImg = Image.FromFile(fileEntries[index - 1]);
+
+            }
+            else
+            {
+                prevImg = Image.FromFile(fileEntries[fileEntries.Length - 1]);
+            }
+
+        }
+        */
+
         private void updateFormName()
         {
-            this.Text = "ImgBrowser - " + Path.GetFileName(pictureBox1.ImageLocation);
+            Text = "ImgBrowser - " + Path.GetFileName(pictureBox1.ImageLocation);
         }
 
         private string[] updateFileList()
         {
+            
             if (pictureBox1.ImageLocation != "")
             {
                 IEnumerable<string> files = Directory.EnumerateFiles(Path.GetDirectoryName(pictureBox1.ImageLocation), "*.*", SearchOption.TopDirectoryOnly)
@@ -510,6 +560,17 @@ namespace ImgBrowser
                 s.EndsWith(".jfif", StringComparison.OrdinalIgnoreCase));
                 return files.ToArray();
             }
+            /*
+            if (imgLocation != "")
+            {
+                IEnumerable<string> files = Directory.EnumerateFiles(imgLocation, "*.*", SearchOption.TopDirectoryOnly)
+                .Where(s => s.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
+                s.EndsWith(".gif", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase) ||
+                s.EndsWith(".tif", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".svg", StringComparison.OrdinalIgnoreCase) ||
+                s.EndsWith(".jfif", StringComparison.OrdinalIgnoreCase));
+                return files.ToArray();
+            }
+            */
             else
             {
                 string[] files = new string[0];
@@ -550,13 +611,13 @@ namespace ImgBrowser
 
             if (cmdArgs.Length > 1)
             {
-                pictureBox1.ImageLocation = cmdArgs[1];
-                updateFormName();
-                fileEntries = updateFileList();
+                loadNewImg(cmdArgs[1]);
             }
             else if (Clipboard.GetImage() != null)
             {
                 pictureBox1.Image = Clipboard.GetImage();
+                //imgName = "";
+                //imgLocation = "";
             }
 
         }
@@ -623,15 +684,23 @@ namespace ImgBrowser
 
                 if (lowerCase.EndsWith(".jpg") || lowerCase.EndsWith(".png") || lowerCase.EndsWith(".gif") || lowerCase.EndsWith(".bmp") || lowerCase.EndsWith(".tif") || lowerCase.EndsWith(".svg") || lowerCase.EndsWith(".jfif"))
                 {
-                    pictureBox1.ImageLocation = files[0];
-
-                    updateFormName();
-                    fileEntries = updateFileList();
+                    loadNewImg(files[0]);
                     pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
                 }
             }
 
 
+        }
+
+        private void loadNewImg(string file)
+        {
+            //imgName = Path.GetFileName(file);
+            //imgLocation = Path.GetDirectoryName(file);
+            pictureBox1.ImageLocation = file;
+
+            updateFormName();
+            fileEntries = updateFileList();
+            //preloadImages();
         }
 
         private void Form1_DragEnter(object sender, DragEventArgs e)
@@ -902,9 +971,12 @@ namespace ImgBrowser
                         centerImage();
                     }
                 }
+                // Paste image from clipboard, if picturebox is empty
                 else if (Clipboard.GetImage() != null)
                 {
                     pictureBox1.Image = Clipboard.GetImage();
+                    //imgName = "";
+                    //imgLocation = "";
                 }
             }
         }
@@ -937,7 +1009,6 @@ namespace ImgBrowser
         {
             if (FormBorderStyle == FormBorderStyle.None && showBorder == true)
             {
-                Console.WriteLine("durp");
                 FormBorderStyle = FormBorderStyle.Sizable;
                 showBorder = false;
             }
