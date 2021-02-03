@@ -14,6 +14,8 @@ using System.Runtime.InteropServices;
 // TODO Color picker?
 // TODO Chroma key / Transparency for window?
 // TODO Randomized slideshow?
+// BUG When zoomed in messages are only shown in top left position
+// TODO Verify if other image changing methods require dispose(), copy+paste, rotate, etc
 
 namespace ImgBrowser
 {
@@ -206,9 +208,19 @@ namespace ImgBrowser
                     {
                         if (Clipboard.GetImage() != null)
                         {
+                            Image oldImg = null;
+                            if (pictureBox1.Image != null) { oldImg = pictureBox1.Image; }
+                            
                             pictureBox1.Image = Clipboard.GetImage();
                             imgLocation = "";
                             imgName = "";
+
+                            panel1.HorizontalScroll.Value = 0;
+                            panel1.VerticalScroll.Value = 0;
+                            pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+                            pictureBox1.Dock = DockStyle.Fill;
+                            
+                            if (oldImg != null) { oldImg.Dispose(); }
                         }
 
                     }
@@ -777,20 +789,25 @@ namespace ImgBrowser
             //int directionY;
 
             // Add some leeway to mouse movement
-            // Also used to make scroll speed dynamic
+            // TODO Should be dynamic
+            int minMov = 150;
+
+            // Make scroll speed dynamic
+            // TODO This should be simplified
             double scrollOffsetX = pictureBox1.Width * 0.04;
             double scrollOffsetY = pictureBox1.Height * 0.04;
+            double scrollOffset = (double)((double)scrollOffsetX + (double)scrollOffsetY) / 2 * 0.1;
 
             if (e.Button.ToString() == "Left")
             {
                 if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
                 {
 
-                    if (Cursor.Position.X - scrollOffsetX > currentPositionX)
+                    if (Cursor.Position.X - minMov > currentPositionX)
                     {
-                        if (panel1.HorizontalScroll.Value - scrollOffsetX * 0.1 >= panel1.HorizontalScroll.Minimum)
+                        if (panel1.HorizontalScroll.Value - scrollOffset * 2 >= panel1.HorizontalScroll.Minimum)
                         {
-                            panel1.HorizontalScroll.Value -= (int)(scrollOffsetX * 0.1);
+                            panel1.HorizontalScroll.Value -= (int)(scrollOffset) * 2;
                         }
                         else
                         {
@@ -798,11 +815,11 @@ namespace ImgBrowser
                         }
 
                     }
-                    else if (Cursor.Position.X + scrollOffsetX < currentPositionX)
+                    else if (Cursor.Position.X + minMov < currentPositionX)
                     {
-                        if (panel1.HorizontalScroll.Value + scrollOffsetX * 0.1 <= panel1.HorizontalScroll.Maximum)
+                        if (panel1.HorizontalScroll.Value + scrollOffset * 2 <= panel1.HorizontalScroll.Maximum)
                         {
-                            panel1.HorizontalScroll.Value += (int)(scrollOffsetX * 0.1);
+                            panel1.HorizontalScroll.Value += (int)(scrollOffset) * 2;
                         }
                         else
                         {
@@ -810,22 +827,22 @@ namespace ImgBrowser
                         }
                     }
 
-                    if (Cursor.Position.Y - scrollOffsetY > currentPositionY)
+                    if (Cursor.Position.Y - minMov > currentPositionY)
                     {
-                        if (panel1.VerticalScroll.Value - scrollOffsetY * 0.1 >= panel1.VerticalScroll.Minimum)
+                        if (panel1.VerticalScroll.Value - scrollOffset >= panel1.VerticalScroll.Minimum)
                         {
-                            panel1.VerticalScroll.Value -= (int)(scrollOffsetY * 0.1);
+                            panel1.VerticalScroll.Value -= (int)(scrollOffset);
                         }
                         else
                         {
                             panel1.VerticalScroll.Value = panel1.VerticalScroll.Minimum;
                         }
                     }
-                    else if (Cursor.Position.Y + scrollOffsetY < currentPositionY)
+                    else if (Cursor.Position.Y + minMov < currentPositionY)
                     {
-                        if (panel1.VerticalScroll.Value + scrollOffsetY * 0.1 <= panel1.VerticalScroll.Maximum)
+                        if (panel1.VerticalScroll.Value + scrollOffset <= panel1.VerticalScroll.Maximum)
                         {
-                            panel1.VerticalScroll.Value += (int)(scrollOffsetY * 0.1);
+                            panel1.VerticalScroll.Value += (int)(scrollOffset);
                         }
                         else
                         {
