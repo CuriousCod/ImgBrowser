@@ -16,6 +16,9 @@ using System.Runtime.InteropServices;
 // TODO Randomized slideshow?
 // BUG When zoomed in messages are only shown in top left position
 // TODO Verify if other image changing methods require dispose(), copy+paste, rotate, etc
+// TODO Arrow keys to navigate when zoomed in
+// TODO Tabs?
+
 
 namespace ImgBrowser
 {
@@ -221,6 +224,8 @@ namespace ImgBrowser
                             pictureBox1.Dock = DockStyle.Fill;
                             
                             if (oldImg != null) { oldImg.Dispose(); }
+                            
+                            updateFormName();
                         }
 
                     }
@@ -533,7 +538,14 @@ namespace ImgBrowser
 
         private void updateFormName()
         {
-            Text = "ImgBrowser - " + imgName;
+            string title = "ImgBrowser - ";
+            string name = imgName + " - ";
+            string size = "";
+            if (imgName == "") { name = "Image - "; }
+            if (pictureBox1.Image != null) { size = pictureBox1.Image.Width + " x " + pictureBox1.Image.Height; }
+            //if ((name == "") && (size == "")) { title = "ImgBrowser"; }
+
+            Text = title + name + size;
         }
 
         private string[] updateFileList()
@@ -596,6 +608,7 @@ namespace ImgBrowser
                 pictureBox1.Image = Clipboard.GetImage();
                 imgName = "";
                 imgLocation = "";
+                updateFormName();
             }
 
         }
