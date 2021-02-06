@@ -170,15 +170,18 @@ namespace ImgBrowser
                         {
                             // Barebones adjust window size to aspect ratio feature
                             FormBorderStyle = FormBorderStyle.None;
-                            if (Size.Height > Size.Width)
+                            if (pictureBox1.SizeMode == PictureBoxSizeMode.Zoom)
                             {
-                                double aspectRatio = (double)pictureBox1.Image.Height / (double)pictureBox1.Image.Width;
-                                Size = new Size(Size.Width, (int)(aspectRatio * Size.Width));
-                            }
-                            else
-                            {
-                                double aspectRatio = (double)pictureBox1.Image.Width / (double)pictureBox1.Image.Height;
-                                Size = new Size((int)(aspectRatio * Size.Height), Size.Height);
+                                if (Size.Height > Size.Width)
+                                {
+                                    double aspectRatio = (double)pictureBox1.Image.Height / (double)pictureBox1.Image.Width;
+                                    Size = new Size(Size.Width, (int)(aspectRatio * Size.Width));
+                                }
+                                else
+                                {
+                                    double aspectRatio = (double)pictureBox1.Image.Width / (double)pictureBox1.Image.Height;
+                                    Size = new Size((int)(aspectRatio * Size.Height), Size.Height);
+                                }
                             }
                         }
                     }
@@ -431,7 +434,7 @@ namespace ImgBrowser
             }
             else
             {
-                //If true, that means that the image is stretched through the height of the control.
+                // If true, that means that the image is stretched through the height of the control.
                 //'In other words: the image is limited by the height.
 
                 //The scale of the image in the Picture Box.
@@ -698,6 +701,8 @@ namespace ImgBrowser
                 // TODO This should be dynamic along the zoom multiplier eventually
                 double posX = (double)(pictureBox1.Location.X * 1.5);
                 double posY = (double)(pictureBox1.Location.Y * 1.5);
+                if (posX > 0) posX = 0;
+                if (posY > 0) posY = 0;
 
                 pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
                 pictureBox1.Dock = DockStyle.None;
@@ -708,7 +713,6 @@ namespace ImgBrowser
 
                 // Set scroll if image fills the screen
                 if (pictureBox1.Image.Width > Width) pictureBox1.Location = new Point((int)posX, pictureBox1.Location.Y);
-
                 if (pictureBox1.Image.Height > Height) pictureBox1.Location = new Point(pictureBox1.Location.X, (int)posY);
 
                 // Set the scroll position to match the position before zooming
@@ -750,7 +754,6 @@ namespace ImgBrowser
                 if (lowerCase.EndsWith(".jpg") || lowerCase.EndsWith(".png") || lowerCase.EndsWith(".gif") || lowerCase.EndsWith(".bmp") || lowerCase.EndsWith(".tif") || lowerCase.EndsWith(".svg") || lowerCase.EndsWith(".jfif"))
                 {
                     loadNewImg(files[0]);
-                    pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
                 }
             }
 
@@ -769,6 +772,10 @@ namespace ImgBrowser
 
             updateFormName();
             fileEntries = updateFileList();
+            centerImage();
+
+            pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+            pictureBox1.Dock = DockStyle.Fill;
 
         }
 
@@ -807,12 +814,12 @@ namespace ImgBrowser
         private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
         {
 
-            if (e.Button.ToString() == "Left")
-
-            // Get mouse position for image scroll
-            currentPositionX = Cursor.Position.X;
-            currentPositionY = Cursor.Position.Y;
-
+            if (e.Button.ToString() == "Left") 
+            { 
+                // Get mouse position for image scroll
+                currentPositionX = Cursor.Position.X;
+                currentPositionY = Cursor.Position.Y;
+            }
             // For moving the window with mouse without ReleaseCapture();
             //frameTop = Top;
             //frameLeft = Left;
@@ -824,12 +831,16 @@ namespace ImgBrowser
                 }
             else
             {
-                // Scroll
-                if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
+                // Check if image scrolling should be activated
+                // Activates when picturebox is autosized and window is bordered and also when autosized and window is borderless and maximized
+                if ((pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) && (FormBorderStyle == FormBorderStyle.Sizable) 
+                    || (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) && (WindowState == FormWindowState.Maximized))
                 {
+                    // Activate image scrolling
+                    // Exits this function and starts the MouseMove function
                     pictureBox1.Cursor = Cursors.SizeAll;
                 }
-                // Drag
+                // Activate window drag
                 else
                 {
                         // Raw commands for moving window with mouse
@@ -902,13 +913,13 @@ namespace ImgBrowser
 
             // Add some leeway to mouse movement
             // TODO Should be dynamic
-            int minMov = 150;
+            int minMov = (int)((double)((Width + Height) * 0.05));
 
             // Make scroll speed dynamic
             // TODO This should be simplified
-            double scrollOffsetX = pictureBox1.Width * 0.04;
-            double scrollOffsetY = pictureBox1.Height * 0.04;
-            double scrollOffset = (double)((double)scrollOffsetX + (double)scrollOffsetY) / 2 * 0.1;
+            double scrollOffsetX = pictureBox1.Width * 0.04 * 0.1;
+            double scrollOffsetY = pictureBox1.Height * 0.04 / 2.2 * 0.1;
+            ///double scrollOffset = (double)((double)scrollOffsetX + (double)scrollOffsetY / 2.2) / 2 * 0.1;
 
             
             if (e.Button.ToString() == "Left")
@@ -922,14 +933,14 @@ namespace ImgBrowser
                         if (Cursor.Position.X - minMov > currentPositionX)
                         {
                             // Prevent picturebox from going over the left border
-                            if (pictureBox1.Location.X + (int)scrollOffset > 0) pictureBox1.Location = new Point(0, pictureBox1.Location.Y);
-                            else if (pictureBox1.Location.X <= 0) pictureBox1.Location = new Point(pictureBox1.Location.X + (int)scrollOffset, pictureBox1.Location.Y);
+                            if (pictureBox1.Location.X + (int)scrollOffsetX > 0) pictureBox1.Location = new Point(0, pictureBox1.Location.Y);
+                            else if (pictureBox1.Location.X <= 0) pictureBox1.Location = new Point(pictureBox1.Location.X + (int)scrollOffsetX, pictureBox1.Location.Y);
                         }
                         if (Cursor.Position.X + minMov < currentPositionX)
                         {
                             // Prevent picturebox from going over the right border
-                            if (pictureBox1.Location.X + (int)scrollOffset < -pictureBox1.Image.Width + Width) pictureBox1.Location = new Point(-pictureBox1.Image.Width + Width, pictureBox1.Location.Y);
-                            else if (pictureBox1.Location.X >= -pictureBox1.Image.Width + Width) pictureBox1.Location = new Point(pictureBox1.Location.X - (int)scrollOffset, pictureBox1.Location.Y);
+                            if (pictureBox1.Location.X + (int)scrollOffsetX < -pictureBox1.Image.Width + Width) pictureBox1.Location = new Point(-pictureBox1.Image.Width + Width, pictureBox1.Location.Y);
+                            else if (pictureBox1.Location.X >= -pictureBox1.Image.Width + Width) pictureBox1.Location = new Point(pictureBox1.Location.X - (int)scrollOffsetX, pictureBox1.Location.Y);
                         }
                     }
                     if (pictureBox1.Image.Height > Height)
@@ -937,14 +948,14 @@ namespace ImgBrowser
                         if (Cursor.Position.Y - minMov > currentPositionY)
                         {
                             // Prevent picturebox from going over the top border
-                            if (pictureBox1.Location.Y + (int)scrollOffset / 2 > 0) pictureBox1.Location = new Point(pictureBox1.Location.X, 0);
-                            else if (pictureBox1.Location.Y <= 0) pictureBox1.Location = new Point(pictureBox1.Location.X, pictureBox1.Location.Y + (int)scrollOffset / 2);
+                            if (pictureBox1.Location.Y + (int)scrollOffsetY > 0) pictureBox1.Location = new Point(pictureBox1.Location.X, 0);
+                            else if (pictureBox1.Location.Y <= 0) pictureBox1.Location = new Point(pictureBox1.Location.X, pictureBox1.Location.Y + (int)scrollOffsetY);
                         }
                         if (Cursor.Position.Y + minMov < currentPositionY)
                         {
                             // Prevent picturebox from going over the bottom border
-                            if (pictureBox1.Location.Y + (int)scrollOffset / 2 < -pictureBox1.Image.Height + Height) pictureBox1.Location = new Point(pictureBox1.Location.X, -pictureBox1.Image.Height + Height);
-                            else if (pictureBox1.Location.Y >= -pictureBox1.Image.Height + Height) pictureBox1.Location = new Point(pictureBox1.Location.X, pictureBox1.Location.Y - (int)scrollOffset / 2);
+                            if (pictureBox1.Location.Y + (int)scrollOffsetY < -pictureBox1.Image.Height + Height) pictureBox1.Location = new Point(pictureBox1.Location.X, -pictureBox1.Image.Height + Height);
+                            else if (pictureBox1.Location.Y >= -pictureBox1.Image.Height + Height) pictureBox1.Location = new Point(pictureBox1.Location.X, pictureBox1.Location.Y - (int)scrollOffsetY);
                         }
                     }
 
@@ -1073,15 +1084,18 @@ namespace ImgBrowser
                     {
                         // Barebones adjust window size to aspect ratio feature
                         FormBorderStyle = FormBorderStyle.None;
-                        if (Size.Height > Size.Width)
+                        if (pictureBox1.SizeMode == PictureBoxSizeMode.Zoom)
                         {
-                            double aspectRatio = (double)pictureBox1.Image.Height / (double)pictureBox1.Image.Width;
-                            Size = new Size(Size.Width, (int)(aspectRatio * Size.Width));
-                        }
-                        else
-                        {
-                            double aspectRatio = (double)pictureBox1.Image.Width / (double)pictureBox1.Image.Height;
-                            Size = new Size((int)(aspectRatio * Size.Height), Size.Height);
+                            if (Size.Height > Size.Width)
+                            {
+                                double aspectRatio = (double)pictureBox1.Image.Height / (double)pictureBox1.Image.Width;
+                                Size = new Size(Size.Width, (int)(aspectRatio * Size.Width));
+                            }
+                            else
+                            {
+                                double aspectRatio = (double)pictureBox1.Image.Width / (double)pictureBox1.Image.Height;
+                                Size = new Size((int)(aspectRatio * Size.Height), Size.Height);
+                            }
                         }
                     }
                 }
