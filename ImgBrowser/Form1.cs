@@ -86,7 +86,6 @@ namespace ImgBrowser
 
         private void showMessage_DoWork(object sender, DoWorkEventArgs e)
         {
-
             string value = (string)e.Argument;
             // Sleep 2 seconds to emulate getting data.
             e.Result = value;
@@ -96,9 +95,9 @@ namespace ImgBrowser
 
         private void showMessage_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            messageLabel.Text = e.Result.ToString();
-            messageLabelShadowBottom.Text = e.Result.ToString();
-            messageLabelShadowTop.Text = e.Result.ToString();
+                messageLabel.Text = e.Result.ToString();
+                messageLabelShadowBottom.Text = e.Result.ToString();
+                messageLabelShadowTop.Text = e.Result.ToString();
         }
 
 
@@ -478,27 +477,29 @@ namespace ImgBrowser
                 //int index = Array.IndexOf(fileEntries, pictureBox1.ImageLocation);
 
                 //Console.WriteLine(index);
-                Image currentImage = pictureBox1.Image;
+                Image currentImage = null;
+                if (pictureBox1.Image != null) { currentImage = pictureBox1.Image; }
 
                 if (index + 1 <= fileEntries.Length - 1)
                 {
-                    pictureBox1.Image = Image.FromFile(fileEntries[index + 1]);
-                    //pictureBox1.Image = nextImg;
+                    if (verifyImg(fileEntries[index + 1]))
+                    {
+                        pictureBox1.Image = Image.FromFile(fileEntries[index + 1]);
+                    }
                     imgLocation = Path.GetDirectoryName(fileEntries[index + 1]);
                     imgName = Path.GetFileName(fileEntries[index + 1]);
-                    //prevImg.Dispose();
                 }
                 else
                 {
-                    pictureBox1.Image = Image.FromFile(fileEntries[0]);
-                    //pictureBox1.Image = nextImg;                    
+                    if (verifyImg(fileEntries[0]))
+                    {
+                        pictureBox1.Image = Image.FromFile(fileEntries[0]);
+                    }
                     imgLocation = Path.GetDirectoryName(fileEntries[0]);
                     imgName = Path.GetFileName(fileEntries[0]);
-                    //prevImg.Dispose();
                 }
-
-                currentImage.Dispose();
                 updateFormName();
+                if (currentImage != null) { currentImage.Dispose(); }
             }
         }
 
@@ -512,26 +513,29 @@ namespace ImgBrowser
                 //int index = Array.IndexOf(fileEntries, pictureBox1.ImageLocation);
 
                 //Console.WriteLine(index);
-                Image currentImage = pictureBox1.Image;
+                Image currentImage = null;
+                if (pictureBox1.Image != null) { currentImage = pictureBox1.Image; }
 
                 if (index - 1 >= 0)
                 {
-                    pictureBox1.Image = Image.FromFile(fileEntries[index - 1]);
-                    //pictureBox1.Image = prevImg;
+                    if (verifyImg(fileEntries[index - 1])) {
+                        pictureBox1.Image = Image.FromFile(fileEntries[index - 1]);
+                    }
                     imgLocation = Path.GetDirectoryName(fileEntries[index - 1]);
                     imgName = Path.GetFileName(fileEntries[index - 1]);
-                    //nextImg.Dispose();
+
                 }
                 else
                 {
-                    pictureBox1.Image = Image.FromFile(fileEntries[fileEntries.Length - 1]);
-                    //pictureBox1.Image = prevImg;
+                    if (verifyImg(fileEntries[fileEntries.Length - 1]))
+                    {
+                        pictureBox1.Image = Image.FromFile(fileEntries[fileEntries.Length - 1]);
+                    }
                     imgLocation = Path.GetDirectoryName(fileEntries[fileEntries.Length - 1]);
                     imgName = Path.GetFileName(fileEntries[fileEntries.Length - 1]);
-                    //nextImg.Dispose();
                 }
 
-                currentImage.Dispose();
+                if (currentImage != null) { currentImage.Dispose(); }
                 updateFormName();
             }
         }
@@ -561,6 +565,7 @@ namespace ImgBrowser
                 return files.ToArray();
             }
             
+            // Return empty array
             else
             {
                 string[] files = new string[0];
@@ -690,12 +695,40 @@ namespace ImgBrowser
         {
             imgName = Path.GetFileName(file);
             imgLocation = Path.GetDirectoryName(file);
-            Image img = Image.FromFile(imgLocation + "\\" + imgName);
-
-            pictureBox1.Image = img;
+            
+            if (verifyImg(imgLocation + "\\" + imgName))
+            {
+                pictureBox1.Image = Image.FromFile(imgLocation + "\\" + imgName);
+            }
 
             updateFormName();
             fileEntries = updateFileList();
+
+        }
+
+        private bool verifyImg(string file)
+        {
+            try
+            {
+                // Check if image can be loaded
+                Image img = Image.FromFile(file);
+                // using (img)
+                // { }
+                img.Dispose();
+                return true;
+            }
+            catch (OutOfMemoryException ex)
+            {
+                Console.WriteLine(ex);
+                pictureBox1.Image = imageError();
+                return false;
+            }
+        }
+
+        private Image imageError()
+        {
+            displayMessage("Unable to load image");
+            return null;
         }
 
         private void Form1_DragEnter(object sender, DragEventArgs e)
@@ -813,6 +846,7 @@ namespace ImgBrowser
 
             if (e.Button.ToString() == "Left")
             {
+
                 if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
                 {
 
@@ -864,6 +898,7 @@ namespace ImgBrowser
 
                     }
                 }
+
                 // Changed to use the Windows function ReleaseCapture();
                 // Move frame with mouse
                 /*
