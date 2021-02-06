@@ -198,6 +198,7 @@ namespace ImgBrowser
                         if (pictureBox1.Image != null)
                         {
                             // TODO This makes image file size large
+
                             displayMessage("Copied to Clipboard");
                             Clipboard.SetImage(pictureBox1.Image);
                         }
@@ -684,14 +685,19 @@ namespace ImgBrowser
                 }
 
                 // Calculate the current scroll position as a percentage
-                double horPos;
-                double verPos;
-                horPos = (double)panel1.HorizontalScroll.Value / (double)panel1.HorizontalScroll.Maximum;
-                verPos = (double)panel1.VerticalScroll.Value / (double)panel1.VerticalScroll.Maximum;
+                //double horPos;
+                //double verPos;
+                //horPos = (double)panel1.HorizontalScroll.Value / (double)panel1.HorizontalScroll.Maximum;
+                //verPos = (double)panel1.VerticalScroll.Value / (double)panel1.VerticalScroll.Maximum;
 
                 // Reset scroll position to keep the picturebox in proper position
-                panel1.HorizontalScroll.Value = 0;
-                panel1.VerticalScroll.Value = 0;
+                //panel1.HorizontalScroll.Value = 0;
+                //panel1.VerticalScroll.Value = 0;
+
+                // Calculate new scroll position 
+                // TODO This should be dynamic along the zoom multiplier eventually
+                double posX = (double)(pictureBox1.Location.X * 1.5);
+                double posY = (double)(pictureBox1.Location.Y * 1.5);
 
                 pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
                 pictureBox1.Dock = DockStyle.None;
@@ -700,9 +706,14 @@ namespace ImgBrowser
                 img.Dispose();
                 centerImage();
 
+                // Set scroll if image fills the screen
+                if (pictureBox1.Image.Width > Width) pictureBox1.Location = new Point((int)posX, pictureBox1.Location.Y);
+
+                if (pictureBox1.Image.Height > Height) pictureBox1.Location = new Point(pictureBox1.Location.X, (int)posY);
+
                 // Set the scroll position to match the position before zooming
-                panel1.HorizontalScroll.Value = (int)(panel1.HorizontalScroll.Maximum * horPos);
-                panel1.VerticalScroll.Value = (int)(panel1.VerticalScroll.Maximum * verPos);
+                //panel1.HorizontalScroll.Value = (int)(panel1.HorizontalScroll.Maximum * horPos);
+                //panel1.VerticalScroll.Value = (int)(panel1.VerticalScroll.Maximum * verPos);
             }
 
 
@@ -899,12 +910,48 @@ namespace ImgBrowser
             double scrollOffsetY = pictureBox1.Height * 0.04;
             double scrollOffset = (double)((double)scrollOffsetX + (double)scrollOffsetY) / 2 * 0.1;
 
+            
             if (e.Button.ToString() == "Left")
             {
 
                 if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
                 {
+                    // Only allow adjustments if the image is larger than the screen resolution
+                    if (pictureBox1.Image.Width > Width)
+                    {
+                        if (Cursor.Position.X - minMov > currentPositionX)
+                        {
+                            // Prevent picturebox from going over the left border
+                            if (pictureBox1.Location.X + (int)scrollOffset > 0) pictureBox1.Location = new Point(0, pictureBox1.Location.Y);
+                            else if (pictureBox1.Location.X <= 0) pictureBox1.Location = new Point(pictureBox1.Location.X + (int)scrollOffset, pictureBox1.Location.Y);
+                        }
+                        if (Cursor.Position.X + minMov < currentPositionX)
+                        {
+                            // Prevent picturebox from going over the right border
+                            if (pictureBox1.Location.X + (int)scrollOffset < -pictureBox1.Image.Width + Width) pictureBox1.Location = new Point(-pictureBox1.Image.Width + Width, pictureBox1.Location.Y);
+                            else if (pictureBox1.Location.X >= -pictureBox1.Image.Width + Width) pictureBox1.Location = new Point(pictureBox1.Location.X - (int)scrollOffset, pictureBox1.Location.Y);
+                        }
+                    }
+                    if (pictureBox1.Image.Height > Height)
+                    { 
+                        if (Cursor.Position.Y - minMov > currentPositionY)
+                        {
+                            // Prevent picturebox from going over the top border
+                            if (pictureBox1.Location.Y + (int)scrollOffset / 2 > 0) pictureBox1.Location = new Point(pictureBox1.Location.X, 0);
+                            else if (pictureBox1.Location.Y <= 0) pictureBox1.Location = new Point(pictureBox1.Location.X, pictureBox1.Location.Y + (int)scrollOffset / 2);
+                        }
+                        if (Cursor.Position.Y + minMov < currentPositionY)
+                        {
+                            // Prevent picturebox from going over the bottom border
+                            if (pictureBox1.Location.Y + (int)scrollOffset / 2 < -pictureBox1.Image.Height + Height) pictureBox1.Location = new Point(pictureBox1.Location.X, -pictureBox1.Image.Height + Height);
+                            else if (pictureBox1.Location.Y >= -pictureBox1.Image.Height + Height) pictureBox1.Location = new Point(pictureBox1.Location.X, pictureBox1.Location.Y - (int)scrollOffset / 2);
+                        }
+                    }
 
+                }
+
+                    // Old code scrolling using scrollbars with panel autoscroll
+                    /*
                     if (Cursor.Position.X - minMov > currentPositionX)
                     {
                         if (panel1.HorizontalScroll.Value - scrollOffset * 2 >= panel1.HorizontalScroll.Minimum)
@@ -917,7 +964,7 @@ namespace ImgBrowser
                         }
 
                     }
-                    else if (Cursor.Position.X + minMov < currentPositionX)
+                    if (Cursor.Position.X + minMov < currentPositionX)
                     {
                         if (panel1.HorizontalScroll.Value + scrollOffset * 2 <= panel1.HorizontalScroll.Maximum)
                         {
@@ -940,7 +987,7 @@ namespace ImgBrowser
                             panel1.VerticalScroll.Value = panel1.VerticalScroll.Minimum;
                         }
                     }
-                    else if (Cursor.Position.Y + minMov < currentPositionY)
+                    if (Cursor.Position.Y + minMov < currentPositionY)
                     {
                         if (panel1.VerticalScroll.Value + scrollOffset <= panel1.VerticalScroll.Maximum)
                         {
@@ -953,6 +1000,7 @@ namespace ImgBrowser
 
                     }
                 }
+                */
 
                 // Changed to use the Windows function ReleaseCapture();
                 // Move frame with mouse

@@ -59,7 +59,6 @@ namespace ImgBrowser
             // 
             // panel1
             // 
-            this.panel1.AutoScroll = true;
             this.panel1.Controls.Add(this.messageLabelShadowTop);
             this.panel1.Controls.Add(this.messageLabelShadowBottom);
             this.panel1.Controls.Add(this.messageLabel);
