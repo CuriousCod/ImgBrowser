@@ -121,7 +121,7 @@ namespace ImgBrowser
                 {
                     if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
                     {
-                        pictureBoxZoom(pictureBox1.Image, new Size(1, 1));
+                        pictureBoxZoom(new Size(1, 1));
                     }
                     else
                     {
@@ -343,7 +343,7 @@ namespace ImgBrowser
                     break;
 
                 case "Add":
-                    pictureBoxZoom(pictureBox1.Image, new Size(1, 1));
+                    pictureBoxZoom( new Size(1, 1));
                     break;
                 case "Subtract":
                     pictureBoxRestore();
@@ -618,36 +618,91 @@ namespace ImgBrowser
 
         }
 
-        public void pictureBoxZoom(Image img, Size size)
+
+
+        public void pictureBoxZoom(Size size)
         {
             if (pictureBox1.Image != null)
             {
                 //Bitmap bm = new Bitmap(img, Convert.ToInt32(img.Width * size.Width), Convert.ToInt32(img.Height * size.Height));
                 //Bitmap bm = new Bitmap(img, Convert.ToInt32(img.Width * 1.5), Convert.ToInt32(img.Height * 1.5));
 
+                // Perform a rough image size check to avoid memory issues
+                if (pictureBox1.Image.Width * 1.5 + pictureBox1.Image.Height * 1.5 > 40000)
+                {
+                    displayMessage("Image too large to resize");
+                    return;
+                }
+
                 //https://stackoverflow.com/questions/1922040/how-to-resize-an-image-c-sharp
 
-                // The bitmap and the graphic will both need to be resized
-                Image currentImg = pictureBox1.Image;
-                Bitmap resized = new Bitmap(Convert.ToInt32(img.Width * 1.5), Convert.ToInt32(img.Height * 1.5));
+                // Grab current image
+                Image img = pictureBox1.Image;
+                Bitmap resized = new Bitmap(1,1);
 
-                using (Graphics grap = Graphics.FromImage(resized))
+                // Creating a new resized bitmap
+                try
                 {
-                    grap.CompositingMode = CompositingMode.SourceCopy;
-                    grap.CompositingQuality = CompositingQuality.HighQuality;
-                    grap.InterpolationMode = InterpolationMode.Bicubic;
-                    //grap.SmoothingMode = SmoothingMode.HighQuality;
-                    grap.PixelOffsetMode = PixelOffsetMode.HighQuality;
-
-                    grap.DrawImage(img, 0, 0, Convert.ToInt32(img.Width * 1.5), Convert.ToInt32(img.Height * 1.5));
+                    resized = new Bitmap(img, Convert.ToInt32(img.Width * 1.5), Convert.ToInt32(img.Height * 1.5));
                 }
+                // Catch out of memory exceptions
+                // TODO This doesn't actually free up memory correctly, so it will eventually cause issues
+                catch (ArgumentException)
+                {
+                    pictureBox1.Image = null;
+                    img.Dispose();
+                    resized.Dispose();
+                    pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+                    pictureBox1.Dock = DockStyle.Fill;
+                    return;
+                }
+                catch (OutOfMemoryException)
+                {
+                    pictureBox1.Image = null;
+                    img.Dispose();
+                    resized.Dispose();
+                    pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+                    pictureBox1.Dock = DockStyle.Fill;
+                    return;
+                }
+                // This will rescale the image. Optional, but makes it look better
+                // Do not rescale images that are over 10 000 pixels, as it will cause memory and performance issues
+                if (img.Width + img.Height < 10000)
+                { 
+                    
+                    using (Graphics grap = Graphics.FromImage(resized))
+                    {
+                        grap.CompositingMode = CompositingMode.SourceCopy;
+                        grap.CompositingQuality = CompositingQuality.HighQuality;
+                        grap.InterpolationMode = InterpolationMode.Bicubic;
+                        //grap.SmoothingMode = SmoothingMode.HighQuality;
+                        grap.PixelOffsetMode = PixelOffsetMode.HighQuality;
+
+                        // This draws the new image on top of the bitmap
+                        grap.DrawImage(img, 0, 0, Convert.ToInt32(img.Width * 1.5), Convert.ToInt32(img.Height * 1.5));
+                    }
+                }
+
+                // Calculate the current scroll position as a percentage
+                double horPos;
+                double verPos;
+                horPos = (double)panel1.HorizontalScroll.Value / (double)panel1.HorizontalScroll.Maximum;
+                verPos = (double)panel1.VerticalScroll.Value / (double)panel1.VerticalScroll.Maximum;
+
+                // Reset scroll position to keep the picturebox in proper position
+                panel1.HorizontalScroll.Value = 0;
+                panel1.VerticalScroll.Value = 0;
 
                 pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
                 pictureBox1.Dock = DockStyle.None;
                 pictureBox1.Image = resized;
-                currentImg.Dispose();
 
+                img.Dispose();
                 centerImage();
+
+                // Set the scroll position to match the position before zooming
+                panel1.HorizontalScroll.Value = (int)(panel1.HorizontalScroll.Maximum * horPos);
+                panel1.VerticalScroll.Value = (int)(panel1.VerticalScroll.Maximum * verPos);
             }
 
 
