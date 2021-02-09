@@ -9,15 +9,18 @@ using System.Windows.Forms;
 using System.Drawing.Drawing2D;
 using System.Threading;
 using System.Runtime.InteropServices;
+using Microsoft.VisualBasic.FileIO;
+using SearchOption = System.IO.SearchOption;
 
 // TODO Config for window start position
 // TODO Color picker?
 // TODO Chroma key / Transparency for window?
-// TODO Randomized slideshow?
+// TODO Randomized slideshow? <-----------
 // BUG When zoomed in messages are only shown in top left position
 // TODO Verify if other image changing methods require dispose(), copy+paste, rotate, etc
 // TODO Arrow keys to navigate when zoomed in
 // TODO Tabs?
+// TODO Folder image count
 
 
 namespace ImgBrowser
@@ -157,7 +160,7 @@ namespace ImgBrowser
                     browseForward();
                     break;
                 case "F5":
-                    updateFileList();
+                    fileEntries = updateFileList();
                     break;
                 case "F2":
                     if (FormBorderStyle == FormBorderStyle.None)
@@ -296,6 +299,38 @@ namespace ImgBrowser
                 break;*/
                 case "F":
                     maxOrNormalizeWindow();
+                    break;
+                // Move image to recycle bin
+                case "Delete":
+                    if ((imgLocation != "") && (imgName != "") && (pictureBox1.Image != null))
+                    {
+                        // Get info from the image that is going to be deleted
+                        string delImgLocation = imgLocation;
+                        string delImgName = imgName;
+                        
+                        // Move to next image, so picturebox won't keep it locked
+                        // This also keeps the file indexes working, otherwise index will be 0 after deletion
+                        browseForward();
+
+                        // Remove image from picturebox, if it is the only image in the folder
+                        if (imgName == delImgName)
+                        {
+                            Image img = pictureBox1.Image;
+                            pictureBox1.Image = null;
+                            img.Dispose();
+                        }
+                        try
+                        {
+                            FileSystem.DeleteFile(delImgLocation + "\\" + delImgName, UIOption.AllDialogs, RecycleOption.SendToRecycleBin);
+                            fileEntries = updateFileList();
+                            displayMessage("Image moved to recycle bin");
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            pictureBox1.Image = Image.FromFile(imgLocation + "\\" + imgName);
+                        }
+
+                    }
                     break;
                 case "F1":
                     // Set always on top
@@ -796,6 +831,21 @@ namespace ImgBrowser
                 pictureBox1.Image = imageError();
                 return false;
             }
+            // This actually doesn't catch these errors, since it also requires HandleProcessCorruptedStateExceptions 
+            // Got this one while trying to access corrupt image
+            // https://social.msdn.microsoft.com/Forums/vstudio/en-US/4de25cc0-9235-4e40-9cd7-d7c934d78cc6/sehexception-is-not-caught-in-managed-code-windows-just-kills-the-process?forum=clr
+            catch (SEHException ex)
+            {
+                Console.WriteLine(ex);
+                pictureBox1.Image = imageError();
+                return false;
+            }
+            catch (FileNotFoundException ex)
+            {
+                Console.WriteLine(ex);
+                pictureBox1.Image = imageError();
+                return false;
+            }
         }
 
         private Image imageError()
@@ -918,7 +968,7 @@ namespace ImgBrowser
             // Make scroll speed dynamic
             // TODO This should be simplified
             double scrollOffsetX = pictureBox1.Width * 0.04 * 0.1;
-            double scrollOffsetY = pictureBox1.Height * 0.04 / 2.2 * 0.1;
+            double scrollOffsetY = pictureBox1.Height * 0.04 / 2 * 0.1;
             ///double scrollOffset = (double)((double)scrollOffsetX + (double)scrollOffsetY / 2.2) / 2 * 0.1;
 
             
