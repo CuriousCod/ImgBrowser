@@ -876,9 +876,9 @@ namespace ImgBrowser
 
             // Maximize or normalize window
             if (e.Button.ToString() == "Left" && e.Clicks == 2)
-                {
-                    maxOrNormalizeWindow();            
-                }
+            {
+                maxOrNormalizeWindow();
+            }
             else
             {
                 // Check if image scrolling should be activated
@@ -923,6 +923,11 @@ namespace ImgBrowser
                 if (this.FormBorderStyle == FormBorderStyle.None)
                 {
                     this.FormBorderStyle = FormBorderStyle.Sizable;
+                    // Reset picturebox style, when returning from full screen
+                    pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+                    pictureBox1.Dock = DockStyle.Fill;
+                    centerImage();
+
                     if (windowNormal)
                     {
                         this.WindowState = FormWindowState.Normal;
@@ -1158,8 +1163,8 @@ namespace ImgBrowser
                     // Disable scrolling
                     if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
                     {
-                        panel1.HorizontalScroll.Value = 0;
-                        panel1.VerticalScroll.Value = 0;
+                        //panel1.HorizontalScroll.Value = 0;
+                        //panel1.VerticalScroll.Value = 0;
                         pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
                         pictureBox1.Dock = DockStyle.Fill;
                     }
