@@ -51,6 +51,7 @@ namespace ImgBrowser
             this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.pictureBox1.TabIndex = 0;
             this.pictureBox1.TabStop = false;
+            this.pictureBox1.LocationChanged += new System.EventHandler(this.pictureBox1_LocationChanged);
             this.pictureBox1.MouseClick += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_MouseClick);
             this.pictureBox1.MouseDown += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_MouseDown);
             this.pictureBox1.MouseMove += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_MouseMove);
@@ -59,6 +60,7 @@ namespace ImgBrowser
             // 
             // panel1
             // 
+            this.panel1.BackColor = System.Drawing.Color.Transparent;
             this.panel1.Controls.Add(this.messageLabelShadowTop);
             this.panel1.Controls.Add(this.messageLabelShadowBottom);
             this.panel1.Controls.Add(this.messageLabel);

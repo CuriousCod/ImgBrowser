@@ -963,159 +963,176 @@ namespace ImgBrowser
 
         private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
         {
-            //int directionX;
-            //int directionY;
-
-            // Add some leeway to mouse movement
-            // TODO Should be dynamic
-            int minMov = (int)((double)((Width + Height) * 0.05));
-
-            // Make scroll speed dynamic
-            // TODO This should be simplified
-            double scrollOffsetX = pictureBox1.Width * 0.04 * 0.1;
-            double scrollOffsetY = pictureBox1.Height * 0.04 / 2 * 0.1;
-            ///double scrollOffset = (double)((double)scrollOffsetX + (double)scrollOffsetY / 2.2) / 2 * 0.1;
-
-            
-            if (e.Button.ToString() == "Left")
+            if (pictureBox1.Image != null)
             {
+ 
+                //int directionX;
+                //int directionY;
 
-                if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
+                // Add some leeway to mouse movement
+                // TODO Should be dynamic
+                int minMov = (int)((double)((Width + Height) * 0.04));
+
+                // Make scroll speed dynamic
+                // TODO This should be simplified
+                //double scrollOffsetX = pictureBox1.Width * 0.04 * 0.1;
+                //double scrollOffsetY = pictureBox1.Height * 0.04 / 2 * 0.1;
+                double scrollOffsetX;
+                double scrollOffsetY;
+
+                if (pictureBox1.Image.Width + pictureBox1.Image.Height > 6000)
                 {
-                    // Only allow adjustments if the image is larger than the screen resolution
-                    if (pictureBox1.Image.Width > Width)
+                    scrollOffsetX = 45;
+                    scrollOffsetY = 45;
+                }
+                else
+                {
+                    scrollOffsetX = 35;
+                    scrollOffsetY = 35;
+                }
+
+                ///double scrollOffset = (double)((double)scrollOffsetX + (double)scrollOffsetY / 2.2) / 2 * 0.1;
+
+
+                if (e.Button.ToString() == "Left")
+                {
+
+                    if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
                     {
+                        // Only allow adjustments if the image is larger than the screen resolution
+                        if (pictureBox1.Image.Width > Width)
+                        {
+                            if (Cursor.Position.X - minMov > currentPositionX)
+                            {
+                                // Prevent picturebox from going over the left border
+                                if (pictureBox1.Location.X + (int)scrollOffsetX > 0) pictureBox1.Location = new Point(0, pictureBox1.Location.Y);
+                                else if (pictureBox1.Location.X <= 0) pictureBox1.Location = new Point(pictureBox1.Location.X + (int)scrollOffsetX, pictureBox1.Location.Y);
+                            }
+                            if (Cursor.Position.X + minMov < currentPositionX)
+                            {
+                                // Prevent picturebox from going over the right border
+                                if (pictureBox1.Location.X - (int)scrollOffsetX < -pictureBox1.Image.Width + Width) pictureBox1.Location = new Point(-pictureBox1.Image.Width + Width, pictureBox1.Location.Y);
+                                else if (pictureBox1.Location.X >= -pictureBox1.Image.Width + Width) pictureBox1.Location = new Point(pictureBox1.Location.X - (int)scrollOffsetX, pictureBox1.Location.Y);
+                            }
+                        }
+                        if (pictureBox1.Image.Height > Height)
+                        { 
+                            if (Cursor.Position.Y - minMov > currentPositionY)
+                            {
+                                // Prevent picturebox from going over the top border
+                                if (pictureBox1.Location.Y + (int)scrollOffsetY > 0) pictureBox1.Location = new Point(pictureBox1.Location.X, 0);
+                                else if (pictureBox1.Location.Y <= 0) pictureBox1.Location = new Point(pictureBox1.Location.X, pictureBox1.Location.Y + (int)scrollOffsetY);
+                            }
+                            if (Cursor.Position.Y + minMov < currentPositionY)
+                            {
+                                // Prevent picturebox from going over the bottom border
+                                if (pictureBox1.Location.Y - (int)scrollOffsetY < -pictureBox1.Image.Height + Height) pictureBox1.Location = new Point(pictureBox1.Location.X, -pictureBox1.Image.Height + Height);
+                                else if (pictureBox1.Location.Y >= -pictureBox1.Image.Height + Height) pictureBox1.Location = new Point(pictureBox1.Location.X, pictureBox1.Location.Y - (int)scrollOffsetY);
+                            }
+                        }
+                    }
+
+                        // Old code scrolling using scrollbars with panel autoscroll
+                        /*
                         if (Cursor.Position.X - minMov > currentPositionX)
                         {
-                            // Prevent picturebox from going over the left border
-                            if (pictureBox1.Location.X + (int)scrollOffsetX > 0) pictureBox1.Location = new Point(0, pictureBox1.Location.Y);
-                            else if (pictureBox1.Location.X <= 0) pictureBox1.Location = new Point(pictureBox1.Location.X + (int)scrollOffsetX, pictureBox1.Location.Y);
+                            if (panel1.HorizontalScroll.Value - scrollOffset * 2 >= panel1.HorizontalScroll.Minimum)
+                            {
+                                panel1.HorizontalScroll.Value -= (int)(scrollOffset) * 2;
+                            }
+                            else
+                            {
+                                panel1.HorizontalScroll.Value = panel1.HorizontalScroll.Minimum;
+                            }
+
                         }
                         if (Cursor.Position.X + minMov < currentPositionX)
                         {
-                            // Prevent picturebox from going over the right border
-                            if (pictureBox1.Location.X + (int)scrollOffsetX < -pictureBox1.Image.Width + Width) pictureBox1.Location = new Point(-pictureBox1.Image.Width + Width, pictureBox1.Location.Y);
-                            else if (pictureBox1.Location.X >= -pictureBox1.Image.Width + Width) pictureBox1.Location = new Point(pictureBox1.Location.X - (int)scrollOffsetX, pictureBox1.Location.Y);
+                            if (panel1.HorizontalScroll.Value + scrollOffset * 2 <= panel1.HorizontalScroll.Maximum)
+                            {
+                                panel1.HorizontalScroll.Value += (int)(scrollOffset) * 2;
+                            }
+                            else
+                            {
+                                panel1.HorizontalScroll.Value = panel1.HorizontalScroll.Maximum;
+                            }
                         }
-                    }
-                    if (pictureBox1.Image.Height > Height)
-                    { 
+
                         if (Cursor.Position.Y - minMov > currentPositionY)
                         {
-                            // Prevent picturebox from going over the top border
-                            if (pictureBox1.Location.Y + (int)scrollOffsetY > 0) pictureBox1.Location = new Point(pictureBox1.Location.X, 0);
-                            else if (pictureBox1.Location.Y <= 0) pictureBox1.Location = new Point(pictureBox1.Location.X, pictureBox1.Location.Y + (int)scrollOffsetY);
+                            if (panel1.VerticalScroll.Value - scrollOffset >= panel1.VerticalScroll.Minimum)
+                            {
+                                panel1.VerticalScroll.Value -= (int)(scrollOffset);
+                            }
+                            else
+                            {
+                                panel1.VerticalScroll.Value = panel1.VerticalScroll.Minimum;
+                            }
                         }
                         if (Cursor.Position.Y + minMov < currentPositionY)
                         {
-                            // Prevent picturebox from going over the bottom border
-                            if (pictureBox1.Location.Y + (int)scrollOffsetY < -pictureBox1.Image.Height + Height) pictureBox1.Location = new Point(pictureBox1.Location.X, -pictureBox1.Image.Height + Height);
-                            else if (pictureBox1.Location.Y >= -pictureBox1.Image.Height + Height) pictureBox1.Location = new Point(pictureBox1.Location.X, pictureBox1.Location.Y - (int)scrollOffsetY);
+                            if (panel1.VerticalScroll.Value + scrollOffset <= panel1.VerticalScroll.Maximum)
+                            {
+                                panel1.VerticalScroll.Value += (int)(scrollOffset);
+                            }
+                            else
+                            {
+                                panel1.VerticalScroll.Value = panel1.VerticalScroll.Maximum;
+                            }
+
                         }
                     }
+                    */
 
-                }
-
-                    // Old code scrolling using scrollbars with panel autoscroll
+                    // Changed to use the Windows function ReleaseCapture();
+                    // Move frame with mouse
                     /*
-                    if (Cursor.Position.X - minMov > currentPositionX)
+                    else
                     {
-                        if (panel1.HorizontalScroll.Value - scrollOffset * 2 >= panel1.HorizontalScroll.Minimum)
-                        {
-                            panel1.HorizontalScroll.Value -= (int)(scrollOffset) * 2;
-                        }
-                        else
-                        {
-                            panel1.HorizontalScroll.Value = panel1.HorizontalScroll.Minimum;
-                        }
+                        Location = new Point(Cursor.Position.X - currentPositionX + frameLeft, Cursor.Position.Y - currentPositionY + frameTop);
+                    }
+                    */
 
-                    }
-                    if (Cursor.Position.X + minMov < currentPositionX)
+                    // Old image move code
+                    /*
+                    // Grab mouse X direction
+                    double deltaDirection = currentPositionX - e.X;
+                    directionX = deltaDirection > 0 ? -1 : 1;
+                    currentPositionX = e.X;
+                    Console.WriteLine("X: " + directionX);
+
+                    // Move image based on direction
+                    if ((directionX == 1) && (panel1.HorizontalScroll.Value + 5 <= panel1.HorizontalScroll.Maximum))
                     {
-                        if (panel1.HorizontalScroll.Value + scrollOffset * 2 <= panel1.HorizontalScroll.Maximum)
-                        {
-                            panel1.HorizontalScroll.Value += (int)(scrollOffset) * 2;
-                        }
-                        else
-                        {
-                            panel1.HorizontalScroll.Value = panel1.HorizontalScroll.Maximum;
-                        }
+                        panel1.HorizontalScroll.Value += 5;
+                    }
+                    else if (panel1.HorizontalScroll.Value - 5 >= panel1.HorizontalScroll.Minimum)
+                    {
+                        panel1.HorizontalScroll.Value -= 5;
                     }
 
-                    if (Cursor.Position.Y - minMov > currentPositionY)
-                    {
-                        if (panel1.VerticalScroll.Value - scrollOffset >= panel1.VerticalScroll.Minimum)
-                        {
-                            panel1.VerticalScroll.Value -= (int)(scrollOffset);
-                        }
-                        else
-                        {
-                            panel1.VerticalScroll.Value = panel1.VerticalScroll.Minimum;
-                        }
-                    }
-                    if (Cursor.Position.Y + minMov < currentPositionY)
-                    {
-                        if (panel1.VerticalScroll.Value + scrollOffset <= panel1.VerticalScroll.Maximum)
-                        {
-                            panel1.VerticalScroll.Value += (int)(scrollOffset);
-                        }
-                        else
-                        {
-                            panel1.VerticalScroll.Value = panel1.VerticalScroll.Maximum;
-                        }
+                    // Grab mouse Y direction
+                    deltaDirection = currentPositionY - e.Y;
+                    directionY = deltaDirection > 0 ? -1 : 1;
+                    currentPositionX = e.Y;
+                    Console.WriteLine("Y: " + directionY);
 
+                    // Move image based on direction
+                    if ((directionY == 1) && (panel1.VerticalScroll.Value + 5 <= panel1.VerticalScroll.Maximum))
+                    {
+                        panel1.VerticalScroll.Value += 5;
                     }
+                    else if (panel1.VerticalScroll.Value - 5 >= panel1.VerticalScroll.Minimum)
+                    {
+                        panel1.VerticalScroll.Value -= 5;
+                    }
+                    */
                 }
-                */
-
-                // Changed to use the Windows function ReleaseCapture();
-                // Move frame with mouse
-                /*
                 else
                 {
-                    Location = new Point(Cursor.Position.X - currentPositionX + frameLeft, Cursor.Position.Y - currentPositionY + frameTop);
+                    //currentPositionX = e.X;
+                    //currentPositionY = e.Y;
                 }
-                */
-
-                // Old image move code
-                /*
-                // Grab mouse X direction
-                double deltaDirection = currentPositionX - e.X;
-                directionX = deltaDirection > 0 ? -1 : 1;
-                currentPositionX = e.X;
-                Console.WriteLine("X: " + directionX);
-
-                // Move image based on direction
-                if ((directionX == 1) && (panel1.HorizontalScroll.Value + 5 <= panel1.HorizontalScroll.Maximum))
-                {
-                    panel1.HorizontalScroll.Value += 5;
-                }
-                else if (panel1.HorizontalScroll.Value - 5 >= panel1.HorizontalScroll.Minimum)
-                {
-                    panel1.HorizontalScroll.Value -= 5;
-                }
-
-                // Grab mouse Y direction
-                deltaDirection = currentPositionY - e.Y;
-                directionY = deltaDirection > 0 ? -1 : 1;
-                currentPositionX = e.Y;
-                Console.WriteLine("Y: " + directionY);
-
-                // Move image based on direction
-                if ((directionY == 1) && (panel1.VerticalScroll.Value + 5 <= panel1.VerticalScroll.Maximum))
-                {
-                    panel1.VerticalScroll.Value += 5;
-                }
-                else if (panel1.VerticalScroll.Value - 5 >= panel1.VerticalScroll.Minimum)
-                {
-                    panel1.VerticalScroll.Value -= 5;
-                }
-                */
-            }
-            else
-            {
-                //currentPositionX = e.X;
-                //currentPositionY = e.Y;
             }
 
         }
@@ -1223,6 +1240,19 @@ namespace ImgBrowser
             {
                 showBorder = false;
             }
+        }
+
+        // TODO This doesn't work
+        private void pictureBox1_LocationChanged(object sender, EventArgs e)
+        {
+            /*
+            // Offset from offset
+            messageLabel.Location = new Point(-3 + pictureBox1.Location.X, -2 + pictureBox1.Location.Y);
+            // Origin
+            messageLabelShadowBottom.Location = new Point(11 + pictureBox1.Location.X, 8 + pictureBox1.Location.Y);
+            // Offset from origin, not in use, as it makes the font look messy (0,0)
+            messageLabelShadowTop.Location = new Point(0 + pictureBox1.Location.X, 0 + pictureBox1.Location.Y);
+            */
         }
     }
 }
