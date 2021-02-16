@@ -42,6 +42,9 @@ namespace ImgBrowser
         public int frameLeft = 0;
         public int frameTop = 0;
 
+        // Picturebox zoomed in location
+        public Point zoomLocation = new Point (0,0);
+
         // If mouse middle button should restore maximized or normal sized window
         public bool windowNormal = false;
 
@@ -224,10 +227,8 @@ namespace ImgBrowser
                             imgLocation = "";
                             imgName = "";
 
-                            panel1.HorizontalScroll.Value = 0;
-                            panel1.VerticalScroll.Value = 0;
-                            pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
-                            pictureBox1.Dock = DockStyle.Fill;
+                            pictureBox1.Location = new Point(0, 0);
+                            SizeModeZoom();
                             
                             if (oldImg != null) { oldImg.Dispose(); }
                             
@@ -715,8 +716,7 @@ namespace ImgBrowser
                 // Do not zoom out if it makes image smaller than screen
                 if ((pictureBox1.Image.Width / multiplier < Width) && (pictureBox1.Image.Height / multiplier < Height))
                 {
-                    pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
-                    pictureBox1.Dock = DockStyle.Fill;
+                    SizeModeZoom();
                     return;
                 }
 
@@ -842,11 +842,13 @@ namespace ImgBrowser
 
             updateFormName();
             fileEntries = updateFileList();
+
+            // Reset zoomed in position
+            pictureBox1.Location = new Point (0, 0);
+
             centerImage();
 
-            pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
-            pictureBox1.Dock = DockStyle.Fill;
-
+            SizeModeZoom();
         }
 
         private bool verifyImg(string file)
@@ -1221,22 +1223,16 @@ namespace ImgBrowser
             {
                 if (pictureBox1.Image != null)
                 {
-                    // Disable scrolling
+                    // Return to autofit image mode
                     if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
                     {
-                        //panel1.HorizontalScroll.Value = 0;
-                        //panel1.VerticalScroll.Value = 0;
-                        pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
-                        pictureBox1.Dock = DockStyle.Fill;
+                        SizeModeZoom();
                     }
 
                     // Scrolling for large images
                     else if ((pictureBox1.Image.Width > Width) || (pictureBox1.Image.Height > Height))
                     {
-                        pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
-                        pictureBox1.Dock = DockStyle.None;
-
-                        centerImage();
+                        SizeModeAutoSize();
                     }
                 }
                 // Paste image from clipboard, if picturebox is empty
@@ -1249,6 +1245,28 @@ namespace ImgBrowser
             }
         }
 
+        private void SizeModeZoom()
+        {
+
+            // Update current zoomed in position
+            zoomLocation = pictureBox1.Location;
+
+            pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+            pictureBox1.Dock = DockStyle.Fill;
+
+        }
+
+        private void SizeModeAutoSize()
+        {
+            pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
+            pictureBox1.Dock = DockStyle.None;
+
+            centerImage();
+
+            pictureBox1.Location = zoomLocation;
+
+        }
+
         private void centerImage()
         {
             if (pictureBox1.Image != null)
@@ -1257,11 +1275,15 @@ namespace ImgBrowser
                 if (Width > pictureBox1.Image.Width)
                 {
                     pictureBox1.Left = (Width - pictureBox1.Image.Width) / 2;
+                    // Update zoom location to center image
+                    zoomLocation = new Point(pictureBox1.Left, zoomLocation.Y);
                     pictureBox1.Top = 0;
                 }
                 else if (Height > pictureBox1.Image.Height)
                 {
                     pictureBox1.Top = (Height - pictureBox1.Image.Height) / 2;
+                    // Update zoom location to center image
+                    zoomLocation = new Point(zoomLocation.X, pictureBox1.Top);
                     pictureBox1.Left = 0;
                 }
                 else
@@ -1297,6 +1319,15 @@ namespace ImgBrowser
             // Offset from origin, not in use, as it makes the font look messy (0,0)
             messageLabelShadowTop.Location = new Point(0 + pictureBox1.Location.X, 0 + pictureBox1.Location.Y);
             */
+        }
+
+        private void Form1_Resize(object sender, EventArgs e)
+        {
+            // Recenter image when window is being resized
+            if ((pictureBox1.Image != null) && (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize))
+            {
+                centerImage();
+            }
         }
     }
 }
