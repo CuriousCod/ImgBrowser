@@ -21,6 +21,8 @@ using SearchOption = System.IO.SearchOption;
 // TODO Arrow keys to navigate when zoomed in
 // TODO Tabs?
 // TODO Folder image count
+// BUG Rotating in autosize mode can make the image go over borders
+// BUG Image can slighty overfill the screen when in autosize + fullscreen mode
 
 
 namespace ImgBrowser
@@ -386,10 +388,14 @@ namespace ImgBrowser
                     break;
 
                 case "Add":
-                    pictureBoxZoom(1.5);
+                    // Hold ctrl for smaller zoom value
+                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control) pictureBoxZoom(1.2);
+                    else pictureBoxZoom(1.5);
                     break;
                 case "Subtract":
-                    pictureBoxUnZoom(1.5);
+                    // Hold ctrl for smaller zoom value
+                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control) pictureBoxUnZoom(1.2);
+                    else pictureBoxUnZoom(1.5);
                     break;
                 default:
                     break;
@@ -895,7 +901,6 @@ namespace ImgBrowser
         {
             // Change cursor graphic
             e.Effect = DragDropEffects.Move;
-
         }
 
         private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
@@ -1282,6 +1287,7 @@ namespace ImgBrowser
                 else if (Height > pictureBox1.Image.Height)
                 {
                     pictureBox1.Top = (Height - pictureBox1.Image.Height) / 2;
+
                     // Update zoom location to center image
                     zoomLocation = new Point(zoomLocation.X, pictureBox1.Top);
                     pictureBox1.Left = 0;
