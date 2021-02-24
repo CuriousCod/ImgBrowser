@@ -24,7 +24,6 @@ using SearchOption = System.IO.SearchOption;
 // BUG Rotating in autosize mode can make the image go over borders
 // BUG Image can slighty overfill the screen when in autosize + fullscreen mode
 
-
 namespace ImgBrowser
 {
     public partial class Form1 : Form
@@ -343,6 +342,7 @@ namespace ImgBrowser
 
                     while (stringWidth + 12 > Width)
                     {
+                        if (messageLabel.Font.Size - 1 <= 0) { break; }
                         messageLabel.Font = new Font(messageLabel.Font.FontFamily, messageLabel.Font.Size - 1, FontStyle.Bold);
                         stringWidth = TextRenderer.MeasureText("Stay on Top: False", messageLabel.Font).Width;
                     }
@@ -352,7 +352,6 @@ namespace ImgBrowser
                         if (messageLabel.Font.Size >= 22) { break; }
                         messageLabel.Font = new Font(messageLabel.Font.FontFamily, messageLabel.Font.Size + 1, FontStyle.Bold);
                         stringWidth = TextRenderer.MeasureText("Stay on Top: False", messageLabel.Font).Width;
-
                     }
 
                     messageLabelShadowBottom.Font = new Font(messageLabel.Font.FontFamily, messageLabel.Font.Size, FontStyle.Bold);
@@ -1084,100 +1083,100 @@ namespace ImgBrowser
                     }
 
                         // Old code scrolling using scrollbars with panel autoscroll
-                        /*
-                        if (Cursor.Position.X - minMov > currentPositionX)
-                        {
-                            if (panel1.HorizontalScroll.Value - scrollOffset * 2 >= panel1.HorizontalScroll.Minimum)
-                            {
-                                panel1.HorizontalScroll.Value -= (int)(scrollOffset) * 2;
-                            }
-                            else
-                            {
-                                panel1.HorizontalScroll.Value = panel1.HorizontalScroll.Minimum;
-                            }
+                                    /*
+                                    if (Cursor.Position.X - minMov > currentPositionX)
+                                    {
+                                        if (panel1.HorizontalScroll.Value - scrollOffset * 2 >= panel1.HorizontalScroll.Minimum)
+                                        {
+                                            panel1.HorizontalScroll.Value -= (int)(scrollOffset) * 2;
+                                        }
+                                        else
+                                        {
+                                            panel1.HorizontalScroll.Value = panel1.HorizontalScroll.Minimum;
+                                        }
 
-                        }
-                        if (Cursor.Position.X + minMov < currentPositionX)
-                        {
-                            if (panel1.HorizontalScroll.Value + scrollOffset * 2 <= panel1.HorizontalScroll.Maximum)
-                            {
-                                panel1.HorizontalScroll.Value += (int)(scrollOffset) * 2;
-                            }
-                            else
-                            {
-                                panel1.HorizontalScroll.Value = panel1.HorizontalScroll.Maximum;
-                            }
-                        }
+                                    }
+                                    if (Cursor.Position.X + minMov < currentPositionX)
+                                    {
+                                        if (panel1.HorizontalScroll.Value + scrollOffset * 2 <= panel1.HorizontalScroll.Maximum)
+                                        {
+                                            panel1.HorizontalScroll.Value += (int)(scrollOffset) * 2;
+                                        }
+                                        else
+                                        {
+                                            panel1.HorizontalScroll.Value = panel1.HorizontalScroll.Maximum;
+                                        }
+                                    }
 
-                        if (Cursor.Position.Y - minMov > currentPositionY)
-                        {
-                            if (panel1.VerticalScroll.Value - scrollOffset >= panel1.VerticalScroll.Minimum)
-                            {
-                                panel1.VerticalScroll.Value -= (int)(scrollOffset);
-                            }
-                            else
-                            {
-                                panel1.VerticalScroll.Value = panel1.VerticalScroll.Minimum;
-                            }
-                        }
-                        if (Cursor.Position.Y + minMov < currentPositionY)
-                        {
-                            if (panel1.VerticalScroll.Value + scrollOffset <= panel1.VerticalScroll.Maximum)
-                            {
-                                panel1.VerticalScroll.Value += (int)(scrollOffset);
-                            }
-                            else
-                            {
-                                panel1.VerticalScroll.Value = panel1.VerticalScroll.Maximum;
-                            }
+                                    if (Cursor.Position.Y - minMov > currentPositionY)
+                                    {
+                                        if (panel1.VerticalScroll.Value - scrollOffset >= panel1.VerticalScroll.Minimum)
+                                        {
+                                            panel1.VerticalScroll.Value -= (int)(scrollOffset);
+                                        }
+                                        else
+                                        {
+                                            panel1.VerticalScroll.Value = panel1.VerticalScroll.Minimum;
+                                        }
+                                    }
+                                    if (Cursor.Position.Y + minMov < currentPositionY)
+                                    {
+                                        if (panel1.VerticalScroll.Value + scrollOffset <= panel1.VerticalScroll.Maximum)
+                                        {
+                                            panel1.VerticalScroll.Value += (int)(scrollOffset);
+                                        }
+                                        else
+                                        {
+                                            panel1.VerticalScroll.Value = panel1.VerticalScroll.Maximum;
+                                        }
 
-                        }
-                    }
-                    */
+                                    }
+                                }
+                                */
 
-                    // Changed to use the Windows function ReleaseCapture();
-                    // Move frame with mouse
-                    /*
-                    else
-                    {
-                        Location = new Point(Cursor.Position.X - currentPositionX + frameLeft, Cursor.Position.Y - currentPositionY + frameTop);
-                    }
-                    */
+                                    // Changed to use the Windows function ReleaseCapture();
+                                    // Move frame with mouse
+                                    /*
+                                    else
+                                    {
+                                        Location = new Point(Cursor.Position.X - currentPositionX + frameLeft, Cursor.Position.Y - currentPositionY + frameTop);
+                                    }
+                                    */
 
-                    // Old image move code
-                    /*
-                    // Grab mouse X direction
-                    double deltaDirection = currentPositionX - e.X;
-                    directionX = deltaDirection > 0 ? -1 : 1;
-                    currentPositionX = e.X;
-                    Console.WriteLine("X: " + directionX);
+                                    // Old image move code
+                                    /*
+                                    // Grab mouse X direction
+                                    double deltaDirection = currentPositionX - e.X;
+                                    directionX = deltaDirection > 0 ? -1 : 1;
+                                    currentPositionX = e.X;
+                                    Console.WriteLine("X: " + directionX);
 
-                    // Move image based on direction
-                    if ((directionX == 1) && (panel1.HorizontalScroll.Value + 5 <= panel1.HorizontalScroll.Maximum))
-                    {
-                        panel1.HorizontalScroll.Value += 5;
-                    }
-                    else if (panel1.HorizontalScroll.Value - 5 >= panel1.HorizontalScroll.Minimum)
-                    {
-                        panel1.HorizontalScroll.Value -= 5;
-                    }
+                                    // Move image based on direction
+                                    if ((directionX == 1) && (panel1.HorizontalScroll.Value + 5 <= panel1.HorizontalScroll.Maximum))
+                                    {
+                                        panel1.HorizontalScroll.Value += 5;
+                                    }
+                                    else if (panel1.HorizontalScroll.Value - 5 >= panel1.HorizontalScroll.Minimum)
+                                    {
+                                        panel1.HorizontalScroll.Value -= 5;
+                                    }
 
-                    // Grab mouse Y direction
-                    deltaDirection = currentPositionY - e.Y;
-                    directionY = deltaDirection > 0 ? -1 : 1;
-                    currentPositionX = e.Y;
-                    Console.WriteLine("Y: " + directionY);
+                                    // Grab mouse Y direction
+                                    deltaDirection = currentPositionY - e.Y;
+                                    directionY = deltaDirection > 0 ? -1 : 1;
+                                    currentPositionX = e.Y;
+                                    Console.WriteLine("Y: " + directionY);
 
-                    // Move image based on direction
-                    if ((directionY == 1) && (panel1.VerticalScroll.Value + 5 <= panel1.VerticalScroll.Maximum))
-                    {
-                        panel1.VerticalScroll.Value += 5;
-                    }
-                    else if (panel1.VerticalScroll.Value - 5 >= panel1.VerticalScroll.Minimum)
-                    {
-                        panel1.VerticalScroll.Value -= 5;
-                    }
-                    */
+                                    // Move image based on direction
+                                    if ((directionY == 1) && (panel1.VerticalScroll.Value + 5 <= panel1.VerticalScroll.Maximum))
+                                    {
+                                        panel1.VerticalScroll.Value += 5;
+                                    }
+                                    else if (panel1.VerticalScroll.Value - 5 >= panel1.VerticalScroll.Minimum)
+                                    {
+                                        panel1.VerticalScroll.Value -= 5;
+                                    }
+                                    */
                 }
                 else
                 {
@@ -1332,7 +1331,12 @@ namespace ImgBrowser
             // Recenter image when window is being resized
             if ((pictureBox1.Image != null) && (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize))
             {
-                centerImage();
+                // Only resize, if empty border is shown
+                if (pictureBox1.Location.X > 0) centerImage();
+                else if (pictureBox1.Location.X < -pictureBox1.Image.Width + Width) centerImage();
+                else if (pictureBox1.Location.Y > 0) centerImage();
+                else if (pictureBox1.Location.Y < -pictureBox1.Image.Height + Height) centerImage();
+
             }
         }
     }
