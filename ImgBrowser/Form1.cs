@@ -13,7 +13,6 @@ using Microsoft.VisualBasic.FileIO;
 using SearchOption = System.IO.SearchOption;
 
 // TODO Config for window start position
-// TODO Color picker?
 // TODO Chroma key / Transparency for window?
 // TODO Randomized slideshow? <-----------
 // BUG When zoomed in messages are only shown in top left position
@@ -67,6 +66,9 @@ namespace ImgBrowser
         public static extern int SendMessage(IntPtr hWnd, int Msg, int wParam, int lParam);
         [DllImportAttribute("user32.dll")]
         public static extern bool ReleaseCapture();
+
+        [DllImport("gdi32.dll", CharSet = CharSet.Auto, SetLastError = true, ExactSpelling = true)]
+        public static extern int BitBlt(IntPtr hDC, int x, int y, int nWidth, int nHeight, IntPtr hSrcDC, int xSrc, int ySrc, int dwRop);
         //-------------------------------------------
 
         public Form1()
@@ -271,6 +273,17 @@ namespace ImgBrowser
                     break;
                 case "F":
                     maxOrNormalizeWindow();
+                    break;
+
+                // Color picker
+                case "I":
+                    Color currentColor = GetColorAt(Cursor.Position);
+                    string colorHex;
+                    
+                    colorHex = ColorTranslator.ToHtml(Color.FromArgb(currentColor.ToArgb()));
+                    Clipboard.SetText(colorHex);
+                    displayMessage("Color copied to clipboard");
+
                     break;
                 // Snipping tool, captured when button is released
                 case "S":
@@ -505,10 +518,7 @@ namespace ImgBrowser
 
         private void pictureBox1_Click(object sender, EventArgs e)
         {
-
             MouseEventArgs me = (MouseEventArgs)e;
-
-            
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -534,7 +544,29 @@ namespace ImgBrowser
 
         }
 
+        public Color GetColorAt(Point location)
+        {
 
+            Bitmap screenPixel = new Bitmap(1, 1, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+            using (Graphics gdest = Graphics.FromImage(screenPixel))
+            {
+                using (Graphics gsrc = Graphics.FromHwnd(IntPtr.Zero))
+                {
+                    IntPtr hSrcDC = gsrc.GetHdc();
+                    IntPtr hDC = gdest.GetHdc();
+                    int retval = BitBlt(hDC, 0, 0, 1, 1, hSrcDC, location.X, location.Y, (int)CopyPixelOperation.SourceCopy);
+                    gdest.ReleaseHdc();
+                    gsrc.ReleaseHdc();
+                }
+            }
+
+            
+            Color grabbedColor = screenPixel.GetPixel(0, 0);
+            screenPixel.Dispose();
+
+            return grabbedColor;
+        }
 
         public void pictureBoxZoom(double multiplier)
         {
