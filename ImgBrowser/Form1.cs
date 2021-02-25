@@ -29,32 +29,39 @@ namespace ImgBrowser
     public partial class Form1 : Form
     {
         private BackgroundWorker showMessage;
-        public string[] fileEntries;
+        private string[] fileEntries;
 
         // Current image information
-        public string imgName = "";
-        public string imgLocation = "";
+        private string imgName = "";
+        private string imgLocation = "";
 
         // Mouse position
-        public int currentPositionX = 0;
-        public int currentPositionY = 0;
+        private int currentPositionX = 0;
+        private int currentPositionY = 0;
+
+        // ScreenCapButton is being held
+        private bool screenCapButtonHeld = false;
+
+        // Screenshot start position
+        private int screenCapPosX;
+        private int screenCapPosY;
 
         // Frame position
-        public int frameLeft = 0;
-        public int frameTop = 0;
+        // private int frameLeft = 0;
+        // private int frameTop = 0;
 
         // Picturebox zoomed in location
-        public Point zoomLocation = new Point (0,0);
+        private Point zoomLocation = new Point (0,0);
 
         // If mouse middle button should restore maximized or normal sized window
-        public bool windowNormal = false;
+        private bool windowNormal = false;
 
         // If border should reappear when draggin window
-        public bool showBorder = false;
+        private bool showBorder = false;
 
         // Commands for moving window with mouse
-        public const int WM_NCLBUTTONDOWN = 0xA1;
-        public const int HT_CAPTION = 0x2;
+        private const int WM_NCLBUTTONDOWN = 0xA1;
+        private const int HT_CAPTION = 0x2;
 
         [DllImportAttribute("user32.dll")]
         public static extern int SendMessage(IntPtr hWnd, int Msg, int wParam, int lParam);
@@ -262,45 +269,17 @@ namespace ImgBrowser
                         pictureBox1.Image = img;
                     }
                     break;
-                /* TODO WIP
-                case "I":
-                    if (pictureBox1.Image != null)
-                    {
-                        float Z = getCurrentPixel();
-                        /*
-                        // Calculate picture size on screen
-
-                        Size sizey;
-                        double aspect = (double)pictureBox1.Image.Width / (double)pictureBox1.Image.Height;
-
-                        if (Size.Height > Size.Width)
-                        {
-                            double aspectRatio = (double)pictureBox1.Image.Height / (double)pictureBox1.Image.Width;
-                            sizey = new Size(Size.Width, (int)(aspectRatio * Size.Width) - 23);
-                        }
-                        else
-                        {
-                            double aspectRatio = (double)pictureBox1.Image.Width / (double)pictureBox1.Image.Height;
-                            sizey = new Size((int)(aspectRatio * Size.Height), Size.Height - 23);
-                        }
-
-                        Console.WriteLine(sizey);
-
-
-                        if (Cursor.Position.X <= pictureBox1.Right && Cursor.Position.X >= pictureBox1.Left && Cursor.Position.Y <= pictureBox1.Bottom && Cursor.Position.Y >= pictureBox1.Top)
-                        {
-                            Bitmap grabImg = new Bitmap(pictureBox1.Image);
-                            Console.WriteLine(pictureBox1.Image.Width);
-                            Console.WriteLine(grabImg.Width);
-                            Console.WriteLine(grabImg.Height);
-                            Color pixel = grabImg.GetPixel(Cursor.Position.X, Cursor.Position.Y);
-                            Console.WriteLine(pixel);
-                        }
-                        
-                    }
-                break;*/
                 case "F":
                     maxOrNormalizeWindow();
+                    break;
+                // Snipping tool, captured when button is released
+                case "S":
+                    if (screenCapButtonHeld == false)
+                    {
+                        screenCapButtonHeld = true;
+                        screenCapPosX = Cursor.Position.X;
+                        screenCapPosY = Cursor.Position.Y;
+                    }
                     break;
                 // Move image to recycle bin
                 case "Delete":
@@ -400,59 +379,6 @@ namespace ImgBrowser
                     break;
             }
         }
-
-        private float getCurrentPixel()
-        {
-
-            int imgWidth = pictureBox1.Image.Width;
-            int imgHeight = pictureBox1.Image.Height;
-            int boxWidth = pictureBox1.Size.Width;
-            int boxHeight = pictureBox1.Size.Height;
-
-            //This variable will hold the result
-            float X = Cursor.Position.X;
-            float Y = Cursor.Position.Y;
-            //Comparing the aspect ratio of both the control and the image itself.
-            if (imgWidth / imgHeight > boxWidth / boxHeight)
-            {
-                //If true, that means that the image is stretched through the width of the control.
-                //'In other words: the image is limited by the width.
-
-                //The scale of the image in the Picture Box.
-                float scale = boxWidth / imgWidth;
-
-                //Since the image is in the middle, this code is used to determinate the empty space in the height
-                //'by getting the difference between the box height and the image actual displayed height and dividing it by 2.
-                float blankPart = (boxHeight - scale * imgHeight) / 2;
-
-                Y -= blankPart;
-
-                //Scaling the results.
-                X /= scale;
-                Y /= scale;
-            }
-            else
-            {
-                // If true, that means that the image is stretched through the height of the control.
-                //'In other words: the image is limited by the height.
-
-                //The scale of the image in the Picture Box.
-                float scale = boxHeight / imgHeight;
-
-                //Since the image is in the middle, this code is used to determinate the empty space in the width
-                //'by getting the difference between the box width and the image actual displayed width and dividing it by 2.
-                float blankPart = (boxWidth - scale * imgWidth) / 2;
-                X -= blankPart;
-
-                //Scaling the results.
-                X /= scale;
-                Y /= scale;
-            }
-            Console.WriteLine(X);
-            Console.WriteLine(Y);
-            return X;
-        }
-
 
         private void displayMessage(string text)
         {
@@ -1331,13 +1257,48 @@ namespace ImgBrowser
             // Recenter image when window is being resized
             if ((pictureBox1.Image != null) && (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize))
             {
-                // Only resize, if empty border is shown
+                // Only recenter, if empty border is shown
                 if (pictureBox1.Location.X > 0) centerImage();
                 else if (pictureBox1.Location.X < -pictureBox1.Image.Width + Width) centerImage();
                 else if (pictureBox1.Location.Y > 0) centerImage();
                 else if (pictureBox1.Location.Y < -pictureBox1.Image.Height + Height) centerImage();
 
             }
+        }
+
+        private void Form1_KeyUp(object sender, KeyEventArgs e)
+        {
+            switch (e.KeyCode.ToString())
+            {
+                // Capture screen from the rectangle drawn by cursor
+                // https://stackoverflow.com/questions/13103682/draw-a-bitmap-image-on-the-screen
+                case "S":
+                    screenCapButtonHeld = false;
+
+                    // Get start and end coordinates
+                    int p1 = Math.Min(screenCapPosX, Cursor.Position.X);
+                    int p2 = Math.Min(screenCapPosY, Cursor.Position.Y);
+                    int s1 = Math.Max(screenCapPosX, Cursor.Position.X);
+                    int s2 = Math.Max(screenCapPosY, Cursor.Position.Y);
+
+                    // Create rectangle from coordinates
+                    Rectangle rect = new Rectangle(new Point(p1, p2), new Size(s1 - p1, s2 - p2));
+
+                    if (rect.Width == 0 || rect.Height == 0) break;
+
+                    Bitmap BM = new Bitmap(rect.Width, rect.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                    Graphics g = Graphics.FromImage(BM);
+                    g.CopyFromScreen(rect.Left, rect.Top, 0, 0, rect.Size);
+                    
+                    Clipboard.SetImage(BM);
+                    BM.Dispose();
+                    
+                    break;
+
+                default:
+                    break;
+            }
+
         }
     }
 }
