@@ -19,6 +19,8 @@ namespace ImgBrowser
         private int mouseStartX;
         private int mouseStartY;
         private int offsetX;
+
+        // Start screen capture
         private bool capturing = true;
 
         public CaptureLayer()
@@ -29,15 +31,16 @@ namespace ImgBrowser
             mouseStartY = Cursor.Position.Y;
             offsetX = GetLeftmostScreenStartPoint();
 
-            // Follow mouse actions globally
-            SetHook();
+            // Follow mouse actions globally, not needed anymore
+            // SetHook();
 
             ShowDialog();
         }
 
+        // Finds the leftmost screen, screens left of the main screen are in minus coordinates
+        // TODO This does not take vertical or some weird screen setups into consideration
         public int GetLeftmostScreenStartPoint()
         {
-
             int lowestX = 0;
 
             foreach (Screen screeny in Screen.AllScreens)
@@ -49,7 +52,7 @@ namespace ImgBrowser
         }
 
 
-        // Selection rectangle
+        // Generates a rectangle based on given values
         static public Rectangle GetRectangle(Point p1, Point p2)
         {
             return new Rectangle(Math.Min(p1.X, p2.X), Math.Min(p1.Y, p2.Y),
@@ -64,17 +67,12 @@ namespace ImgBrowser
                 // https://stackoverflow.com/questions/13103682/draw-a-bitmap-image-on-the-screen
                 case "S":
                     capturing = false;
+                    
                     // Clear rectangle drawing
-                    Refresh();
+                    captureBox.Refresh();
 
-                    // Get start and end coordinates
-                    int p1 = Math.Min(mouseStartX, Cursor.Position.X);
-                    int p2 = Math.Min(mouseStartY, Cursor.Position.Y);
-                    int s1 = Math.Max(mouseStartX, Cursor.Position.X);
-                    int s2 = Math.Max(mouseStartY, Cursor.Position.Y);
-
-                    // Create rectangle from coordinates
-                    Rectangle rect = new Rectangle(new Point(p1, p2), new Size(s1 - p1, s2 - p2));
+                    // Create rectangle from current coordinates
+                    Rectangle rect = GetRectangle(new Point(mouseStartX, mouseStartY), Cursor.Position);
 
                     if (rect.Width == 0 || rect.Height == 0) break;
 
@@ -87,8 +85,8 @@ namespace ImgBrowser
 
                     BM.Dispose();
 
-                    // Stop following mouse globally
-                    UnHook();
+                    // Stop following mouse globally, not needed anymore
+                    //UnHook();
 
                     // Close form
                     Close();
@@ -102,7 +100,7 @@ namespace ImgBrowser
             }
         }
 
-        // Does not work when form is transparent
+        // Does not work when form is transparent, worthless
         private void CaptureLayer_MouseMove(object sender, MouseEventArgs e)
         {/*
             Refresh();
@@ -113,7 +111,8 @@ namespace ImgBrowser
                     g.DrawRectangle(Pens.Red, rect);
                 }
             }
-        */}
+        */
+        }
 
         private void CaptureLayer_Load(object sender, EventArgs e)
         {
@@ -126,9 +125,37 @@ namespace ImgBrowser
         }
 
 
+
+        private void captureBox_MouseMove(object sender, MouseEventArgs e)
+        {
+            // Refresh picturebox to draw rectangle
+            if (capturing) captureBox.Refresh();
+
+            // Previously used captureBox.CreateGraphics()
+            // Don't use that as it causes flickering
+            // Paint works better
+        }
+
+        // Drawing the selection "rubber band" on a picturebox, since the drawing refuses to display on transparent form window. 
+        // Works fine on a transparent picturebox though >_>
+        // There's also some weird "feature" where the drawing only works on some form background colors, blue is confirmed to work
+        private void captureBox_Paint(object sender, PaintEventArgs e)
+        {
+            if (capturing)
+            {
+                Graphics g = e.Graphics;
+
+                Rectangle rect = GetRectangle(new Point(mouseStartX - offsetX, mouseStartY), new Point(Cursor.Position.X - offsetX, Cursor.Position.Y));
+                g.DrawRectangle(Pens.Red, rect);
+            }
+
+        }
+
         ///
-        /// This following madness tracks mouse actions globally
+        /// The following madness tracks mouse actions globally, not actually needed anymore
         ///
+
+        // https://stackoverflow.com/questions/17196965/how-do-i-create-a-fully-transparent-winform-in-c-sharp-that-is-interactive
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall)]
         public static extern int SetWindowsHookEx(int idHook, HookProc lpfn, IntPtr hInstance, int threadId);
@@ -193,7 +220,7 @@ namespace ImgBrowser
                         {
                             Rectangle rect = GetRectangle(new Point(mouseStartX - offsetX, mouseStartY), new Point(Cursor.Position.X - offsetX, Cursor.Position.Y));
                             g.DrawRectangle(Pens.Red, rect);
-                        }  
+                        }
                     }
                 }
                 else if (wParam == (IntPtr)512)
