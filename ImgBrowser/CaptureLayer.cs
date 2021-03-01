@@ -31,9 +31,6 @@ namespace ImgBrowser
             mouseStartY = Cursor.Position.Y;
             offsetX = GetLeftmostScreenStartPoint();
 
-            // Follow mouse actions globally, not needed anymore
-            // SetHook();
-
             ShowDialog();
         }
 
@@ -85,16 +82,12 @@ namespace ImgBrowser
 
                     BM.Dispose();
 
-                    // Stop following mouse globally, not needed anymore
-                    //UnHook();
-
                     // Close form
                     Close();
 
                     break;
 
                 default:
-                    UnHook();
                     Close();
                     break;
             }
@@ -124,8 +117,6 @@ namespace ImgBrowser
             Cursor = System.Windows.Forms.Cursors.Cross;
         }
 
-
-
         private void captureBox_MouseMove(object sender, MouseEventArgs e)
         {
             // Refresh picturebox to draw rectangle
@@ -151,87 +142,6 @@ namespace ImgBrowser
 
         }
 
-        ///
-        /// The following madness tracks mouse actions globally, not actually needed anymore
-        ///
-
-        // https://stackoverflow.com/questions/17196965/how-do-i-create-a-fully-transparent-winform-in-c-sharp-that-is-interactive
-
-        [DllImport("user32.dll", CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall)]
-        public static extern int SetWindowsHookEx(int idHook, HookProc lpfn, IntPtr hInstance, int threadId);
-
-        [DllImport("user32.dll", CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall)]
-        public static extern bool UnhookWindowsHookEx(int idHook);
-
-        [DllImport("user32.dll", CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall)]
-        public static extern int CallNextHookEx(int idHook, int nCode, IntPtr wParam, IntPtr lParam);
-
-        [StructLayout(LayoutKind.Sequential)]
-        public class MouseStruct
-        {
-            public Point pt;
-            public int hwnd;
-            public int wHitTestCode;
-            public int dwExtraInfo;
-        }
-
-        public delegate int HookProc(int nCode, IntPtr wParam, IntPtr lParam);
-
-        private int hHook;
-        public const int WH_MOUSE_LL = 14;
-        public static HookProc hProc;
-
-        public int SetHook()
-        {
-            hProc = new HookProc(MouseHookProc);
-            hHook = SetWindowsHookEx(WH_MOUSE_LL, hProc, IntPtr.Zero, 0);
-            return hHook;
-        }
-        public void UnHook()
-        {
-            UnhookWindowsHookEx(hHook);
-        }
-        //callback function, invoked when there is an mouse event
-        private int MouseHookProc(int nCode, IntPtr wParam, IntPtr lParam)
-        {
-            var MyMouseStruct = (MouseStruct)Marshal.PtrToStructure(lParam, typeof(MouseStruct));
-            if (nCode < 0)
-            {
-                return CallNextHookEx(hHook, nCode, wParam, lParam);
-            }
-            else
-            {
-                // Check for mouse actions
-                if (wParam == (IntPtr)513)
-                {
-                    //click
-                }
-                else if (wParam == (IntPtr)512)
-                {
-                    //move
-
-                    // Reduce cpu load
-                    Thread.Sleep(10);
-
-                    Refresh();
-                    if (capturing)
-                    {
-                        using (Graphics g = CreateGraphics())
-                        {
-                            Rectangle rect = GetRectangle(new Point(mouseStartX - offsetX, mouseStartY), new Point(Cursor.Position.X - offsetX, Cursor.Position.Y));
-                            g.DrawRectangle(Pens.Red, rect);
-                        }
-                    }
-                }
-                else if (wParam == (IntPtr)512)
-                {
-                    //release
-                }
-
-                Cursor.Position = MyMouseStruct.pt;
-                //stop the event from passed to other windows.
-                return 1;
-            }
-        }
+  
     }
 }
