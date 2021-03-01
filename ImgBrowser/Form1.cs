@@ -13,6 +13,7 @@ using Microsoft.VisualBasic.FileIO;
 using SearchOption = System.IO.SearchOption;
 
 // TODO Config for window start position
+// TODO Button config
 // TODO Chroma key / Transparency for window?
 // TODO Randomized slideshow? <-----------
 // BUG When zoomed in messages are only shown in top left position
@@ -22,6 +23,9 @@ using SearchOption = System.IO.SearchOption;
 // TODO Folder image count
 // BUG Rotating in autosize mode can make the image go over borders
 // BUG Image can slighty overfill the screen when in autosize + fullscreen mode
+// TODO Scale image to screen?
+// TODO Change cursor icon when capturing screen
+
 
 namespace ImgBrowser
 {
@@ -50,7 +54,7 @@ namespace ImgBrowser
         // private int frameTop = 0;
 
         // Picturebox zoomed in location
-        private Point zoomLocation = new Point (0,0);
+        private Point zoomLocation = new Point(0, 0);
 
         // If mouse middle button should restore maximized or normal sized window
         private bool windowNormal = false;
@@ -111,9 +115,9 @@ namespace ImgBrowser
 
         private void showMessage_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-                messageLabel.Text = e.Result.ToString();
-                messageLabelShadowBottom.Text = e.Result.ToString();
-                messageLabelShadowTop.Text = e.Result.ToString();
+            messageLabel.Text = e.Result.ToString();
+            messageLabelShadowBottom.Text = e.Result.ToString();
+            messageLabelShadowTop.Text = e.Result.ToString();
         }
 
 
@@ -232,16 +236,16 @@ namespace ImgBrowser
                         {
                             Image oldImg = null;
                             if (pictureBox1.Image != null) { oldImg = pictureBox1.Image; }
-                            
+
                             pictureBox1.Image = Clipboard.GetImage();
                             imgLocation = "";
                             imgName = "";
 
                             pictureBox1.Location = new Point(0, 0);
                             SizeModeZoom();
-                            
+
                             if (oldImg != null) { oldImg.Dispose(); }
-                            
+
                             updateFormName();
                         }
 
@@ -275,14 +279,29 @@ namespace ImgBrowser
                     maxOrNormalizeWindow();
                     break;
 
+                case "X":
+                    Screen[] durp = Screen.AllScreens;
+
+                    int lowestX = 0;
+
+                    foreach(Screen asd in durp)
+                    {
+                        if (asd.Bounds.Left < lowestX) lowestX = asd.Bounds.Left;
+                    }
+
+                    displayMessage(lowestX.ToString());
+
+                    break;
+
                 // Color picker
                 case "I":
                     Color currentColor = GetColorAt(Cursor.Position);
                     string colorHex;
-                    
+
+                    BackColor = currentColor;
+
                     colorHex = ColorTranslator.ToHtml(Color.FromArgb(currentColor.ToArgb()));
-                    Clipboard.SetText(colorHex);
-                    displayMessage("Color copied to clipboard");
+                    displayMessage(colorHex);
 
                     break;
                 // Snipping tool, captured when button is released
@@ -292,6 +311,12 @@ namespace ImgBrowser
                         screenCapButtonHeld = true;
                         screenCapPosX = Cursor.Position.X;
                         screenCapPosY = Cursor.Position.Y;
+                        //pictureBox1.Cursor = Cursors.Cross;
+
+                        Form f = new CaptureLayer();
+                        displayMessage("Selection copied to clipboard");
+                        screenCapButtonHeld = false;
+
                     }
                     break;
                 // Move image to recycle bin
@@ -301,7 +326,7 @@ namespace ImgBrowser
                         // Get info from the image that is going to be deleted
                         string delImgLocation = imgLocation;
                         string delImgName = imgName;
-                        
+
                         // Move to next image, so picturebox won't keep it locked
                         // This also keeps the file indexes working, otherwise index will be 0 after deletion
                         browseForward();
@@ -409,7 +434,8 @@ namespace ImgBrowser
 
         private void browseForward()
         {
-            if (imgLocation != "") {
+            if (imgLocation != "")
+            {
 
                 //string[] fileEntries = listFiles(Path.GetDirectoryName(pictureBox1.ImageLocation));
                 //string[] fileEntries = asd;
@@ -460,7 +486,8 @@ namespace ImgBrowser
 
                 if (index - 1 >= 0)
                 {
-                    if (verifyImg(fileEntries[index - 1])) {
+                    if (verifyImg(fileEntries[index - 1]))
+                    {
                         pictureBox1.Image = Image.FromFile(fileEntries[index - 1]);
                     }
                     imgLocation = Path.GetDirectoryName(fileEntries[index - 1]);
@@ -496,7 +523,7 @@ namespace ImgBrowser
 
         private string[] updateFileList()
         {
-            
+
             if (imgLocation != "")
             {
                 IEnumerable<string> files = Directory.EnumerateFiles(imgLocation, "*.*", SearchOption.TopDirectoryOnly)
@@ -506,14 +533,14 @@ namespace ImgBrowser
                 s.EndsWith(".jfif", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase));
                 return files.ToArray();
             }
-            
+
             // Return empty array
             else
             {
                 string[] files = new string[0];
                 return files;
             }
-            
+
         }
 
         private void pictureBox1_Click(object sender, EventArgs e)
@@ -561,7 +588,7 @@ namespace ImgBrowser
                 }
             }
 
-            
+
             Color grabbedColor = screenPixel.GetPixel(0, 0);
             screenPixel.Dispose();
 
@@ -586,7 +613,7 @@ namespace ImgBrowser
 
                 // Grab current image
                 Image img = pictureBox1.Image;
-                Bitmap resized = new Bitmap(1,1);
+                Bitmap resized = new Bitmap(1, 1);
 
                 // Creating a new resized bitmap
                 try
@@ -616,8 +643,8 @@ namespace ImgBrowser
                 // This will rescale the image. Optional, but makes it look better
                 // Do not rescale images that are over 10 000 pixels, as it will cause memory and performance issues
                 if (img.Width + img.Height < 10000)
-                { 
-                    
+                {
+
                     using (Graphics grap = Graphics.FromImage(resized))
                     {
                         grap.CompositingMode = CompositingMode.SourceCopy;
@@ -797,7 +824,7 @@ namespace ImgBrowser
         {
             imgName = Path.GetFileName(file);
             imgLocation = Path.GetDirectoryName(file);
-            
+
             if (verifyImg(imgLocation + "\\" + imgName))
             {
                 pictureBox1.Image = Image.FromFile(imgLocation + "\\" + imgName);
@@ -807,7 +834,7 @@ namespace ImgBrowser
             fileEntries = updateFileList();
 
             // Reset zoomed in position
-            pictureBox1.Location = new Point (0, 0);
+            pictureBox1.Location = new Point(0, 0);
 
             centerImage();
 
@@ -863,8 +890,8 @@ namespace ImgBrowser
         private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
         {
 
-            if (e.Button.ToString() == "Left") 
-            { 
+            if (e.Button.ToString() == "Left")
+            {
                 // Get mouse position for image scroll
                 currentPositionX = Cursor.Position.X;
                 currentPositionY = Cursor.Position.Y;
@@ -882,7 +909,7 @@ namespace ImgBrowser
             {
                 // Check if image scrolling should be activated
                 // Activates when picturebox is autosized and window is bordered and also when autosized and window is borderless and maximized
-                if ((pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) && (FormBorderStyle == FormBorderStyle.Sizable) 
+                if ((pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) && (FormBorderStyle == FormBorderStyle.Sizable)
                     || (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) && (WindowState == FormWindowState.Maximized))
                 {
                     // Activate image scrolling
@@ -892,14 +919,14 @@ namespace ImgBrowser
                 // Activate window drag
                 else
                 {
-                        // Raw commands for moving window with mouse
-                        ReleaseCapture();
-                        SendMessage(Handle, WM_NCLBUTTONDOWN, HT_CAPTION, 0);
+                    // Raw commands for moving window with mouse
+                    ReleaseCapture();
+                    SendMessage(Handle, WM_NCLBUTTONDOWN, HT_CAPTION, 0);
                 }
             }
-               
+
         }
-            
+
         private void maxOrNormalizeWindow()
         {
             if (this.WindowState == FormWindowState.Maximized)
@@ -1014,7 +1041,7 @@ namespace ImgBrowser
                             }
                         }
                         if (pictureBox1.Image.Height > Height)
-                        { 
+                        {
                             if (Cursor.Position.Y - minMov > currentPositionY)
                             {
                                 // Old offset calculation based scrolling
@@ -1040,101 +1067,101 @@ namespace ImgBrowser
                         }
                     }
 
-                        // Old code scrolling using scrollbars with panel autoscroll
-                                    /*
-                                    if (Cursor.Position.X - minMov > currentPositionX)
-                                    {
-                                        if (panel1.HorizontalScroll.Value - scrollOffset * 2 >= panel1.HorizontalScroll.Minimum)
-                                        {
-                                            panel1.HorizontalScroll.Value -= (int)(scrollOffset) * 2;
-                                        }
-                                        else
-                                        {
-                                            panel1.HorizontalScroll.Value = panel1.HorizontalScroll.Minimum;
-                                        }
+                    // Old code scrolling using scrollbars with panel autoscroll
+                    /*
+                    if (Cursor.Position.X - minMov > currentPositionX)
+                    {
+                        if (panel1.HorizontalScroll.Value - scrollOffset * 2 >= panel1.HorizontalScroll.Minimum)
+                        {
+                            panel1.HorizontalScroll.Value -= (int)(scrollOffset) * 2;
+                        }
+                        else
+                        {
+                            panel1.HorizontalScroll.Value = panel1.HorizontalScroll.Minimum;
+                        }
 
-                                    }
-                                    if (Cursor.Position.X + minMov < currentPositionX)
-                                    {
-                                        if (panel1.HorizontalScroll.Value + scrollOffset * 2 <= panel1.HorizontalScroll.Maximum)
-                                        {
-                                            panel1.HorizontalScroll.Value += (int)(scrollOffset) * 2;
-                                        }
-                                        else
-                                        {
-                                            panel1.HorizontalScroll.Value = panel1.HorizontalScroll.Maximum;
-                                        }
-                                    }
+                    }
+                    if (Cursor.Position.X + minMov < currentPositionX)
+                    {
+                        if (panel1.HorizontalScroll.Value + scrollOffset * 2 <= panel1.HorizontalScroll.Maximum)
+                        {
+                            panel1.HorizontalScroll.Value += (int)(scrollOffset) * 2;
+                        }
+                        else
+                        {
+                            panel1.HorizontalScroll.Value = panel1.HorizontalScroll.Maximum;
+                        }
+                    }
 
-                                    if (Cursor.Position.Y - minMov > currentPositionY)
-                                    {
-                                        if (panel1.VerticalScroll.Value - scrollOffset >= panel1.VerticalScroll.Minimum)
-                                        {
-                                            panel1.VerticalScroll.Value -= (int)(scrollOffset);
-                                        }
-                                        else
-                                        {
-                                            panel1.VerticalScroll.Value = panel1.VerticalScroll.Minimum;
-                                        }
-                                    }
-                                    if (Cursor.Position.Y + minMov < currentPositionY)
-                                    {
-                                        if (panel1.VerticalScroll.Value + scrollOffset <= panel1.VerticalScroll.Maximum)
-                                        {
-                                            panel1.VerticalScroll.Value += (int)(scrollOffset);
-                                        }
-                                        else
-                                        {
-                                            panel1.VerticalScroll.Value = panel1.VerticalScroll.Maximum;
-                                        }
+                    if (Cursor.Position.Y - minMov > currentPositionY)
+                    {
+                        if (panel1.VerticalScroll.Value - scrollOffset >= panel1.VerticalScroll.Minimum)
+                        {
+                            panel1.VerticalScroll.Value -= (int)(scrollOffset);
+                        }
+                        else
+                        {
+                            panel1.VerticalScroll.Value = panel1.VerticalScroll.Minimum;
+                        }
+                    }
+                    if (Cursor.Position.Y + minMov < currentPositionY)
+                    {
+                        if (panel1.VerticalScroll.Value + scrollOffset <= panel1.VerticalScroll.Maximum)
+                        {
+                            panel1.VerticalScroll.Value += (int)(scrollOffset);
+                        }
+                        else
+                        {
+                            panel1.VerticalScroll.Value = panel1.VerticalScroll.Maximum;
+                        }
 
-                                    }
-                                }
-                                */
+                    }
+                }
+                */
 
-                                    // Changed to use the Windows function ReleaseCapture();
-                                    // Move frame with mouse
-                                    /*
-                                    else
-                                    {
-                                        Location = new Point(Cursor.Position.X - currentPositionX + frameLeft, Cursor.Position.Y - currentPositionY + frameTop);
-                                    }
-                                    */
+                    // Changed to use the Windows function ReleaseCapture();
+                    // Move frame with mouse
+                    /*
+                    else
+                    {
+                        Location = new Point(Cursor.Position.X - currentPositionX + frameLeft, Cursor.Position.Y - currentPositionY + frameTop);
+                    }
+                    */
 
-                                    // Old image move code
-                                    /*
-                                    // Grab mouse X direction
-                                    double deltaDirection = currentPositionX - e.X;
-                                    directionX = deltaDirection > 0 ? -1 : 1;
-                                    currentPositionX = e.X;
-                                    Console.WriteLine("X: " + directionX);
+                    // Old image move code
+                    /*
+                    // Grab mouse X direction
+                    double deltaDirection = currentPositionX - e.X;
+                    directionX = deltaDirection > 0 ? -1 : 1;
+                    currentPositionX = e.X;
+                    Console.WriteLine("X: " + directionX);
 
-                                    // Move image based on direction
-                                    if ((directionX == 1) && (panel1.HorizontalScroll.Value + 5 <= panel1.HorizontalScroll.Maximum))
-                                    {
-                                        panel1.HorizontalScroll.Value += 5;
-                                    }
-                                    else if (panel1.HorizontalScroll.Value - 5 >= panel1.HorizontalScroll.Minimum)
-                                    {
-                                        panel1.HorizontalScroll.Value -= 5;
-                                    }
+                    // Move image based on direction
+                    if ((directionX == 1) && (panel1.HorizontalScroll.Value + 5 <= panel1.HorizontalScroll.Maximum))
+                    {
+                        panel1.HorizontalScroll.Value += 5;
+                    }
+                    else if (panel1.HorizontalScroll.Value - 5 >= panel1.HorizontalScroll.Minimum)
+                    {
+                        panel1.HorizontalScroll.Value -= 5;
+                    }
 
-                                    // Grab mouse Y direction
-                                    deltaDirection = currentPositionY - e.Y;
-                                    directionY = deltaDirection > 0 ? -1 : 1;
-                                    currentPositionX = e.Y;
-                                    Console.WriteLine("Y: " + directionY);
+                    // Grab mouse Y direction
+                    deltaDirection = currentPositionY - e.Y;
+                    directionY = deltaDirection > 0 ? -1 : 1;
+                    currentPositionX = e.Y;
+                    Console.WriteLine("Y: " + directionY);
 
-                                    // Move image based on direction
-                                    if ((directionY == 1) && (panel1.VerticalScroll.Value + 5 <= panel1.VerticalScroll.Maximum))
-                                    {
-                                        panel1.VerticalScroll.Value += 5;
-                                    }
-                                    else if (panel1.VerticalScroll.Value - 5 >= panel1.VerticalScroll.Minimum)
-                                    {
-                                        panel1.VerticalScroll.Value -= 5;
-                                    }
-                                    */
+                    // Move image based on direction
+                    if ((directionY == 1) && (panel1.VerticalScroll.Value + 5 <= panel1.VerticalScroll.Maximum))
+                    {
+                        panel1.VerticalScroll.Value += 5;
+                    }
+                    else if (panel1.VerticalScroll.Value - 5 >= panel1.VerticalScroll.Minimum)
+                    {
+                        panel1.VerticalScroll.Value -= 5;
+                    }
+                    */
                 }
                 else
                 {
@@ -1179,7 +1206,7 @@ namespace ImgBrowser
                         }
                     }
                 }
-                
+
             }
             else if ((e.Button.ToString() == "Right"))
             {
@@ -1302,10 +1329,16 @@ namespace ImgBrowser
         {
             switch (e.KeyCode.ToString())
             {
+
+                // Moved to separate form window
+
+
                 // Capture screen from the rectangle drawn by cursor
                 // https://stackoverflow.com/questions/13103682/draw-a-bitmap-image-on-the-screen
                 case "S":
+                    /*
                     screenCapButtonHeld = false;
+                    pictureBox1.Cursor = Cursors.Default;
 
                     // Get start and end coordinates
                     int p1 = Math.Min(screenCapPosX, Cursor.Position.X);
@@ -1324,12 +1357,22 @@ namespace ImgBrowser
                         g.CopyFromScreen(rect.Left, rect.Top, 0, 0, rect.Size);
                         Clipboard.SetImage(BM);
                     }
-                    
+
                     BM.Dispose();
                     displayMessage("Selection copied to clipboard");
+                    */
 
                     break;
+                case "I":
+                    Color currentColor = GetColorAt(Cursor.Position);
+                    string colorHex;
+                    colorHex = ColorTranslator.ToHtml(Color.FromArgb(currentColor.ToArgb()));
 
+                    BackColor = Color.FromArgb(28, 28, 28);
+
+                    Clipboard.SetText(colorHex);
+                    displayMessage("Color copied to clipboard");
+                    break;
                 default:
                     break;
             }
