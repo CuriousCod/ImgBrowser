@@ -127,7 +127,7 @@ namespace ImgBrowser
 
 
         ///
-        /// This following madness follows mouse actions globally
+        /// This following madness tracks mouse actions globally
         ///
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall)]
@@ -183,6 +183,9 @@ namespace ImgBrowser
                 {
                     //move
 
+                    // Reduce cpu load
+                    Thread.Sleep(10);
+
                     Refresh();
                     if (capturing)
                     {
@@ -190,7 +193,7 @@ namespace ImgBrowser
                         {
                             Rectangle rect = GetRectangle(new Point(mouseStartX - offsetX, mouseStartY), new Point(Cursor.Position.X - offsetX, Cursor.Position.Y));
                             g.DrawRectangle(Pens.Red, rect);
-                        }
+                        }  
                     }
                 }
                 else if (wParam == (IntPtr)512)
