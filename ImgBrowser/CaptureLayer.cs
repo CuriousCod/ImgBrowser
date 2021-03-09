@@ -73,20 +73,17 @@ namespace ImgBrowser
 
                     if (rect.Width == 0 || rect.Height == 0) break;
 
-                    Bitmap BM = new Bitmap(rect.Width, rect.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                    using (Graphics g = Graphics.FromImage(BM))
+                    using (Bitmap BM = new Bitmap(rect.Width, rect.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
                     {
-                        g.CopyFromScreen(rect.Left, rect.Top, 0, 0, rect.Size);
-                        Clipboard.SetImage(BM);
+                        using (Graphics g = Graphics.FromImage(BM))
+                        {
+                            g.CopyFromScreen(rect.Left, rect.Top, 0, 0, rect.Size);
+                            Clipboard.SetImage(BM);
+                        }
                     }
 
-                    BM.Dispose();
-
-                    // Close form
                     Close();
-
                     break;
-
                 default:
                     Close();
                     break;

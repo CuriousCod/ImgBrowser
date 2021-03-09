@@ -441,7 +441,9 @@ namespace ImgBrowser
                 //string[] fileEntries = asd;
                 //Console.WriteLine(pictureBox1.ImageLocation);
 
+                //foreach (string file in fileEntries) { Console.WriteLine(file); }
                 int index = Array.IndexOf(fileEntries, imgLocation + "\\" + imgName);
+
                 //int index = Array.IndexOf(fileEntries, pictureBox1.ImageLocation);
 
                 //Console.WriteLine(index);
@@ -454,7 +456,8 @@ namespace ImgBrowser
                     {
                         pictureBox1.Image = Image.FromFile(fileEntries[index + 1]);
                     }
-                    imgLocation = Path.GetDirectoryName(fileEntries[index + 1]);
+                    // Getting directory from disk root returns \ character
+                    imgLocation = Path.GetDirectoryName(fileEntries[index + 1]).TrimEnd('\\');
                     imgName = Path.GetFileName(fileEntries[index + 1]);
                 }
                 else
@@ -463,7 +466,7 @@ namespace ImgBrowser
                     {
                         pictureBox1.Image = Image.FromFile(fileEntries[0]);
                     }
-                    imgLocation = Path.GetDirectoryName(fileEntries[0]);
+                    imgLocation = Path.GetDirectoryName(fileEntries[0]).TrimEnd('\\');
                     imgName = Path.GetFileName(fileEntries[0]);
                 }
                 updateFormName();
@@ -490,7 +493,7 @@ namespace ImgBrowser
                     {
                         pictureBox1.Image = Image.FromFile(fileEntries[index - 1]);
                     }
-                    imgLocation = Path.GetDirectoryName(fileEntries[index - 1]);
+                    imgLocation = Path.GetDirectoryName(fileEntries[index - 1]).TrimEnd('\\');
                     imgName = Path.GetFileName(fileEntries[index - 1]);
 
                 }
@@ -500,7 +503,7 @@ namespace ImgBrowser
                     {
                         pictureBox1.Image = Image.FromFile(fileEntries[fileEntries.Length - 1]);
                     }
-                    imgLocation = Path.GetDirectoryName(fileEntries[fileEntries.Length - 1]);
+                    imgLocation = Path.GetDirectoryName(fileEntries[fileEntries.Length - 1]).TrimEnd('\\');
                     imgName = Path.GetFileName(fileEntries[fileEntries.Length - 1]);
                 }
 
@@ -526,7 +529,7 @@ namespace ImgBrowser
 
             if (imgLocation != "")
             {
-                IEnumerable<string> files = Directory.EnumerateFiles(imgLocation, "*.*", SearchOption.TopDirectoryOnly)
+                IEnumerable<string> files = Directory.EnumerateFiles(imgLocation + "\\", "*.*", SearchOption.TopDirectoryOnly)
                 .Where(s => s.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
                 s.EndsWith(".gif", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase) ||
                 s.EndsWith(".tif", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".svg", StringComparison.OrdinalIgnoreCase) ||
@@ -823,7 +826,7 @@ namespace ImgBrowser
         private void loadNewImg(string file)
         {
             imgName = Path.GetFileName(file);
-            imgLocation = Path.GetDirectoryName(file);
+            imgLocation = Path.GetDirectoryName(file).TrimEnd('\\');
 
             if (verifyImg(imgLocation + "\\" + imgName))
             {
