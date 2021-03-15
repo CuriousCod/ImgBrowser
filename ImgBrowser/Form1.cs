@@ -314,7 +314,7 @@ namespace ImgBrowser
                         }
                         else
                         {
-                            TransparencyKey = Color.White;
+                            TransparencyKey = Control.DefaultBackColor;
                         }
                     }
                     break;
