@@ -135,10 +135,9 @@ namespace ImgBrowser
 
                 Rectangle rect = GetRectangle(new Point(mouseStartX - offsetX, mouseStartY), new Point(Cursor.Position.X - offsetX, Cursor.Position.Y));
                 g.DrawRectangle(Pens.Red, rect);
+
             }
 
         }
-
-  
     }
 }

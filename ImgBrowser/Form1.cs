@@ -25,6 +25,7 @@ using SearchOption = System.IO.SearchOption;
 // BUG Image can slighty overfill the screen when in autosize + fullscreen mode
 // TODO Scale image to screen?
 // TODO Change cursor icon when capturing screen
+// TODO Remember rotate position for next image
 
 
 namespace ImgBrowser
@@ -279,20 +280,6 @@ namespace ImgBrowser
                     maxOrNormalizeWindow();
                     break;
 
-                case "X":
-                    Screen[] durp = Screen.AllScreens;
-
-                    int lowestX = 0;
-
-                    foreach(Screen asd in durp)
-                    {
-                        if (asd.Bounds.Left < lowestX) lowestX = asd.Bounds.Left;
-                    }
-
-                    displayMessage(lowestX.ToString());
-
-                    break;
-
                 // Color picker
                 case "I":
                     Color currentColor = GetColorAt(Cursor.Position);
@@ -317,6 +304,18 @@ namespace ImgBrowser
                         displayMessage("Selection copied to clipboard");
                         screenCapButtonHeld = false;
 
+                    }
+                    break;
+                case "T":
+                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control) { 
+                        if (TransparencyKey != BackColor)
+                        {
+                            TransparencyKey = BackColor;
+                        }
+                        else
+                        {
+                            TransparencyKey = Color.White;
+                        }
                     }
                     break;
                 // Move image to recycle bin
@@ -1015,6 +1014,7 @@ namespace ImgBrowser
 
                     if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
                     {
+                        //pictureBox1.Refresh();
                         // Only allow adjustments if the image is larger than the screen resolution
                         if (pictureBox1.Image.Width > Width)
                         {
@@ -1380,6 +1380,16 @@ namespace ImgBrowser
                     break;
             }
 
+        }
+
+        private void pictureBox1_Paint(object sender, PaintEventArgs e)
+        {
+            /*
+            Point loc = new Point(-pictureBox1.Location.X, -pictureBox1.Location.Y);
+            TextRenderer.DrawText(e.Graphics, "Test", new Font(this.Font.FontFamily, 60, 0f, GraphicsUnit.Point), Point.Subtract(loc, new Size(-2, -1)), SystemColors.WindowText);
+            TextRenderer.DrawText(e.Graphics, "Test", new Font(this.Font.FontFamily, 60, 0f, GraphicsUnit.Point), Point.Subtract(loc, new Size(2,1)), SystemColors.WindowText);
+            TextRenderer.DrawText(e.Graphics, "Test", new Font(this.Font.FontFamily, 60, 0f, GraphicsUnit.Point), loc, SystemColors.Window);
+            */
         }
     }
 }
