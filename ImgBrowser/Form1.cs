@@ -276,6 +276,15 @@ namespace ImgBrowser
                         pictureBox1.Image = img;
                     }
                     break;
+                case "M":
+                    if (pictureBox1.Image != null)
+                    {
+                        Image img = pictureBox1.Image;
+                        img.RotateFlip(RotateFlipType.RotateNoneFlipX);
+
+                        pictureBox1.Image = img;
+                    }
+                    break;
                 case "F":
                     maxOrNormalizeWindow();
                     break;
