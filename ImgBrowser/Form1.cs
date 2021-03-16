@@ -51,8 +51,8 @@ namespace ImgBrowser
         private int screenCapPosY;
 
         // Frame position
-        // private int frameLeft = 0;
-        // private int frameTop = 0;
+        private int frameLeft = 0;
+        private int frameTop = 0;
 
         // Picturebox zoomed in location
         private Point zoomLocation = new Point(0, 0);
@@ -315,14 +315,17 @@ namespace ImgBrowser
 
                     }
                     break;
+                // TODO This can make the image transparent as well if the color matches the form's bg
                 case "T":
                     if ((Control.ModifierKeys & Keys.Control) == Keys.Control) { 
                         if (TransparencyKey != BackColor)
                         {
+                            displayMessage("Background hidden");
                             TransparencyKey = BackColor;
                         }
                         else
                         {
+                            displayMessage("Background visible");
                             TransparencyKey = Control.DefaultBackColor;
                         }
                     }
@@ -907,9 +910,13 @@ namespace ImgBrowser
                 currentPositionX = Cursor.Position.X;
                 currentPositionY = Cursor.Position.Y;
             }
-            // For moving the window with mouse without ReleaseCapture();
-            //frameTop = Top;
-            //frameLeft = Left;
+
+            if (WindowState != FormWindowState.Maximized)
+            {
+                // For moving the window with mouse without ReleaseCapture();
+                frameTop = Top;
+                frameLeft = Left;
+            }
 
             // Maximize or normalize window
             if (e.Button.ToString() == "Left" && e.Clicks == 2)
@@ -930,9 +937,12 @@ namespace ImgBrowser
                 // Activate window drag
                 else
                 {
-                    // Raw commands for moving window with mouse
-                    ReleaseCapture();
-                    SendMessage(Handle, WM_NCLBUTTONDOWN, HT_CAPTION, 0);
+                    // Ignore if form is transparent, so the image can be moved without snapping to screen edges
+                    if (TransparencyKey != BackColor) { 
+                        // Raw commands for moving window with mouse
+                        ReleaseCapture();
+                        SendMessage(Handle, WM_NCLBUTTONDOWN, HT_CAPTION, 0);
+                    }
                 }
             }
 
@@ -944,7 +954,8 @@ namespace ImgBrowser
             {
                 if (this.FormBorderStyle == FormBorderStyle.None)
                 {
-                    this.FormBorderStyle = FormBorderStyle.Sizable;
+                    if (showBorder == true)
+                        this.FormBorderStyle = FormBorderStyle.Sizable;
                     // Reset picturebox style, when returning from full screen
                     pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
                     pictureBox1.Dock = DockStyle.Fill;
@@ -1076,6 +1087,27 @@ namespace ImgBrowser
                                 else if (pictureBox1.Location.Y >= -pictureBox1.Image.Height + Height) pictureBox1.Location = new Point(pictureBox1.Location.X, pictureBox1.Location.Y - currentPositionY + Cursor.Position.Y);
                                 currentPositionY = Cursor.Position.Y;
                             }
+                        }
+                    }
+                    else
+                    {
+                        // Classic style window drag anywhere to move feature
+                        // Useful when you don't want window to snap to screen edges
+                        if (TransparencyKey == BackColor) 
+                        {
+                            if ((Cursor.Position.X != currentPositionX) && (Cursor.Position.Y != currentPositionY) && (WindowState == FormWindowState.Maximized))
+                            {
+                                WindowState = FormWindowState.Normal;
+
+                                // Center window on mouse
+                                Location = Cursor.Position;
+                                frameTop = Top - (int)(Height / 2);
+                                frameLeft = Left - (int)(Width / 2);
+                            }
+                            
+                            // Keep border hidden when restoring window
+                            showBorder = false;
+                            Location = new Point(Cursor.Position.X - currentPositionX + frameLeft, Cursor.Position.Y - currentPositionY + frameTop);
                         }
                     }
 
