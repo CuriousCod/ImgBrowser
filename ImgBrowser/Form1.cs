@@ -39,6 +39,9 @@ namespace ImgBrowser
         private string imgName = "";
         private string imgLocation = "";
 
+        // Locks current image, so browsing doesn't work
+        private bool lockImage = false;
+
         // Mouse position
         private int currentPositionX = 0;
         private int currentPositionY = 0;
@@ -144,6 +147,14 @@ namespace ImgBrowser
                     {
                         pictureBoxZoom(1.5);
                     }
+                    else if ((Control.ModifierKeys & Keys.Alt) == Keys.Alt)
+                    {
+                        // Increase window size
+                        if (WindowState == FormWindowState.Normal)
+                        {
+                            Size = Size.Add(Size, new Size(1,1));
+                        }
+                    }
                     else
                     {
                         browseForward();
@@ -155,6 +166,14 @@ namespace ImgBrowser
                     if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
                     {
                         pictureBoxUnZoom(1.5);
+                    }
+                    else if ((Control.ModifierKeys & Keys.Alt) == Keys.Alt)
+                    {
+                        // Decrease window size
+                        if (WindowState == FormWindowState.Normal)
+                        {
+                            Size = Size.Subtract(Size, new Size(1, 1));
+                        }
                     }
                     else
                     {
@@ -288,7 +307,6 @@ namespace ImgBrowser
                 case "F":
                     maxOrNormalizeWindow();
                     break;
-
                 // Color picker
                 case "I":
                     Color currentColor = GetColorAt(Cursor.Position);
@@ -299,6 +317,18 @@ namespace ImgBrowser
                     colorHex = ColorTranslator.ToHtml(Color.FromArgb(currentColor.ToArgb()));
                     displayMessage(colorHex);
 
+                    break;
+                case "L":
+                    if (lockImage)
+                    {
+                        lockImage = false;
+                        displayMessage("Image unlocked");
+                    }
+                    else
+                    {
+                        lockImage = true;
+                        displayMessage("Image locked");
+                    }
                     break;
                 // Snipping tool, captured when button is released
                 case "S":
@@ -337,6 +367,8 @@ namespace ImgBrowser
                         // Get info from the image that is going to be deleted
                         string delImgLocation = imgLocation;
                         string delImgName = imgName;
+
+                        lockImage = false;
 
                         // Move to next image, so picturebox won't keep it locked
                         // This also keeps the file indexes working, otherwise index will be 0 after deletion
@@ -445,7 +477,7 @@ namespace ImgBrowser
 
         private void browseForward()
         {
-            if (imgLocation != "")
+            if ((imgLocation != "") && lockImage == false)
             {
 
                 //string[] fileEntries = listFiles(Path.GetDirectoryName(pictureBox1.ImageLocation));
@@ -487,7 +519,7 @@ namespace ImgBrowser
 
         private void browseBackward()
         {
-            if (imgLocation != "")
+            if ((imgLocation != "") && lockImage == false)
             {
                 //string[] fileEntries = listFiles(Path.GetDirectoryName(pictureBox1.ImageLocation));
 
@@ -849,6 +881,7 @@ namespace ImgBrowser
 
             // Reset zoomed in position
             pictureBox1.Location = new Point(0, 0);
+            lockImage = false;
 
             centerImage();
 
