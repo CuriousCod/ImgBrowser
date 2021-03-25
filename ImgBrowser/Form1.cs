@@ -26,6 +26,7 @@ using SearchOption = System.IO.SearchOption;
 // TODO Scale image to screen?
 // TODO Change cursor icon when capturing screen
 // TODO Remember rotate position for next image
+// TODO Home/End buttons for quick move to first/last image
 
 
 namespace ImgBrowser
@@ -319,15 +320,21 @@ namespace ImgBrowser
 
                     break;
                 case "L":
-                    if (lockImage)
+                    if (pictureBox1.Image != null)
                     {
-                        lockImage = false;
-                        displayMessage("Image unlocked");
-                    }
-                    else
-                    {
-                        lockImage = true;
-                        displayMessage("Image locked");
+                        if ((lockImage))
+                        {
+                            lockImage = false;
+                            displayMessage("Image unlocked");
+                        }
+                        else
+                        {
+                            if ((fileEntries != null) && (fileEntries.Length > 0))
+                            {
+                                lockImage = true;
+                                displayMessage("Image locked");
+                            }
+                        }
                     }
                     break;
                 // Snipping tool, captured when button is released
@@ -1065,7 +1072,7 @@ namespace ImgBrowser
                 if (e.Button.ToString() == "Left")
                 {
 
-                    if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
+                    if ((pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) && (FormBorderStyle == FormBorderStyle.Sizable))
                     {
                         //pictureBox1.Refresh();
                         // Only allow adjustments if the image is larger than the screen resolution
@@ -1445,10 +1452,21 @@ namespace ImgBrowser
                     string colorHex;
                     colorHex = ColorTranslator.ToHtml(Color.FromArgb(currentColor.ToArgb()));
 
-                    BackColor = Color.FromArgb(28, 28, 28);
+                    // TODO This is probably pointless
+                    // Set chroma key if alt is held
+                    if ((Control.ModifierKeys & Keys.Alt) == Keys.Alt)
+                    { 
+                        TransparencyKey = BackColor;
+                        displayMessage("Chroma key set");
+                    }
+                    else
+                    {
+                        BackColor = Color.FromArgb(28, 28, 28);
+                        Clipboard.SetText(colorHex);
+                        displayMessage("Color copied to clipboard");
+                    }
+                        
 
-                    Clipboard.SetText(colorHex);
-                    displayMessage("Color copied to clipboard");
                     break;
                 default:
                     break;
