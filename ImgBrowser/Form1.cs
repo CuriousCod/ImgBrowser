@@ -27,6 +27,8 @@ using SearchOption = System.IO.SearchOption;
 // TODO Change cursor icon when capturing screen
 // TODO Remember rotate position for next image
 // TODO Home/End buttons for quick move to first/last image
+// TODO Config to remember current images, their settings and positions
+// TODO Make a dynamic check for window title border (currently 40px), when scrolling picture
 
 
 namespace ImgBrowser
@@ -1120,11 +1122,12 @@ namespace ImgBrowser
                             {
                                 // Old offset calculation based scrolling
                                 //if (pictureBox1.Location.Y - (int)scrollOffsetY < -pictureBox1.Image.Height + Height) pictureBox1.Location = new Point(pictureBox1.Location.X, -pictureBox1.Image.Height + Height);
-                                //else if (pictureBox1.Location.Y >= -pictureBox1.Image.Height + Height) pictureBox1.Location = new Point(pictureBox1.Location.X, pictureBox1.Location.Y - (int)scrollOffsetY);
+                                //else if (pictureBox1.Location.Y >= -pictureBox1.Image.Height + Height) pictureBox1.Location = new Poin6t(pictureBox1.Location.X, pictureBox1.Location.Y - (int)scrollOffsetY);
 
                                 // Prevent picturebox from going over the bottom border
-                                if (pictureBox1.Location.Y - currentPositionY + Cursor.Position.Y < -pictureBox1.Image.Height + Height) pictureBox1.Location = new Point(pictureBox1.Location.X, -pictureBox1.Image.Height + Height);
-                                else if (pictureBox1.Location.Y >= -pictureBox1.Image.Height + Height) pictureBox1.Location = new Point(pictureBox1.Location.X, pictureBox1.Location.Y - currentPositionY + Cursor.Position.Y);
+                                // TODO Make this dynamic -> 40px is the height of the window title border
+                                if (pictureBox1.Location.Y - currentPositionY + Cursor.Position.Y < -pictureBox1.Image.Height + Height - 40) pictureBox1.Location = new Point(pictureBox1.Location.X, -pictureBox1.Image.Height + Height - 40);
+                                else if (pictureBox1.Location.Y >= -pictureBox1.Image.Height + Height - 40) pictureBox1.Location = new Point(pictureBox1.Location.X, pictureBox1.Location.Y - currentPositionY + Cursor.Position.Y);
                                 currentPositionY = Cursor.Position.Y;
                             }
                         }
