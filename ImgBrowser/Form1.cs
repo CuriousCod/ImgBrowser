@@ -645,6 +645,7 @@ namespace ImgBrowser
             {
                 loadNewImg(tempPath + "//" + tempName);
                 displayMessage("Temp image loaded");
+                lockImage = true;
             }
         }
 
@@ -1499,20 +1500,6 @@ namespace ImgBrowser
             */
         }
 
-        private void Form1_Resize(object sender, EventArgs e)
-        {
-            // Recenter image when window is being resized
-            if ((pictureBox1.Image != null) && (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize))
-            {
-                // Only recenter, if empty border is shown
-                if (pictureBox1.Location.X > 0) centerImage();
-                else if (pictureBox1.Location.X < -pictureBox1.Image.Width + Width) centerImage();
-                else if (pictureBox1.Location.Y > 0) centerImage();
-                else if (pictureBox1.Location.Y < -pictureBox1.Image.Height + Height) centerImage();
-
-            }
-        }
-
         private void Form1_KeyUp(object sender, KeyEventArgs e)
         {
             switch (e.KeyCode.ToString())
@@ -1586,6 +1573,32 @@ namespace ImgBrowser
             TextRenderer.DrawText(e.Graphics, "Test", new Font(this.Font.FontFamily, 60, 0f, GraphicsUnit.Point), Point.Subtract(loc, new Size(2,1)), SystemColors.WindowText);
             TextRenderer.DrawText(e.Graphics, "Test", new Font(this.Font.FontFamily, 60, 0f, GraphicsUnit.Point), loc, SystemColors.Window);
             */
+        }
+
+        private void Form1_ResizeEnd(object sender, EventArgs e)
+        {
+            // Recenter image when window is being resized
+            if ((pictureBox1.Image != null) && (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize))
+            {
+                // Only recenter, if empty border is shown
+                // TODO This is still buggy, added offset 20 and 40 to prevent image from needlessly centering when scrolled to the corners
+                if (pictureBox1.Location.X > 0)
+                {
+                    centerImage();
+                }
+                else if (pictureBox1.Location.X < -pictureBox1.Image.Width + ClientRectangle.Width - 20)
+                {
+                    centerImage();
+                }
+                else if (pictureBox1.Location.Y > 0)
+                {
+                    centerImage();
+                }
+                else if (pictureBox1.Location.Y < -pictureBox1.Image.Height + ClientRectangle.Height - 40)
+                {
+                    centerImage();
+                }
+            }
         }
     }
 }
