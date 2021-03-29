@@ -7,6 +7,7 @@ using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.Threading;
 using System.Runtime.InteropServices;
 using Microsoft.VisualBasic.FileIO;
@@ -17,7 +18,7 @@ using SearchOption = System.IO.SearchOption;
 // TODO Chroma key / Transparency for window?
 // TODO Randomized slideshow? <-----------
 // BUG When zoomed in messages are only shown in top left position
-// TODO Verify if other image changing methods require dispose(), copy+paste, rotate, etc
+// TODO Verify if other image changing methods req6uire dispose(), copy+paste, rotate, etc
 // TODO Arrow keys to navigate when zoomed in
 // TODO Tabs?
 // TODO Folder image count
@@ -27,8 +28,6 @@ using SearchOption = System.IO.SearchOption;
 // TODO Change cursor icon when capturing screen
 // TODO Remember rotate position for next image
 // TODO Home/End buttons for quick move to first/last image
-// TODO Config to remember current images, their settings and positions
-// TODO Make a dynamic check for window title border (currently 40px), when scrolling picture
 
 
 namespace ImgBrowser
@@ -199,8 +198,8 @@ namespace ImgBrowser
                 case "Right":
                     browseForward();
                     break;
-                case "F5":
-                    fileEntries = updateFileList();
+                case "F1":
+                    ToggleAlwaysOnTop();
                     break;
                 case "F2":
                     if (FormBorderStyle == FormBorderStyle.None)
@@ -209,24 +208,7 @@ namespace ImgBrowser
                     }
                     else
                     {
-                        if (pictureBox1.Image != null)
-                        {
-                            // Barebones adjust window size to aspect ratio feature
-                            FormBorderStyle = FormBorderStyle.None;
-                            if (pictureBox1.SizeMode == PictureBoxSizeMode.Zoom)
-                            {
-                                if (Size.Height > Size.Width)
-                                {
-                                    double aspectRatio = (double)pictureBox1.Image.Height / (double)pictureBox1.Image.Width;
-                                    Size = new Size(Size.Width, (int)(aspectRatio * Size.Width));
-                                }
-                                else
-                                {
-                                    double aspectRatio = (double)pictureBox1.Image.Width / (double)pictureBox1.Image.Height;
-                                    Size = new Size((int)(aspectRatio * Size.Height), Size.Height);
-                                }
-                            }
-                        }
+                        FitImageToWindow();
                     }
                     break;
                 // Open image location
@@ -235,6 +217,15 @@ namespace ImgBrowser
                     {
                         System.Diagnostics.Process.Start("explorer.exe", imgLocation);
                     }
+                    break;
+                case "F5":
+                    fileEntries = updateFileList();
+                    break;
+                case "F10":
+                    pictureBoxRestore();
+                    break;
+                case "F11":
+                    maxOrNormalizeWindow();
                     break;
                 // Copy image to clipboard
                 case "C":
@@ -255,12 +246,14 @@ namespace ImgBrowser
                     // Check for control key
                     if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
                     {
-                        if (Clipboard.GetImage() != null)
+                        Image clipImg = Clipboard.GetImage();
+                        if (clipImg != null)
                         {
                             Image oldImg = null;
-                            if (pictureBox1.Image != null) { oldImg = pictureBox1.Image; }
+                            if (pictureBox1.Image != null) { 
+                                oldImg = pictureBox1.Image; }
 
-                            pictureBox1.Image = Clipboard.GetImage();
+                            pictureBox1.Image = clipImg;
                             imgLocation = "";
                             imgName = "";
 
@@ -403,48 +396,6 @@ namespace ImgBrowser
 
                     }
                     break;
-                case "F1":
-                    // Set always on top
-
-                    // Make sure the string fits the frame
-                    int stringWidth = TextRenderer.MeasureText("Stay on Top: False", messageLabel.Font).Width;
-
-                    while (stringWidth + 12 > Width)
-                    {
-                        if (messageLabel.Font.Size - 1 <= 0) { break; }
-                        messageLabel.Font = new Font(messageLabel.Font.FontFamily, messageLabel.Font.Size - 1, FontStyle.Bold);
-                        stringWidth = TextRenderer.MeasureText("Stay on Top: False", messageLabel.Font).Width;
-                    }
-
-                    while ((stringWidth - 12) * 2.8 < Width)
-                    {
-                        if (messageLabel.Font.Size >= 22) { break; }
-                        messageLabel.Font = new Font(messageLabel.Font.FontFamily, messageLabel.Font.Size + 1, FontStyle.Bold);
-                        stringWidth = TextRenderer.MeasureText("Stay on Top: False", messageLabel.Font).Width;
-                    }
-
-                    messageLabelShadowBottom.Font = new Font(messageLabel.Font.FontFamily, messageLabel.Font.Size, FontStyle.Bold);
-                    messageLabelShadowTop.Font = new Font(messageLabel.Font.FontFamily, messageLabel.Font.Size, FontStyle.Bold);
-
-                    if (TopMost)
-                    {
-                        displayMessage("Stay on Top: False");
-                        TopMost = false;
-                    }
-                    else
-                    {
-                        displayMessage("Stay on Top: True");
-                        TopMost = true;
-                    }
-
-                    break;
-                case "F10":
-                    pictureBoxRestore();
-                    break;
-                case "F11":
-                    maxOrNormalizeWindow();
-                    break;
-
                 case "Return":
                     if ((Control.ModifierKeys & Keys.Alt) == Keys.Alt)
                     {
@@ -464,6 +415,36 @@ namespace ImgBrowser
                     // Hold ctrl for smaller zoom value
                     if ((Control.ModifierKeys & Keys.Control) == Keys.Control) pictureBoxUnZoom(1.2);
                     else pictureBoxUnZoom(1.5);
+                    break;
+                case "D1":
+                    TempImageHandling("01");
+                    break;
+                case "D2":
+                    TempImageHandling("02");
+                    break;
+                case "D3":
+                    TempImageHandling("03");
+                    break;
+                case "D4":
+                    TempImageHandling("04");
+                    break;
+                case "D5":
+                    TempImageHandling("05");
+                    break;
+                case "D6":
+                    TempImageHandling("06");
+                    break;
+                case "D7":
+                    TempImageHandling("07");
+                    break;
+                case "D8":
+                    TempImageHandling("08");
+                    break;
+                case "D9":
+                    TempImageHandling("09");
+                    break;
+                case "D0":
+                    TempImageHandling("00");
                     break;
                 default:
                     break;
@@ -564,6 +545,101 @@ namespace ImgBrowser
             }
         }
 
+        private void FitImageToWindow()
+        {
+            if (pictureBox1.Image != null)
+            {
+                // Barebones adjust window size to aspect ratio feature
+                FormBorderStyle = FormBorderStyle.None;
+                if (pictureBox1.SizeMode == PictureBoxSizeMode.Zoom)
+                {
+                    if (Size.Height > Size.Width)
+                    {
+                        double aspectRatio = (double)pictureBox1.Image.Height / (double)pictureBox1.Image.Width;
+                        Size = new Size(Size.Width, (int)(aspectRatio * Size.Width));
+                    }
+                    else
+                    {
+                        double aspectRatio = (double)pictureBox1.Image.Width / (double)pictureBox1.Image.Height;
+                        Size = new Size((int)(aspectRatio * Size.Height), Size.Height);
+                    }
+                }
+            }
+        }
+
+        private void ToggleAlwaysOnTop()
+        {
+            // Make sure the string fits the frame
+            int stringWidth = TextRenderer.MeasureText("Stay on Top: False", messageLabel.Font).Width;
+
+            while (stringWidth + 12 > Width)
+            {
+                if (messageLabel.Font.Size - 1 <= 0) { break; }
+                messageLabel.Font = new Font(messageLabel.Font.FontFamily, messageLabel.Font.Size - 1, FontStyle.Bold);
+                stringWidth = TextRenderer.MeasureText("Stay on Top: False", messageLabel.Font).Width;
+            }
+
+            while ((stringWidth - 12) * 2.8 < Width)
+            {
+                if (messageLabel.Font.Size >= 22) { break; }
+                messageLabel.Font = new Font(messageLabel.Font.FontFamily, messageLabel.Font.Size + 1, FontStyle.Bold);
+                stringWidth = TextRenderer.MeasureText("Stay on Top: False", messageLabel.Font).Width;
+            }
+
+            messageLabelShadowBottom.Font = new Font(messageLabel.Font.FontFamily, messageLabel.Font.Size, FontStyle.Bold);
+            messageLabelShadowTop.Font = new Font(messageLabel.Font.FontFamily, messageLabel.Font.Size, FontStyle.Bold);
+
+            if (TopMost)
+            {
+                displayMessage("Stay on Top: False");
+                TopMost = false;
+            }
+            else
+            {
+                displayMessage("Stay on Top: True");
+                TopMost = true;
+            }
+        }
+
+        private void TempImageHandling(string ordinalValue)
+        {
+            if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
+                if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift)
+                    SaveImageToTemp(ordinalValue);
+                else
+                    LoadImageFromTemp(ordinalValue);
+        }
+
+        private void SaveImageToTemp(string ordinalValue)
+        {
+            if (pictureBox1.Image != null)
+            {
+                try { 
+                    string tempPath = Path.GetTempPath();
+                    string tempName = "imgBrowserTemp" + ordinalValue + ".png";
+                    pictureBox1.Image.Save(tempPath + "\\" + tempName, ImageFormat.Png);
+                    displayMessage($"Saved to temp {ordinalValue}");
+                }
+                // This occurs when trying to rewrite a currently opened image
+                catch (ExternalException)
+                {
+                    displayMessage("Unable to save image");
+                }
+            }
+        }
+
+        private void LoadImageFromTemp(string ordinalValue)
+        {
+            string tempPath = Path.GetTempPath();
+            string tempName = "imgBrowserTemp" + ordinalValue + ".png";
+
+            if (File.Exists(tempPath + "//" + tempName))
+            {
+                loadNewImg(tempPath + "//" + tempName);
+                displayMessage("Temp image loaded");
+            }
+        }
+
         private void updateFormName()
         {
             string title = "ImgBrowser - ";
@@ -616,12 +692,16 @@ namespace ImgBrowser
             {
                 loadNewImg(cmdArgs[1]);
             }
-            else if (Clipboard.GetImage() != null)
-            {
-                pictureBox1.Image = Clipboard.GetImage();
-                imgName = "";
-                imgLocation = "";
-                updateFormName();
+            else { 
+                Image clipImg = Clipboard.GetImage();
+
+                if (clipImg != null)
+                {
+                    pictureBox1.Image = clipImg;
+                    imgName = "";
+                    imgLocation = "";
+                    updateFormName();
+                }
             }
 
         }
@@ -882,6 +962,13 @@ namespace ImgBrowser
 
             if (verifyImg(imgLocation + "\\" + imgName))
             {
+                if (pictureBox1.Image != null)
+                {
+                    Image oldImg = pictureBox1.Image;
+                    pictureBox1.Image = null;
+                    oldImg.Dispose();
+                }
+
                 pictureBox1.Image = Image.FromFile(imgLocation + "\\" + imgName);
             }
 
@@ -1048,6 +1135,7 @@ namespace ImgBrowser
                 // TODO Should be dynamic
                 //int minMov = (int)((double)((Width + Height) * 0.04));
                 int minMov = (int)((double)((Width + Height) * 0.01));
+                int range;
 
                 // Make scroll speed dynamic
                 // TODO This should be simplified
@@ -1074,7 +1162,7 @@ namespace ImgBrowser
                 if (e.Button.ToString() == "Left")
                 {
 
-                    if ((pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) && (FormBorderStyle == FormBorderStyle.Sizable))
+                    if ((pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) && (FormBorderStyle == FormBorderStyle.Sizable) || (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) && (WindowState == FormWindowState.Maximized))
                     {
                         //pictureBox1.Refresh();
                         // Only allow adjustments if the image is larger than the screen resolution
@@ -1082,26 +1170,25 @@ namespace ImgBrowser
                         {
                             if (Cursor.Position.X - minMov > currentPositionX)
                             {
-                                // Old offset calculation based scrolling
-                                //if (pictureBox1.Location.X + (int)scrollOffsetX > 0) pictureBox1.Location = new Point(0, pictureBox1.Location.Y);
-                                //else if (pictureBox1.Location.X <= 0) pictureBox1.Location = new Point(pictureBox1.Location.X + (int)scrollOffsetX, pictureBox1.Location.Y);
-
                                 // Prevent picturebox from going over the left border
-                                if (pictureBox1.Location.X + Cursor.Position.X - currentPositionX > 0) pictureBox1.Location = new Point(0, pictureBox1.Location.Y);
-                                else if (pictureBox1.Location.X <= 0) pictureBox1.Location = new Point(pictureBox1.Location.X + Cursor.Position.X - currentPositionX, pictureBox1.Location.Y);
+                                if (pictureBox1.Location.X + Cursor.Position.X - currentPositionX > 0) 
+                                    pictureBox1.Location = new Point(0, pictureBox1.Location.Y);
+                                else if (pictureBox1.Location.X <= 0) 
+                                    pictureBox1.Location = new Point(pictureBox1.Location.X + Cursor.Position.X - currentPositionX, pictureBox1.Location.Y);
+                                
                                 // Reset mouse position variable to stop infinite scrolling
                                 currentPositionX = Cursor.Position.X;
                             }
                             if (Cursor.Position.X + minMov < currentPositionX)
                             {
-
-                                // Old offset calculation based scrolling
-                                //if (pictureBox1.Location.X - (int)scrollOffsetX < -pictureBox1.Image.Width + Width) pictureBox1.Location = new Point(-pictureBox1.Image.Width + Width, pictureBox1.Location.Y);
-                                //else if (pictureBox1.Location.X >= -pictureBox1.Image.Width + Width) pictureBox1.Location = new Point(pictureBox1.Location.X - (int)scrollOffsetX, pictureBox1.Location.Y);
+                                range = -pictureBox1.Image.Width + ClientRectangle.Width;
 
                                 // Prevent picturebox from going over the right border
-                                if (pictureBox1.Location.X - currentPositionX + Cursor.Position.X < -pictureBox1.Image.Width + Width) pictureBox1.Location = new Point(-pictureBox1.Image.Width + Width, pictureBox1.Location.Y);
-                                else if (pictureBox1.Location.X >= -pictureBox1.Image.Width + Width) pictureBox1.Location = new Point(pictureBox1.Location.X - currentPositionX + Cursor.Position.X, pictureBox1.Location.Y);
+                                if (pictureBox1.Location.X - currentPositionX + Cursor.Position.X < range) 
+                                    pictureBox1.Location = new Point(range, pictureBox1.Location.Y);
+                                else if (pictureBox1.Location.X >= range) 
+                                    pictureBox1.Location = new Point(pictureBox1.Location.X - currentPositionX + Cursor.Position.X, pictureBox1.Location.Y);
+                                
                                 currentPositionX = Cursor.Position.X;
                             }
                         }
@@ -1109,25 +1196,24 @@ namespace ImgBrowser
                         {
                             if (Cursor.Position.Y - minMov > currentPositionY)
                             {
-                                // Old offset calculation based scrolling
-                                //if (pictureBox1.Location.Y + (int)scrollOffsetY > 0) pictureBox1.Location = new Point(pictureBox1.Location.X, 0);
-                                //else if (pictureBox1.Location.Y <= 0) pictureBox1.Location = new Point(pictureBox1.Location.X, pictureBox1.Location.Y + (int)scrollOffsetY);
-
                                 // Prevent picturebox from going over the top border
-                                if (pictureBox1.Location.Y + Cursor.Position.Y - currentPositionY > 0) pictureBox1.Location = new Point(pictureBox1.Location.X, 0);
-                                else if (pictureBox1.Location.Y <= 0) pictureBox1.Location = new Point(pictureBox1.Location.X, pictureBox1.Location.Y + Cursor.Position.Y - currentPositionY);
+                                if (pictureBox1.Location.Y + Cursor.Position.Y - currentPositionY > 0) 
+                                    pictureBox1.Location = new Point(pictureBox1.Location.X, 0);
+                                else if (pictureBox1.Location.Y <= 0) 
+                                    pictureBox1.Location = new Point(pictureBox1.Location.X, pictureBox1.Location.Y + Cursor.Position.Y - currentPositionY);
+                                
                                 currentPositionY = Cursor.Position.Y;
                             }
                             if (Cursor.Position.Y + minMov < currentPositionY)
                             {
-                                // Old offset calculation based scrolling
-                                //if (pictureBox1.Location.Y - (int)scrollOffsetY < -pictureBox1.Image.Height + Height) pictureBox1.Location = new Point(pictureBox1.Location.X, -pictureBox1.Image.Height + Height);
-                                //else if (pictureBox1.Location.Y >= -pictureBox1.Image.Height + Height) pictureBox1.Location = new Poin6t(pictureBox1.Location.X, pictureBox1.Location.Y - (int)scrollOffsetY);
+                                range = -pictureBox1.Image.Height + ClientRectangle.Height;
 
                                 // Prevent picturebox from going over the bottom border
-                                // TODO Make this dynamic -> 40px is the height of the window title border
-                                if (pictureBox1.Location.Y - currentPositionY + Cursor.Position.Y < -pictureBox1.Image.Height + Height - 40) pictureBox1.Location = new Point(pictureBox1.Location.X, -pictureBox1.Image.Height + Height - 40);
-                                else if (pictureBox1.Location.Y >= -pictureBox1.Image.Height + Height - 40) pictureBox1.Location = new Point(pictureBox1.Location.X, pictureBox1.Location.Y - currentPositionY + Cursor.Position.Y);
+                                if (pictureBox1.Location.Y - currentPositionY + Cursor.Position.Y < range) 
+                                    pictureBox1.Location = new Point(pictureBox1.Location.X, range);
+                                else if (pictureBox1.Location.Y >= range) 
+                                    pictureBox1.Location = new Point(pictureBox1.Location.X, pictureBox1.Location.Y - currentPositionY + Cursor.Position.Y);
+                                
                                 currentPositionY = Cursor.Position.Y;
                             }
                         }
@@ -1312,11 +1398,15 @@ namespace ImgBrowser
                     }
                 }
                 // Paste image from clipboard, if picturebox is empty
-                else if (Clipboard.GetImage() != null)
-                {
-                    pictureBox1.Image = Clipboard.GetImage();
-                    imgName = "";
-                    imgLocation = "";
+                else { 
+                    Image clipImg = Clipboard.GetImage();
+
+                    if (clipImg != null)
+                    {
+                        pictureBox1.Image = clipImg;
+                        imgName = "";
+                        imgLocation = "";
+                    }
                 }
             }
         }
