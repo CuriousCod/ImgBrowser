@@ -141,47 +141,55 @@ namespace ImgBrowser
 
         private void pictureBox1_MouseWheel(object sender, MouseEventArgs e)
         {
-            if (pictureBox1.SizeMode != PictureBoxSizeMode.AutoSize)
-            {
                 if (e.Delta > 0)
                 {
-                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
-                    {
-                        pictureBoxZoom(1.5);
-                    }
-                    else if ((Control.ModifierKeys & Keys.Alt) == Keys.Alt)
+                    if ((Control.ModifierKeys & Keys.Alt) == Keys.Alt)
                     {
                         // Increase window size
                         if (WindowState == FormWindowState.Normal)
                         {
-                            Size = Size.Add(Size, new Size(1,1));
+                            Size = Size.Add(Size, GetAdjustmentValue());
+                            if ((pictureBox1.SizeMode != PictureBoxSizeMode.AutoSize) && (FormBorderStyle == FormBorderStyle.None))
+                                FitImageToWindow();
                         }
                     }
-                    else
+                    else if (pictureBox1.SizeMode != PictureBoxSizeMode.AutoSize)
                     {
-                        browseForward();
+                        if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
+                        {
+                            pictureBoxZoom(1.5);
+                        }
+                        else
+                        {
+                            browseForward();
+                        }
                     }
 
                 }
                 else if (e.Delta < 0)
                 {
-                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
-                    {
-                        pictureBoxUnZoom(1.5);
-                    }
-                    else if ((Control.ModifierKeys & Keys.Alt) == Keys.Alt)
+                    if ((Control.ModifierKeys & Keys.Alt) == Keys.Alt)
                     {
                         // Decrease window size
                         if (WindowState == FormWindowState.Normal)
                         {
-                            Size = Size.Subtract(Size, new Size(1, 1));
+                        Size = Size.Subtract(Size, GetAdjustmentValue());
+                        if ((pictureBox1.SizeMode != PictureBoxSizeMode.AutoSize) && (FormBorderStyle == FormBorderStyle.None))
+                            FitImageToWindow();
                         }
                     }
-                    else
+                    else if (pictureBox1.SizeMode != PictureBoxSizeMode.AutoSize)
                     {
-                        browseBackward();
+                        if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
+                        {
+                            pictureBoxUnZoom(1.5);
+                        }
+                        else
+                        {
+                            browseBackward();
+                        }
                     }
-                }
+
             }
 
         }
@@ -674,6 +682,21 @@ namespace ImgBrowser
 
         }
 
+        // Used to determine the window quick size adjustment type
+        private Size GetAdjustmentValue()
+        {
+            Size adjustmentValue;
+
+            if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
+                adjustmentValue = new Size(1, 0);
+            else if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift)
+                adjustmentValue = new Size(0, 1);
+            else
+                adjustmentValue = new Size(1, 1);
+
+            return adjustmentValue;
+        }
+
         private void pictureBox1_Click(object sender, EventArgs e)
         {
             MouseEventArgs me = (MouseEventArgs)e;
@@ -1067,7 +1090,7 @@ namespace ImgBrowser
                 else
                 {
                     // Ignore if form is transparent, so the image can be moved without snapping to screen edges
-                    if (TransparencyKey != BackColor) { 
+                    if ((TransparencyKey != BackColor) && ((Control.ModifierKeys & Keys.Control) != Keys.Control)) { 
                         // Raw commands for moving window with mouse
                         ReleaseCapture();
                         SendMessage(Handle, WM_NCLBUTTONDOWN, HT_CAPTION, 0);
@@ -1162,7 +1185,9 @@ namespace ImgBrowser
                 if (e.Button.ToString() == "Left")
                 {
 
-                    if ((pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) && (FormBorderStyle == FormBorderStyle.Sizable) || (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) && (WindowState == FormWindowState.Maximized))
+                    if ((pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) && (FormBorderStyle == FormBorderStyle.Sizable) || 
+                        (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) && (WindowState == FormWindowState.Maximized) ||
+                        (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) && ((Control.ModifierKeys & Keys.Control) == Keys.Control))
                     {
                         //pictureBox1.Refresh();
                         // Only allow adjustments if the image is larger than the screen resolution
@@ -1362,21 +1387,7 @@ namespace ImgBrowser
                 {
                     if (pictureBox1.Image != null)
                     {
-                        // Barebones adjust window size to aspect ratio feature
-                        FormBorderStyle = FormBorderStyle.None;
-                        if (pictureBox1.SizeMode == PictureBoxSizeMode.Zoom)
-                        {
-                            if (Size.Height > Size.Width)
-                            {
-                                double aspectRatio = (double)pictureBox1.Image.Height / (double)pictureBox1.Image.Width;
-                                Size = new Size(Size.Width, (int)(aspectRatio * Size.Width));
-                            }
-                            else
-                            {
-                                double aspectRatio = (double)pictureBox1.Image.Width / (double)pictureBox1.Image.Height;
-                                Size = new Size((int)(aspectRatio * Size.Height), Size.Height);
-                            }
-                        }
+                        FitImageToWindow();
                     }
                 }
 
