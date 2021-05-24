@@ -28,6 +28,7 @@ using SearchOption = System.IO.SearchOption;
 // TODO Change cursor icon when capturing screen
 // TODO Remember rotate position for next image
 // TODO Home/End buttons for quick move to first/last image
+// TODO Rotating image does not rotate(resize) the window
 
 
 namespace ImgBrowser
@@ -404,6 +405,15 @@ namespace ImgBrowser
 
                     }
                     break;
+                case "Home":
+                    JumpToImage(0);
+                    break;
+                case "End":
+                    if (fileEntries != null)
+                    {
+                        JumpToImage(fileEntries.Length - 1);
+                    }
+                    break;
                 case "Return":
                     if ((Control.ModifierKeys & Keys.Alt) == Keys.Alt)
                     {
@@ -550,6 +560,26 @@ namespace ImgBrowser
 
                 if (currentImage != null) { currentImage.Dispose(); }
                 updateFormName();
+            }
+        }
+
+        private void JumpToImage(int index)
+        {
+            if ((!lockImage) && ((imgLocation != ""))) 
+            {
+                Image currentImage = null;
+                if (pictureBox1.Image != null) { currentImage = pictureBox1.Image; }
+
+                if (verifyImg(fileEntries[index]))
+                {
+                    pictureBox1.Image = Image.FromFile(fileEntries[index]);
+
+                    imgLocation = Path.GetDirectoryName(fileEntries[index]).TrimEnd('\\');
+                    imgName = Path.GetFileName(fileEntries[index]);
+
+                    if (currentImage != null) { currentImage.Dispose(); }
+                    updateFormName();
+                }
             }
         }
 
