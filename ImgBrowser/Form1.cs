@@ -56,6 +56,9 @@ namespace ImgBrowser
         private int screenCapPosX;
         private int screenCapPosY;
 
+        // Stores window size during resizeStart
+        private Size windowResizeBegin;
+
         // Frame position
         private int frameLeft = 0;
         private int frameTop = 0;
@@ -1627,7 +1630,7 @@ namespace ImgBrowser
         private void Form1_ResizeEnd(object sender, EventArgs e)
         {
             // Recenter image when window is being resized
-            if ((pictureBox1.Image != null) && (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize))
+            if ((pictureBox1.Image != null) && (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) && (windowResizeBegin != Size))
             {
                 // Only recenter, if empty border is shown
                 // TODO This is still buggy, added offset 20 and 40 to prevent image from needlessly centering when scrolled to the corners
@@ -1648,6 +1651,11 @@ namespace ImgBrowser
                     centerImage();
                 }
             }
+        }
+
+        private void Form1_ResizeBegin(object sender, EventArgs e)
+        {
+            windowResizeBegin = Size;
         }
     }
 }
