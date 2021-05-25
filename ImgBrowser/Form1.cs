@@ -580,7 +580,7 @@ namespace ImgBrowser
 
                     imgLocation = Path.GetDirectoryName(fileEntries[index]).TrimEnd('\\');
                     imgName = Path.GetFileName(fileEntries[index]);
-                    zoomLocation = new Point(0, 0); // Reset Zoom position
+
 
                     if (currentImage != null) { currentImage.Dispose(); }
                     updateFormName();
@@ -1588,6 +1588,14 @@ namespace ImgBrowser
                         TransparencyKey = BackColor;
                         displayMessage("Chroma key set");
                     }
+                    // Get color RGBA when shift is being held
+                    else if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift)
+                    {
+                        BackColor = Color.FromArgb(28, 28, 28);
+                        Clipboard.SetText($"{currentColor.R.ToString()}, {currentColor.G.ToString()}, {currentColor.B.ToString()}, {currentColor.A.ToString()}");
+                        displayMessage("Color RGBA copied to clipboard");
+                    }
+                    // Get color hex otherwise
                     else
                     {
                         BackColor = Color.FromArgb(28, 28, 28);
