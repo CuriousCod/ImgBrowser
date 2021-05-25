@@ -506,6 +506,7 @@ namespace ImgBrowser
                     if (verifyImg(fileEntries[index + 1]))
                     {
                         pictureBox1.Image = Image.FromFile(fileEntries[index + 1]);
+                        zoomLocation = new Point(0, 0); // Reset Zoom position
                     }
                     // Getting directory from disk root returns \ character
                     imgLocation = Path.GetDirectoryName(fileEntries[index + 1]).TrimEnd('\\');
@@ -516,6 +517,7 @@ namespace ImgBrowser
                     if (verifyImg(fileEntries[0]))
                     {
                         pictureBox1.Image = Image.FromFile(fileEntries[0]);
+                        zoomLocation = new Point(0, 0); // Reset Zoom position
                     }
                     imgLocation = Path.GetDirectoryName(fileEntries[0]).TrimEnd('\\');
                     imgName = Path.GetFileName(fileEntries[0]);
@@ -543,6 +545,7 @@ namespace ImgBrowser
                     if (verifyImg(fileEntries[index - 1]))
                     {
                         pictureBox1.Image = Image.FromFile(fileEntries[index - 1]);
+                        zoomLocation = new Point(0, 0); // Reset Zoom position
                     }
                     imgLocation = Path.GetDirectoryName(fileEntries[index - 1]).TrimEnd('\\');
                     imgName = Path.GetFileName(fileEntries[index - 1]);
@@ -553,6 +556,7 @@ namespace ImgBrowser
                     if (verifyImg(fileEntries[fileEntries.Length - 1]))
                     {
                         pictureBox1.Image = Image.FromFile(fileEntries[fileEntries.Length - 1]);
+                        zoomLocation = new Point(0, 0); // Reset Zoom position
                     }
                     imgLocation = Path.GetDirectoryName(fileEntries[fileEntries.Length - 1]).TrimEnd('\\');
                     imgName = Path.GetFileName(fileEntries[fileEntries.Length - 1]);
@@ -576,6 +580,7 @@ namespace ImgBrowser
 
                     imgLocation = Path.GetDirectoryName(fileEntries[index]).TrimEnd('\\');
                     imgName = Path.GetFileName(fileEntries[index]);
+                    zoomLocation = new Point(0, 0); // Reset Zoom position
 
                     if (currentImage != null) { currentImage.Dispose(); }
                     updateFormName();
