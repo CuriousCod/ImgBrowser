@@ -320,7 +320,10 @@ namespace ImgBrowser
                     BackColor = currentColor;
 
                     colorHex = ColorTranslator.ToHtml(Color.FromArgb(currentColor.ToArgb()));
-                    displayMessage(colorHex);
+                    if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift)
+                        displayMessage($"{currentColor.R}, {currentColor.G}, {currentColor.B}");
+                    else
+                        displayMessage(colorHex);
 
                     break;
                 case "L":
@@ -1588,12 +1591,12 @@ namespace ImgBrowser
                         TransparencyKey = BackColor;
                         displayMessage("Chroma key set");
                     }
-                    // Get color RGBA when shift is being held
+                    // Get color RGB when shift is being held
                     else if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift)
                     {
                         BackColor = Color.FromArgb(28, 28, 28);
-                        Clipboard.SetText($"{currentColor.R.ToString()}, {currentColor.G.ToString()}, {currentColor.B.ToString()}, {currentColor.A.ToString()}");
-                        displayMessage("Color RGBA copied to clipboard");
+                        Clipboard.SetText($"{currentColor.R}, {currentColor.G}, {currentColor.B}");
+                        displayMessage("Color RGB copied to clipboard");
                     }
                     // Get color hex otherwise
                     else
