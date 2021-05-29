@@ -143,7 +143,7 @@ namespace ImgBrowser
             }
         }
 
-        private void pictureBox1_MouseWheel(object sender, MouseEventArgs e)
+        private void Form1_MouseWheel(object sender, MouseEventArgs e)
         {
                 if (e.Delta > 0)
                 {
