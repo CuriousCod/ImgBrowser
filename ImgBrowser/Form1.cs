@@ -299,6 +299,7 @@ namespace ImgBrowser
 
                         Image img = pictureBox1.Image;
                         img.RotateFlip(RotateFlipType.Rotate90FlipNone);
+                        centerImage();
 
                         pictureBox1.Image = img;
                     }
@@ -583,6 +584,7 @@ namespace ImgBrowser
                 if (verifyImg(fileEntries[index]))
                 {
                     pictureBox1.Image = Image.FromFile(fileEntries[index]);
+                    zoomLocation = new Point(0, 0); // Reset Zoom position
 
                     imgLocation = Path.GetDirectoryName(fileEntries[index]).TrimEnd('\\');
                     imgName = Path.GetFileName(fileEntries[index]);
@@ -744,7 +746,7 @@ namespace ImgBrowser
 
         private void pictureBox1_Click(object sender, EventArgs e)
         {
-            MouseEventArgs me = (MouseEventArgs)e;
+            // MouseEventArgs me = (MouseEventArgs)e;
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -986,7 +988,6 @@ namespace ImgBrowser
             }
         }
 
-        // Not in use atm
         // Reset Zoom, if original image can be accessed
         public void pictureBoxRestore()
         {
@@ -1196,37 +1197,6 @@ namespace ImgBrowser
             if (pictureBox1.Image != null)
             {
 
-                //int directionX;
-                //int directionY;
-
-                // Add some leeway to mouse movement
-                // TODO Should be dynamic
-                //int minMov = (int)((double)((Width + Height) * 0.04));
-                int minMov = (int)((double)((Width + Height) * 0.01));
-                int range;
-
-                // Make scroll speed dynamic
-                // TODO This should be simplified
-                //double scrollOffsetX = pictureBox1.Width * 0.04 * 0.1;
-                //double scrollOffsetY = pictureBox1.Height * 0.04 / 2 * 0.1;
-                ///double scrollOffset = (double)((double)scrollOffsetX + (double)scrollOffsetY / 2.2) / 2 * 0.1;
-
-                /*
-                double scrollOffsetX;
-                double scrollOffsetY;
-
-                if (pictureBox1.Image.Width + pictureBox1.Image.Height > 6000)
-                {
-                    scrollOffsetX = 45;
-                    scrollOffsetY = 45;
-                }
-                else
-                {
-                    scrollOffsetX = 35;
-                    scrollOffsetY = 35;
-                }
-                */
-
                 if (e.Button.ToString() == "Left")
                 {
 
@@ -1234,59 +1204,7 @@ namespace ImgBrowser
                         (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) && (WindowState == FormWindowState.Maximized) ||
                         (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) && ((Control.ModifierKeys & Keys.Control) == Keys.Control))
                     {
-                        //pictureBox1.Refresh();
-                        // Only allow adjustments if the image is larger than the screen resolution
-                        if (pictureBox1.Image.Width > Width)
-                        {
-                            if (Cursor.Position.X - minMov > currentPositionX)
-                            {
-                                // Prevent picturebox from going over the left border
-                                if (pictureBox1.Location.X + Cursor.Position.X - currentPositionX > 0) 
-                                    pictureBox1.Location = new Point(0, pictureBox1.Location.Y);
-                                else if (pictureBox1.Location.X <= 0) 
-                                    pictureBox1.Location = new Point(pictureBox1.Location.X + Cursor.Position.X - currentPositionX, pictureBox1.Location.Y);
-                                
-                                // Reset mouse position variable to stop infinite scrolling
-                                currentPositionX = Cursor.Position.X;
-                            }
-                            if (Cursor.Position.X + minMov < currentPositionX)
-                            {
-                                range = -pictureBox1.Image.Width + ClientRectangle.Width;
-
-                                // Prevent picturebox from going over the right border
-                                if (pictureBox1.Location.X - currentPositionX + Cursor.Position.X < range) 
-                                    pictureBox1.Location = new Point(range, pictureBox1.Location.Y);
-                                else if (pictureBox1.Location.X >= range) 
-                                    pictureBox1.Location = new Point(pictureBox1.Location.X - currentPositionX + Cursor.Position.X, pictureBox1.Location.Y);
-                                
-                                currentPositionX = Cursor.Position.X;
-                            }
-                        }
-                        if (pictureBox1.Image.Height > Height)
-                        {
-                            if (Cursor.Position.Y - minMov > currentPositionY)
-                            {
-                                // Prevent picturebox from going over the top border
-                                if (pictureBox1.Location.Y + Cursor.Position.Y - currentPositionY > 0) 
-                                    pictureBox1.Location = new Point(pictureBox1.Location.X, 0);
-                                else if (pictureBox1.Location.Y <= 0) 
-                                    pictureBox1.Location = new Point(pictureBox1.Location.X, pictureBox1.Location.Y + Cursor.Position.Y - currentPositionY);
-                                
-                                currentPositionY = Cursor.Position.Y;
-                            }
-                            if (Cursor.Position.Y + minMov < currentPositionY)
-                            {
-                                range = -pictureBox1.Image.Height + ClientRectangle.Height;
-
-                                // Prevent picturebox from going over the bottom border
-                                if (pictureBox1.Location.Y - currentPositionY + Cursor.Position.Y < range) 
-                                    pictureBox1.Location = new Point(pictureBox1.Location.X, range);
-                                else if (pictureBox1.Location.Y >= range) 
-                                    pictureBox1.Location = new Point(pictureBox1.Location.X, pictureBox1.Location.Y - currentPositionY + Cursor.Position.Y);
-                                
-                                currentPositionY = Cursor.Position.Y;
-                            }
-                        }
+                        MovePictureBox();
                     }
                     else
                     {
@@ -1415,6 +1333,97 @@ namespace ImgBrowser
 
         }
 
+        // Moves the picturebox image when dragging the mouse on the image
+        private void MovePictureBox()
+        {
+
+            //int directionX;
+            //int directionY;
+
+            // Add some leeway to mouse movement
+            // TODO Should be dynamic
+            //int minMov = (int)((double)((Width + Height) * 0.04));
+
+            // Make scroll speed dynamic
+            // TODO This should be simplified
+            //double scrollOffsetX = pictureBox1.Width * 0.04 * 0.1;
+            //double scrollOffsetY = pictureBox1.Height * 0.04 / 2 * 0.1;
+            ///double scrollOffset = (double)((double)scrollOffsetX + (double)scrollOffsetY / 2.2) / 2 * 0.1;
+
+            /*
+            double scrollOffsetX;
+            double scrollOffsetY;
+
+            if (pictureBox1.Image.Width + pictureBox1.Image.Height > 6000)
+            {
+                scrollOffsetX = 45;
+                scrollOffsetY = 45;
+            }
+            else
+            {
+                scrollOffsetX = 35;
+                scrollOffsetY = 35;
+            }
+            */
+
+            int range;
+            int minMov = (int)((double)((Width + Height) * 0.01));
+
+            //pictureBox1.Refresh();
+            // Only allow adjustments if the image is larger than the screen resolution
+            if (pictureBox1.Image.Width > Width)
+            {
+                if (Cursor.Position.X - minMov > currentPositionX)
+                {
+                    // Prevent picturebox from going over the left border
+                    if (pictureBox1.Location.X + Cursor.Position.X - currentPositionX > 0)
+                        pictureBox1.Location = new Point(0, pictureBox1.Location.Y);
+                    else if (pictureBox1.Location.X <= 0)
+                        pictureBox1.Location = new Point(pictureBox1.Location.X + Cursor.Position.X - currentPositionX, pictureBox1.Location.Y);
+
+                    // Reset mouse position variable to stop infinite scrolling
+                    currentPositionX = Cursor.Position.X;
+                }
+                if (Cursor.Position.X + minMov < currentPositionX)
+                {
+                    range = -pictureBox1.Image.Width + ClientRectangle.Width;
+
+                    // Prevent picturebox from going over the right border
+                    if (pictureBox1.Location.X - currentPositionX + Cursor.Position.X < range)
+                        pictureBox1.Location = new Point(range, pictureBox1.Location.Y);
+                    else if (pictureBox1.Location.X >= range)
+                        pictureBox1.Location = new Point(pictureBox1.Location.X - currentPositionX + Cursor.Position.X, pictureBox1.Location.Y);
+
+                    currentPositionX = Cursor.Position.X;
+                }
+            }
+            if (pictureBox1.Image.Height > Height)
+            {
+                if (Cursor.Position.Y - minMov > currentPositionY)
+                {
+                    // Prevent picturebox from going over the top border
+                    if (pictureBox1.Location.Y + Cursor.Position.Y - currentPositionY > 0)
+                        pictureBox1.Location = new Point(pictureBox1.Location.X, 0);
+                    else if (pictureBox1.Location.Y <= 0)
+                        pictureBox1.Location = new Point(pictureBox1.Location.X, pictureBox1.Location.Y + Cursor.Position.Y - currentPositionY);
+
+                    currentPositionY = Cursor.Position.Y;
+                }
+                if (Cursor.Position.Y + minMov < currentPositionY)
+                {
+                    range = -pictureBox1.Image.Height + ClientRectangle.Height;
+
+                    // Prevent picturebox from going over the bottom border
+                    if (pictureBox1.Location.Y - currentPositionY + Cursor.Position.Y < range)
+                        pictureBox1.Location = new Point(pictureBox1.Location.X, range);
+                    else if (pictureBox1.Location.Y >= range)
+                        pictureBox1.Location = new Point(pictureBox1.Location.X, pictureBox1.Location.Y - currentPositionY + Cursor.Position.Y);
+
+                    currentPositionY = Cursor.Position.Y;
+                }
+            }
+        }
+
         private void pictureBox1_MouseUp(object sender, MouseEventArgs e)
         {
             pictureBox1.Cursor = Cursors.Arrow;
@@ -1454,6 +1463,7 @@ namespace ImgBrowser
                     }
                 }
                 // Paste image from clipboard, if picturebox is empty
+                // This does not dispose the previous image, but this also only works when the picturebox image is null
                 else { 
                     Image clipImg = Clipboard.GetImage();
 
@@ -1657,5 +1667,6 @@ namespace ImgBrowser
         {
             windowResizeBegin = Size;
         }
+
     }
 }
