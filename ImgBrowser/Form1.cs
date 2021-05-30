@@ -300,6 +300,7 @@ namespace ImgBrowser
                         Image img = pictureBox1.Image;
                         img.RotateFlip(RotateFlipType.Rotate90FlipNone);
                         centerImage();
+                        zoomLocation = new Point(0, 0);
 
                         pictureBox1.Image = img;
                     }
@@ -518,6 +519,7 @@ namespace ImgBrowser
                     // Getting directory from disk root returns \ character
                     imgLocation = Path.GetDirectoryName(fileEntries[index + 1]).TrimEnd('\\');
                     imgName = Path.GetFileName(fileEntries[index + 1]);
+                    SizeModeZoom();
                 }
                 else
                 {
@@ -528,6 +530,7 @@ namespace ImgBrowser
                     }
                     imgLocation = Path.GetDirectoryName(fileEntries[0]).TrimEnd('\\');
                     imgName = Path.GetFileName(fileEntries[0]);
+                    SizeModeZoom();
                 }
                 updateFormName();
                 if (currentImage != null) { currentImage.Dispose(); }
@@ -556,6 +559,7 @@ namespace ImgBrowser
                     }
                     imgLocation = Path.GetDirectoryName(fileEntries[index - 1]).TrimEnd('\\');
                     imgName = Path.GetFileName(fileEntries[index - 1]);
+                    SizeModeZoom();
 
                 }
                 else
@@ -567,6 +571,7 @@ namespace ImgBrowser
                     }
                     imgLocation = Path.GetDirectoryName(fileEntries[fileEntries.Length - 1]).TrimEnd('\\');
                     imgName = Path.GetFileName(fileEntries[fileEntries.Length - 1]);
+                    SizeModeZoom();
                 }
 
                 if (currentImage != null) { currentImage.Dispose(); }
@@ -588,7 +593,7 @@ namespace ImgBrowser
 
                     imgLocation = Path.GetDirectoryName(fileEntries[index]).TrimEnd('\\');
                     imgName = Path.GetFileName(fileEntries[index]);
-
+                    SizeModeZoom();
 
                     if (currentImage != null) { currentImage.Dispose(); }
                     updateFormName();
