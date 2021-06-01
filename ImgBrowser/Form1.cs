@@ -763,9 +763,31 @@ namespace ImgBrowser
                 Console.WriteLine(i);
             }
 
-            if (cmdArgs.Length > 1)
+            int argsLength = cmdArgs.Length;
+
+            if (argsLength > 1)
             {
-                loadNewImg(cmdArgs[1]);
+                loadNewImg(cmdArgs[1]); 
+            }
+            
+            // Argument two contains settings for form Top,Left,Width,Height
+            if (argsLength > 2)
+            {
+                ProcessLaunchCoordinates(cmdArgs[2]);
+            }
+            // Argument three contains setting for hiding the form elements
+            if (argsLength > 3)
+            {
+                bool elementsEnabled;
+                if(bool.TryParse(cmdArgs[3], out elementsEnabled))
+                {
+                    if (!elementsEnabled) {
+                        if (pictureBox1.Image != null)
+                        {
+                            FitImageToWindow();
+                        }
+                    }
+                }
             }
             else { 
                 Image clipImg = Clipboard.GetImage();
@@ -777,6 +799,45 @@ namespace ImgBrowser
                     imgLocation = "";
                     updateFormName();
                 }
+            }
+
+        }
+
+        void ProcessLaunchCoordinates(string launchArg)
+        {
+            try { 
+                string[] values = launchArg.Split(',');
+
+                List<int> coordinates = new List<int>();
+
+                int formTop;
+                if (int.TryParse(values[0], out formTop)) { }
+
+                int formLeft;
+                if (int.TryParse(values[1], out formLeft)) { }
+
+                int formWidth;
+                if (int.TryParse(values[2], out formWidth)) { }
+
+                int formHeight;
+                if (int.TryParse(values[3], out formHeight)) { }
+
+                // Prevent window from going over the top border
+                // TODO This should check monitor resolution
+                if (formTop > -6)
+                    Top = formTop;
+
+                Left = formLeft;
+
+                if (formWidth != 0)
+                    Width = formWidth;
+
+                if (formHeight != 0)
+                    Height = formHeight;
+            }
+            catch (IndexOutOfRangeException)
+            {
+                displayMessage("Invalid launch argument");
             }
 
         }
