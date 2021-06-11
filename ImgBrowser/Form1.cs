@@ -431,7 +431,13 @@ namespace ImgBrowser
                         e.SuppressKeyPress = true;
                     }
                     break;
-
+                // Copy image fullname and window coordinates to clipboard
+                case "Pause":
+                    if ((Control.ModifierKeys & Keys.Alt) == Keys.Alt) {
+                        displayMessage("Image path and window size added to clipboard");
+                        Clipboard.SetText($"{imgLocation}\\{imgName} {Top},{Left},{Height},{Width}");
+                    }
+                    break;
                 case "Add":
                     // Hold ctrl for smaller zoom value
                     if ((Control.ModifierKeys & Keys.Control) == Keys.Control) pictureBoxZoom(1.2);
@@ -515,11 +521,12 @@ namespace ImgBrowser
                     {
                         pictureBox1.Image = Image.FromFile(fileEntries[index + 1]);
                         zoomLocation = new Point(0, 0); // Reset Zoom position
+
+                        // Getting directory from disk root returns \ character
+                        imgLocation = Path.GetDirectoryName(fileEntries[index + 1]).TrimEnd('\\');
+                        imgName = Path.GetFileName(fileEntries[index + 1]);
+                        SizeModeZoom();
                     }
-                    // Getting directory from disk root returns \ character
-                    imgLocation = Path.GetDirectoryName(fileEntries[index + 1]).TrimEnd('\\');
-                    imgName = Path.GetFileName(fileEntries[index + 1]);
-                    SizeModeZoom();
                 }
                 else
                 {
@@ -527,10 +534,12 @@ namespace ImgBrowser
                     {
                         pictureBox1.Image = Image.FromFile(fileEntries[0]);
                         zoomLocation = new Point(0, 0); // Reset Zoom position
+
+                        imgLocation = Path.GetDirectoryName(fileEntries[0]).TrimEnd('\\');
+                        imgName = Path.GetFileName(fileEntries[0]);
+                        SizeModeZoom();
                     }
-                    imgLocation = Path.GetDirectoryName(fileEntries[0]).TrimEnd('\\');
-                    imgName = Path.GetFileName(fileEntries[0]);
-                    SizeModeZoom();
+
                 }
                 updateFormName();
                 if (currentImage != null) { currentImage.Dispose(); }
@@ -556,10 +565,11 @@ namespace ImgBrowser
                     {
                         pictureBox1.Image = Image.FromFile(fileEntries[index - 1]);
                         zoomLocation = new Point(0, 0); // Reset Zoom position
+
+                        imgLocation = Path.GetDirectoryName(fileEntries[index - 1]).TrimEnd('\\');
+                        imgName = Path.GetFileName(fileEntries[index - 1]);
+                        SizeModeZoom();
                     }
-                    imgLocation = Path.GetDirectoryName(fileEntries[index - 1]).TrimEnd('\\');
-                    imgName = Path.GetFileName(fileEntries[index - 1]);
-                    SizeModeZoom();
 
                 }
                 else
@@ -568,10 +578,12 @@ namespace ImgBrowser
                     {
                         pictureBox1.Image = Image.FromFile(fileEntries[fileEntries.Length - 1]);
                         zoomLocation = new Point(0, 0); // Reset Zoom position
+
+                        imgLocation = Path.GetDirectoryName(fileEntries[fileEntries.Length - 1]).TrimEnd('\\');
+                        imgName = Path.GetFileName(fileEntries[fileEntries.Length - 1]);
+                        SizeModeZoom();
                     }
-                    imgLocation = Path.GetDirectoryName(fileEntries[fileEntries.Length - 1]).TrimEnd('\\');
-                    imgName = Path.GetFileName(fileEntries[fileEntries.Length - 1]);
-                    SizeModeZoom();
+
                 }
 
                 if (currentImage != null) { currentImage.Dispose(); }
@@ -769,27 +781,8 @@ namespace ImgBrowser
             {
                 loadNewImg(cmdArgs[1]); 
             }
-            
-            // Argument two contains settings for form Top,Left,Width,Height
-            if (argsLength > 2)
+            else
             {
-                ProcessLaunchCoordinates(cmdArgs[2]);
-            }
-            // Argument three contains setting for hiding the form elements
-            if (argsLength > 3)
-            {
-                bool elementsEnabled;
-                if(bool.TryParse(cmdArgs[3], out elementsEnabled))
-                {
-                    if (!elementsEnabled) {
-                        if (pictureBox1.Image != null)
-                        {
-                            FitImageToWindow();
-                        }
-                    }
-                }
-            }
-            else { 
                 Image clipImg = Clipboard.GetImage();
 
                 if (clipImg != null)
@@ -800,7 +793,25 @@ namespace ImgBrowser
                     updateFormName();
                 }
             }
-
+            // Argument two contains settings for form Top,Left,Width,Height
+            if (argsLength > 2)
+            {
+                ProcessLaunchCoordinates(cmdArgs[2]);
+            }
+            // Argument three contains setting for fitting the image to window
+            if (argsLength > 3)
+            {
+                bool elementsDisabled;
+                if(bool.TryParse(cmdArgs[3], out elementsDisabled))
+                {
+                    if (elementsDisabled) {
+                        if (pictureBox1.Image != null)
+                        {
+                            FitImageToWindow();
+                        }
+                    }
+                }
+            }
         }
 
         void ProcessLaunchCoordinates(string launchArg)
@@ -829,11 +840,12 @@ namespace ImgBrowser
 
                 Left = formLeft;
 
-                if (formWidth != 0)
+                if (formWidth > 0)
                     Width = formWidth;
 
-                if (formHeight != 0)
+                if (formHeight > 0)
                     Height = formHeight;
+
             }
             catch (IndexOutOfRangeException)
             {
