@@ -298,7 +298,12 @@ namespace ImgBrowser
                         */
 
                         Image img = pictureBox1.Image;
-                        img.RotateFlip(RotateFlipType.Rotate90FlipNone);
+
+                        if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
+                            img.RotateFlip(RotateFlipType.Rotate270FlipNone);
+                        else
+                            img.RotateFlip(RotateFlipType.Rotate90FlipNone);
+
                         centerImage();
                         zoomLocation = new Point(0, 0);
 
@@ -378,6 +383,11 @@ namespace ImgBrowser
                             TransparencyKey = Control.DefaultBackColor;
                         }
                     }
+                    break;
+                // Display image name
+                case "N":
+                    if (!string.IsNullOrEmpty(imgName))
+                        displayMessage(imgName);
                     break;
                 // Move image to recycle bin
                 case "Delete":
