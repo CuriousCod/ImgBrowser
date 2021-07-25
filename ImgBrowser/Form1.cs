@@ -30,7 +30,7 @@ namespace ImgBrowser
 {
     public partial class Form1 : Form
     {
-        private BackgroundWorker showMessage;
+        private BackgroundWorker clearMessage;
         private string[] fileEntries;
 
         // Current image information
@@ -67,6 +67,9 @@ namespace ImgBrowser
         // If border should reappear when draggin window
         private bool showBorder = false;
 
+        // Timer for the text display
+        private int textTimer;
+
         // Commands for moving window with mouse
         private const int WM_NCLBUTTONDOWN = 0xA1;
         private const int HT_CAPTION = 0x2;
@@ -83,10 +86,10 @@ namespace ImgBrowser
         public Form1()
         {
             // Add a worker to remove messages from display after a set duration
-            showMessage = new BackgroundWorker();
-            showMessage.DoWork += new DoWorkEventHandler(showMessage_DoWork);
-            showMessage.RunWorkerCompleted += new RunWorkerCompletedEventHandler(showMessage_RunWorkerCompleted);
-            showMessage.WorkerSupportsCancellation = true;
+            clearMessage = new BackgroundWorker();
+            clearMessage.DoWork += new DoWorkEventHandler(clearMessage_DoWork);
+            clearMessage.RunWorkerCompleted += new RunWorkerCompletedEventHandler(clearMessage_RunWorkerCompleted);
+            clearMessage.WorkerSupportsCancellation = true;
 
             InitializeComponent();
 
@@ -109,22 +112,24 @@ namespace ImgBrowser
 
         }
 
-        private void showMessage_DoWork(object sender, DoWorkEventArgs e)
+        private void clearMessage_DoWork(object sender, DoWorkEventArgs e)
         {
             string value = (string)e.Argument;
-            // Sleep 2 seconds to emulate getting data.
             e.Result = value;
-            Thread.Sleep(1500);
-            //e.Result = "";
+
+            while (textTimer < 3)
+            {
+                Thread.Sleep(500);
+                textTimer += 1;
+            }
         }
 
-        private void showMessage_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        private void clearMessage_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             messageLabel.Text = e.Result.ToString();
             messageLabelShadowBottom.Text = e.Result.ToString();
             messageLabelShadowTop.Text = e.Result.ToString();
         }
-
 
         private void Form1_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
         {
@@ -494,10 +499,13 @@ namespace ImgBrowser
             messageLabelShadowBottom.Text = text;
             messageLabelShadowTop.Text = text;
 
+            // Reset timer
+            textTimer = 0;
+
             // Clear message
-            if (showMessage.IsBusy == false)
+            if (!clearMessage.IsBusy)
             {
-                showMessage.RunWorkerAsync("");
+                clearMessage.RunWorkerAsync("");
             }
 
         }
