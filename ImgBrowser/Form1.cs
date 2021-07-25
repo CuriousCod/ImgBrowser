@@ -15,21 +15,16 @@ using SearchOption = System.IO.SearchOption;
 
 // TODO Config for window start position
 // TODO Button config
-// TODO Chroma key / Transparency for window?
 // TODO Randomized slideshow? <-----------
-// BUG When zoomed in messages are only shown in top left position
-// TODO Verify if other image changing methods req6uire dispose(), copy+paste, rotate, etc
+// TODO Verify if other image changing methods require dispose(), copy+paste, rotate, etc
 // TODO Arrow keys to navigate when zoomed in
 // TODO Tabs?
 // TODO Folder image count
 // BUG Rotating in autosize mode can make the image go over borders
 // BUG Image can slighty overfill the screen when in autosize + fullscreen mode
 // TODO Scale image to screen?
-// TODO Change cursor icon when capturing screen
 // TODO Remember rotate position for next image
-// TODO Home/End buttons for quick move to first/last image
 // TODO Rotating image does not rotate(resize) the window
-
 
 namespace ImgBrowser
 {
@@ -1139,6 +1134,8 @@ namespace ImgBrowser
             centerImage();
 
             SizeModeZoom();
+
+            PositionMessageDisplay();
         }
 
         private bool verifyImg(string file)
@@ -1457,6 +1454,9 @@ namespace ImgBrowser
             int range;
             int minMov = (int)((double)((Width + Height) * 0.01));
 
+            // Hide any currently displayed message
+            displayMessage("");
+
             //pictureBox1.Refresh();
             // Only allow adjustments if the image is larger than the screen resolution
             if (pictureBox1.Image.Width > Width)
@@ -1515,6 +1515,7 @@ namespace ImgBrowser
         private void pictureBox1_MouseUp(object sender, MouseEventArgs e)
         {
             pictureBox1.Cursor = Cursors.Arrow;
+            PositionMessageDisplay();
         }
 
         private void pictureBox1_MouseClick(object sender, MouseEventArgs e)
@@ -1632,14 +1633,7 @@ namespace ImgBrowser
         // TODO This doesn't work
         private void pictureBox1_LocationChanged(object sender, EventArgs e)
         {
-            /*
-            // Offset from offset
-            messageLabel.Location = new Point(-3 + pictureBox1.Location.X, -2 + pictureBox1.Location.Y);
-            // Origin
-            messageLabelShadowBottom.Location = new Point(11 + pictureBox1.Location.X, 8 + pictureBox1.Location.Y);
-            // Offset from origin, not in use, as it makes the font look messy (0,0)
-            messageLabelShadowTop.Location = new Point(0 + pictureBox1.Location.X, 0 + pictureBox1.Location.Y);
-            */
+            // PositionMessageDisplay();
         }
 
         private void Form1_KeyUp(object sender, KeyEventArgs e)
@@ -1707,7 +1701,6 @@ namespace ImgBrowser
                         displayMessage("Color copied to clipboard");
                     }
                         
-
                     break;
                 default:
                     break;
@@ -1749,11 +1742,25 @@ namespace ImgBrowser
                     centerImage();
                 }
             }
+
+            PositionMessageDisplay();
         }
 
         private void Form1_ResizeBegin(object sender, EventArgs e)
         {
             windowResizeBegin = Size;
+        }
+
+        // Set the display message position relative to the picturebox
+        private void PositionMessageDisplay() { 
+            if (pictureBox1.Width >= Width && pictureBox1.Height >= Height)
+                messageLabelShadowBottom.Location = new Point(11 + Math.Abs(pictureBox1.Location.X), 3 + Math.Abs(pictureBox1.Location.Y));
+            else if (pictureBox1.Width >= Width)
+                messageLabelShadowBottom.Location = new Point(11 + Math.Abs(pictureBox1.Location.X), messageLabelShadowBottom.Location.Y);
+            else if (pictureBox1.Height >= Height)
+                messageLabelShadowBottom.Location = new Point(messageLabelShadowBottom.Location.X, 3 + Math.Abs(pictureBox1.Location.Y));
+            else
+                messageLabelShadowBottom.Location = new Point(11, 3);
         }
 
     }
