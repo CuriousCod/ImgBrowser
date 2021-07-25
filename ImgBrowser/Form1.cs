@@ -227,7 +227,7 @@ namespace ImgBrowser
                 case "F3":
                     if (imgLocation != "")
                     {
-                        System.Diagnostics.Process.Start("explorer.exe", imgLocation);
+                        System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{imgLocation}\\{imgName}\"");
                     }
                     break;
                 case "F5":
