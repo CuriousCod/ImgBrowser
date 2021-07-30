@@ -25,6 +25,7 @@ using SearchOption = System.IO.SearchOption;
 // TODO Scale image to screen?
 // TODO Remember rotate position for next image
 // TODO Rotating image does not rotate(resize) the window
+// TODO Z-index adjust
 
 namespace ImgBrowser
 {
@@ -205,10 +206,36 @@ namespace ImgBrowser
             switch (e.KeyCode.ToString())
             {
                 case "Left":
-                    browseBackward();
+                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control) { 
+                        int modifier = ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) ? 3 : 1;
+                        Location = Point.Subtract(Location, new Size(modifier, 0));
+                    }
+                    else
+                        browseBackward();
                     break;
                 case "Right":
-                    browseForward();
+                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control) {
+                        int modifier = ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) ? 3 : 1;
+                        Location = Point.Add(Location, new Size(1, 0));
+                    }
+                    else
+                        browseForward();
+                    break;
+                case "Up":
+                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control) {
+                        int modifier = ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) ? 3 : 1;
+                        Location = Point.Subtract(Location, new Size(0, 1));
+                    }
+                    else
+                        browseForward();
+                    break;
+                case "Down":
+                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control) {
+                        int modifier = ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) ? 3 : 1;
+                        Location = Point.Add(Location, new Size(0, 1));
+                    }
+                    else
+                        browseForward();
                     break;
                 case "F1":
                     ToggleAlwaysOnTop();
@@ -634,7 +661,36 @@ namespace ImgBrowser
                 FormBorderStyle = FormBorderStyle.None;
                 if (pictureBox1.SizeMode == PictureBoxSizeMode.Zoom)
                 {
-                    if (Size.Height > Size.Width)
+                    // Image aspect ratio
+                    double aspectRatio = (double)pictureBox1.Image.Width / (double)pictureBox1.Image.Height;
+                    
+                    // Window frame aspect ratio
+                    double windowAspectRatio = (double)Width / (double)Height;
+
+                    int tempHeight = Height;
+
+                    // Adjust frame size when there's a big difference between the image and frame aspect ratios
+                    // This prevent images from getting too large when readjusting frame size to the image
+                    if (windowAspectRatio + 2 < aspectRatio)
+                        while (windowAspectRatio + 2 < aspectRatio)
+                        {
+                            tempHeight = (int)(tempHeight * 0.95f);
+                            windowAspectRatio = (double)Width / (double)tempHeight;
+                        }
+                    else if (aspectRatio + 2 < windowAspectRatio)
+                        while (aspectRatio + 2 < windowAspectRatio)
+                        {
+                            tempHeight = (int)(tempHeight * 1.05f);
+                            windowAspectRatio = (double)Width / (double)tempHeight;
+                        }
+
+                    Height = tempHeight;
+
+                    // Set frame size to match the image aspect ratio
+                    Size = new Size((int)(aspectRatio * Size.Height), Size.Height);
+
+                    /*
+                    if (pictureBox1.Image.Height < pictureBox1.Image.Width)
                     {
                         double aspectRatio = (double)pictureBox1.Image.Height / (double)pictureBox1.Image.Width;
                         Size = new Size(Size.Width, (int)(aspectRatio * Size.Width));
@@ -643,7 +699,7 @@ namespace ImgBrowser
                     {
                         double aspectRatio = (double)pictureBox1.Image.Width / (double)pictureBox1.Image.Height;
                         Size = new Size((int)(aspectRatio * Size.Height), Size.Height);
-                    }
+                    }*/
                 }
             }
         }
