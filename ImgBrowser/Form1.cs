@@ -206,17 +206,32 @@ namespace ImgBrowser
             switch (e.KeyCode.ToString())
             {
                 case "Left":
-                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control) { 
-                        int modifier = ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) ? 3 : 1;
+                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
+                    {
+                        int modifier = ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) ? 5 : 1;
                         Location = Point.Subtract(Location, new Size(modifier, 0));
+                    }
+                    else if ((Control.ModifierKeys & Keys.Alt) == Keys.Alt)
+                    {
+                        int modifier = ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) ? 5 : 1;
+                        Size = Size.Subtract(Size, new Size(modifier, 0));
+                        if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
+                            centerImage(false);
                     }
                     else
                         browseBackward();
                     break;
                 case "Right":
                     if ((Control.ModifierKeys & Keys.Control) == Keys.Control) {
-                        int modifier = ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) ? 3 : 1;
-                        Location = Point.Add(Location, new Size(1, 0));
+                        int modifier = ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) ? 5 : 1;
+                        Location = Point.Add(Location, new Size(modifier, 0));
+                    }
+                    else if ((Control.ModifierKeys & Keys.Alt) == Keys.Alt)
+                    {
+                        int modifier = ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) ? 5 : 1;
+                        Size = Size.Add(Size, new Size(modifier, 0));
+                        if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
+                            centerImage(false);
                     }
                     else
                         browseForward();
@@ -224,18 +239,28 @@ namespace ImgBrowser
                 case "Up":
                     if ((Control.ModifierKeys & Keys.Control) == Keys.Control) {
                         int modifier = ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) ? 3 : 1;
-                        Location = Point.Subtract(Location, new Size(0, 1));
+                        Location = Point.Subtract(Location, new Size(0, modifier));
                     }
-                    else
-                        browseForward();
+                    else if ((Control.ModifierKeys & Keys.Alt) == Keys.Alt)
+                    {
+                        int modifier = ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) ? 3 : 1;
+                        Size = Size.Subtract(Size, new Size(0, modifier));
+                        if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
+                            centerImage(false);
+                    }
                     break;
                 case "Down":
                     if ((Control.ModifierKeys & Keys.Control) == Keys.Control) {
                         int modifier = ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) ? 3 : 1;
-                        Location = Point.Add(Location, new Size(0, 1));
+                        Location = Point.Add(Location, new Size(0, modifier));
                     }
-                    else
-                        browseForward();
+                    else if ((Control.ModifierKeys & Keys.Alt) == Keys.Alt)
+                    {
+                        int modifier = ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) ? 3 : 1;
+                        Size = Size.Add(Size, new Size(0, modifier));
+                        if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
+                            centerImage(false);
+                    }
                     break;
                 case "F1":
                     ToggleAlwaysOnTop();
@@ -1652,25 +1677,35 @@ namespace ImgBrowser
 
         }
 
-        private void centerImage()
+        private void centerImage(bool updateZoom = true)
         {
             if (pictureBox1.Image != null)
             {
+                // Return to zoom mode, if image is smaller than the frame
+                if (Width > pictureBox1.Image.Width && Height > pictureBox1.Image.Height) {
+                    SizeModeZoom();
+                    return;
+                }
+                
                 // Calculate padding to center image
                 if (Width > pictureBox1.Image.Width)
                 {
                     pictureBox1.Left = (Width - pictureBox1.Image.Width) / 2;
                     // Update zoom location to center image
-                    zoomLocation = new Point(pictureBox1.Left, zoomLocation.Y);
-                    pictureBox1.Top = 0;
+                    if (updateZoom) { 
+                        zoomLocation = new Point(pictureBox1.Left, zoomLocation.Y);
+                        pictureBox1.Top = 0;
+                    }
                 }
                 else if (Height > pictureBox1.Image.Height)
                 {
                     pictureBox1.Top = (Height - pictureBox1.Image.Height) / 2;
 
                     // Update zoom location to center image
-                    zoomLocation = new Point(zoomLocation.X, pictureBox1.Top);
-                    pictureBox1.Left = 0;
+                    if (updateZoom) { 
+                        zoomLocation = new Point(zoomLocation.X, pictureBox1.Top);
+                        pictureBox1.Left = 0;
+                    }
                 }
                 else
                 {
