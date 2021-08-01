@@ -68,6 +68,12 @@ namespace ImgBrowser
         // If border should reappear when draggin window
         private bool showBorder = false;
 
+        // Keeps track of image flipping
+        private bool imageFlipped = false;
+
+        // Keeps track of image rotation
+        private int imageRotation = 0;
+
         // Timer for the text display
         private int textTimer;
 
@@ -349,26 +355,17 @@ namespace ImgBrowser
                         }
                         */
 
-                        Image img = pictureBox1.Image;
-
                         if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
-                            img.RotateFlip(RotateFlipType.Rotate270FlipNone);
+                            RotateImage(true);
                         else
-                            img.RotateFlip(RotateFlipType.Rotate90FlipNone);
+                            RotateImage(false);
 
-                        centerImage();
-                        zoomLocation = new Point(0, 0);
-
-                        pictureBox1.Image = img;
                     }
                     break;
                 case "M":
                     if (pictureBox1.Image != null)
                     {
-                        Image img = pictureBox1.Image;
-                        img.RotateFlip(RotateFlipType.RotateNoneFlipX);
-
-                        pictureBox1.Image = img;
+                        FlipImageX(((Control.ModifierKeys & Keys.Control) == Keys.Control));
                     }
                     break;
                 case "F":
@@ -690,7 +687,7 @@ namespace ImgBrowser
                     double aspectRatio = (double)pictureBox1.Image.Width / (double)pictureBox1.Image.Height;
                     
                     // Window frame aspect ratio
-                    double windowAspectRatio = (double)Width / (double)Height;
+                    double windowAspectRatio = (double)ClientSize.Width / (double)ClientSize.Height;
 
                     int tempHeight = Height;
 
@@ -700,13 +697,13 @@ namespace ImgBrowser
                         while (windowAspectRatio + 2 < aspectRatio)
                         {
                             tempHeight = (int)(tempHeight * 0.95f);
-                            windowAspectRatio = (double)Width / (double)tempHeight;
+                            windowAspectRatio = (double)ClientSize.Width / (double)tempHeight;
                         }
                     else if (aspectRatio + 2 < windowAspectRatio)
                         while (aspectRatio + 2 < windowAspectRatio)
                         {
                             tempHeight = (int)(tempHeight * 1.05f);
-                            windowAspectRatio = (double)Width / (double)tempHeight;
+                            windowAspectRatio = (double)ClientSize.Width / (double)tempHeight;
                         }
 
                     Height = tempHeight;
@@ -734,14 +731,14 @@ namespace ImgBrowser
             // Make sure the string fits the frame
             int stringWidth = TextRenderer.MeasureText("Stay on Top: False", messageLabel.Font).Width;
 
-            while (stringWidth + 12 > Width)
+            while (stringWidth + 12 > ClientSize.Width)
             {
                 if (messageLabel.Font.Size - 1 <= 0) { break; }
                 messageLabel.Font = new Font(messageLabel.Font.FontFamily, messageLabel.Font.Size - 1, FontStyle.Bold);
                 stringWidth = TextRenderer.MeasureText("Stay on Top: False", messageLabel.Font).Width;
             }
 
-            while ((stringWidth - 12) * 2.8 < Width)
+            while ((stringWidth - 12) * 2.8 < ClientSize.Width)
             {
                 if (messageLabel.Font.Size >= 22) { break; }
                 messageLabel.Font = new Font(messageLabel.Font.FontFamily, messageLabel.Font.Size + 1, FontStyle.Bold);
@@ -761,6 +758,78 @@ namespace ImgBrowser
                 displayMessage("Stay on Top: True");
                 TopMost = true;
             }
+        }
+
+        private void FlipImageX(bool ctrl)
+        {
+            Image img = pictureBox1.Image;
+
+            img.RotateFlip(RotateFlipType.RotateNoneFlipX);
+            pictureBox1.Image = img;
+
+            bool imageAutoSizeMode = pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize;
+
+            if (!imageFlipped)
+            {
+                // Flip image only based on current viewport, unless ctrl is held
+                if (imageAutoSizeMode && !ctrl)
+                {
+                    pictureBox1.Location = new Point(-pictureBox1.Image.Width + ClientSize.Width + Math.Abs(pictureBox1.Location.X), pictureBox1.Location.Y);
+                    PositionMessageDisplay();
+                }
+                imageFlipped = true;
+            }
+            else
+            {
+                if (imageAutoSizeMode && !ctrl)
+                {
+                    pictureBox1.Location = new Point(0 - pictureBox1.Image.Width - pictureBox1.Location.X + ClientSize.Width, pictureBox1.Location.Y);
+                    PositionMessageDisplay();
+                }
+                imageFlipped = false;
+            }
+        }
+
+        private void RotateImage(bool CCW)
+        {
+            Image img = pictureBox1.Image;
+
+            // int x = pictureBox1.Location.X;
+            // int y = pictureBox1.Location.Y;
+
+            if (CCW) { 
+                img.RotateFlip(RotateFlipType.Rotate270FlipNone);
+            }
+            else { 
+                img.RotateFlip(RotateFlipType.Rotate90FlipNone);
+                /*switch (imageRotation)
+                {
+                    case 0:
+                        imageRotation += 1;
+                        pictureBox1.Location = new Point(-pictureBox1.Image.Size.Width + ClientSize.Width + y, 0 + x);
+                        break;
+                    case 1:
+                        imageRotation += 1;
+                        pictureBox1.Location = new Point(-pictureBox1.Image.Size.Width + ClientSize.Width + y, 0 + x - ClientSize.Height);
+                        break;
+                    case 2:
+                        imageRotation += 1;
+                        pictureBox1.Location = new Point(0, 0);
+                        break;
+                    case 3:
+                        imageRotation = 0;
+                        pictureBox1.Location = new Point(0, 0);
+                        break;
+                    default:
+                        break;
+                }*/
+                
+            }
+
+            centerImage();
+            zoomLocation = new Point(0, 0);
+
+            pictureBox1.Image = img;
         }
 
         private void TempImageHandling(string ordinalValue)
@@ -1219,6 +1288,10 @@ namespace ImgBrowser
             // Reset zoomed in position
             pictureBox1.Location = new Point(0, 0);
             lockImage = false;
+
+            // Reset image mirror and rotation
+            imageFlipped = false;
+            imageRotation = 0;
 
             centerImage();
 
