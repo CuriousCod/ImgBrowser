@@ -71,9 +71,6 @@ namespace ImgBrowser
         // Keeps track of image flipping
         private bool imageFlipped = false;
 
-        // Keeps track of image rotation
-        private int imageRotation = 0;
-
         // Timer for the text display
         private int textTimer;
 
@@ -772,7 +769,7 @@ namespace ImgBrowser
             if (!imageFlipped)
             {
                 // Flip image only based on current viewport, unless ctrl is held
-                if (imageAutoSizeMode && !ctrl)
+                if (imageAutoSizeMode && !ctrl && WindowState != FormWindowState.Maximized && pictureBox1.Image.Width >= ClientSize.Width)
                 {
                     pictureBox1.Location = new Point(-pictureBox1.Image.Width + ClientSize.Width + Math.Abs(pictureBox1.Location.X), pictureBox1.Location.Y);
                     PositionMessageDisplay();
@@ -781,7 +778,7 @@ namespace ImgBrowser
             }
             else
             {
-                if (imageAutoSizeMode && !ctrl)
+                if (imageAutoSizeMode && !ctrl && WindowState != FormWindowState.Maximized && pictureBox1.Image.Width >= ClientSize.Width)
                 {
                     pictureBox1.Location = new Point(0 - pictureBox1.Image.Width - pictureBox1.Location.X + ClientSize.Width, pictureBox1.Location.Y);
                     PositionMessageDisplay();
@@ -794,40 +791,36 @@ namespace ImgBrowser
         {
             Image img = pictureBox1.Image;
 
-            // int x = pictureBox1.Location.X;
-            // int y = pictureBox1.Location.Y;
+            int x = pictureBox1.Location.X;
+            int y = pictureBox1.Location.Y;
+
+            Point rotate;
+
+            // Check that the image is larger than the current window size
+            bool sizeVsFrame = pictureBox1.Image.Width >= ClientSize.Width && pictureBox1.Image.Height >= ClientSize.Height;
 
             if (CCW) { 
                 img.RotateFlip(RotateFlipType.Rotate270FlipNone);
+                if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize && WindowState != FormWindowState.Maximized && sizeVsFrame) { 
+                    ClientSize = new Size(ClientSize.Height, ClientSize.Width);
+                    rotate = new Point(0 - Math.Abs(y), -pictureBox1.Image.Height + ClientSize.Height + Math.Abs(x));
+                    pictureBox1.Location = rotate;
+                }
             }
             else { 
                 img.RotateFlip(RotateFlipType.Rotate90FlipNone);
-                /*switch (imageRotation)
+                if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize && WindowState != FormWindowState.Maximized && sizeVsFrame)
                 {
-                    case 0:
-                        imageRotation += 1;
-                        pictureBox1.Location = new Point(-pictureBox1.Image.Size.Width + ClientSize.Width + y, 0 + x);
-                        break;
-                    case 1:
-                        imageRotation += 1;
-                        pictureBox1.Location = new Point(-pictureBox1.Image.Size.Width + ClientSize.Width + y, 0 + x - ClientSize.Height);
-                        break;
-                    case 2:
-                        imageRotation += 1;
-                        pictureBox1.Location = new Point(0, 0);
-                        break;
-                    case 3:
-                        imageRotation = 0;
-                        pictureBox1.Location = new Point(0, 0);
-                        break;
-                    default:
-                        break;
-                }*/
-                
+                    ClientSize = new Size(ClientSize.Height, ClientSize.Width);
+                    rotate = new Point(-pictureBox1.Image.Width + ClientSize.Width + Math.Abs(y), 0 - Math.Abs(x));
+                    pictureBox1.Location = rotate;
+                }
             }
 
-            centerImage();
-            zoomLocation = new Point(0, 0);
+            if(pictureBox1.SizeMode == PictureBoxSizeMode.Zoom || WindowState == FormWindowState.Maximized || !sizeVsFrame) {
+                centerImage();
+                zoomLocation = new Point(0, 0);
+            }
 
             pictureBox1.Image = img;
         }
@@ -1291,7 +1284,6 @@ namespace ImgBrowser
 
             // Reset image mirror and rotation
             imageFlipped = false;
-            imageRotation = 0;
 
             centerImage();
 
