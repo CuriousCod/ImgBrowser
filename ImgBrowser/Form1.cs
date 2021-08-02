@@ -20,11 +20,11 @@ using SearchOption = System.IO.SearchOption;
 // TODO Arrow keys to navigate when zoomed in
 // TODO Tabs?
 // TODO Folder image count
-// BUG Rotating in autosize mode can make the image go over borders
+// TODO Open folder in app and os.walk an image array
+// TODO Randomize image array order?
 // BUG Image can slighty overfill the screen when in autosize + fullscreen mode
 // TODO Scale image to screen?
 // TODO Remember rotate position for next image
-// TODO Rotating image does not rotate(resize) the window
 // TODO Z-index adjust
 
 namespace ImgBrowser
@@ -541,6 +541,8 @@ namespace ImgBrowser
 
         private void displayMessage(string text)
         {
+            AdjustTextSize(text);
+
             messageLabel.Text = text;
             messageLabelShadowBottom.Text = text;
             messageLabelShadowTop.Text = text;
@@ -725,26 +727,6 @@ namespace ImgBrowser
 
         private void ToggleAlwaysOnTop()
         {
-            // Make sure the string fits the frame
-            int stringWidth = TextRenderer.MeasureText("Stay on Top: False", messageLabel.Font).Width;
-
-            while (stringWidth + 12 > ClientSize.Width)
-            {
-                if (messageLabel.Font.Size - 1 <= 0) { break; }
-                messageLabel.Font = new Font(messageLabel.Font.FontFamily, messageLabel.Font.Size - 1, FontStyle.Bold);
-                stringWidth = TextRenderer.MeasureText("Stay on Top: False", messageLabel.Font).Width;
-            }
-
-            while ((stringWidth - 12) * 2.8 < ClientSize.Width)
-            {
-                if (messageLabel.Font.Size >= 22) { break; }
-                messageLabel.Font = new Font(messageLabel.Font.FontFamily, messageLabel.Font.Size + 1, FontStyle.Bold);
-                stringWidth = TextRenderer.MeasureText("Stay on Top: False", messageLabel.Font).Width;
-            }
-
-            messageLabelShadowBottom.Font = new Font(messageLabel.Font.FontFamily, messageLabel.Font.Size, FontStyle.Bold);
-            messageLabelShadowTop.Font = new Font(messageLabel.Font.FontFamily, messageLabel.Font.Size, FontStyle.Bold);
-
             if (TopMost)
             {
                 displayMessage("Stay on Top: False");
@@ -755,6 +737,29 @@ namespace ImgBrowser
                 displayMessage("Stay on Top: True");
                 TopMost = true;
             }
+        }
+
+        private void AdjustTextSize(string text)
+        {
+            // Make sure the string fits the frame
+            int stringWidth = TextRenderer.MeasureText(text, messageLabel.Font).Width;
+
+            while (stringWidth + 12 > ClientSize.Width)
+            {
+                if (messageLabel.Font.Size - 1 <= 0) { break; }
+                messageLabel.Font = new Font(messageLabel.Font.FontFamily, messageLabel.Font.Size - 1, FontStyle.Bold);
+                stringWidth = TextRenderer.MeasureText(text, messageLabel.Font).Width;
+            }
+
+            while ((stringWidth - 12) * 2.8 < ClientSize.Width)
+            {
+                if (messageLabel.Font.Size >= 22) { break; }
+                messageLabel.Font = new Font(messageLabel.Font.FontFamily, messageLabel.Font.Size + 1, FontStyle.Bold);
+                stringWidth = TextRenderer.MeasureText(text, messageLabel.Font).Width;
+            }
+
+            messageLabelShadowBottom.Font = new Font(messageLabel.Font.FontFamily, messageLabel.Font.Size, FontStyle.Bold);
+            messageLabelShadowTop.Font = new Font(messageLabel.Font.FontFamily, messageLabel.Font.Size, FontStyle.Bold);
         }
 
         private void FlipImageX(bool ctrl)
@@ -1908,6 +1913,8 @@ namespace ImgBrowser
             }
 
             PositionMessageDisplay();
+            AdjustTextSize("This is a test string");
+
         }
 
         private void Form1_ResizeBegin(object sender, EventArgs e)
