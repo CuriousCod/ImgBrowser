@@ -1087,9 +1087,10 @@ namespace ImgBrowser
             if (pictureBox1.Image != null)
             {
                 // Make a backup of the current image
-                if (!imageEdited && imgLocation == "")
+                if (!imageEdited)
                 {
-                    SaveImageToTemp(randString);
+                    if (imgLocation == "")
+                        SaveImageToTemp(randString);
                     imageEdited = true;
                 }
 
@@ -1191,9 +1192,10 @@ namespace ImgBrowser
             {
 
                 // Make a backup of the current image
-                if (!imageEdited && imgLocation == "")
+                if (!imageEdited)
                 {
-                    SaveImageToTemp(randString);
+                    if (imgLocation == "")
+                        SaveImageToTemp(randString);
                     imageEdited = true;
                 }
 
