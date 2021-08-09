@@ -228,7 +228,7 @@ namespace ImgBrowser
                     {
                         int modifier = ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) ? 5 : 1;
                         Size = Size.Subtract(Size, new Size(modifier, 0));
-                        if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) { 
+                        if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) {
                             centerImage(false);
                             pictureBox1.Location = new Point(pictureBox1.Location.X - modifier, pictureBox1.Location.Y);
                         }
@@ -245,7 +245,7 @@ namespace ImgBrowser
                     {
                         int modifier = ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) ? 5 : 1;
                         Size = Size.Add(Size, new Size(modifier, 0));
-                        if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) { 
+                        if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) {
                             centerImage(false);
                             pictureBox1.Location = new Point(pictureBox1.Location.X + modifier, pictureBox1.Location.Y);
                         }
@@ -267,7 +267,7 @@ namespace ImgBrowser
                             centerImage(false);
                             //pictureBox1.Location = new Point(pictureBox1.Location.X, pictureBox1.Location.Y - modifier);
                         }
-                            
+
                     }
                     break;
                 case "Down":
@@ -322,8 +322,8 @@ namespace ImgBrowser
                     // Check for control key
                     if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
                     {
-                        if (pictureBox1.Image != null) { 
-                            if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) { 
+                        if (pictureBox1.Image != null) {
+                            if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) {
                                 CopyCurrentDisplaytoClipboard();
                             }
                             else
@@ -345,7 +345,7 @@ namespace ImgBrowser
                         if (clipImg != null)
                         {
                             Image oldImg = null;
-                            if (pictureBox1.Image != null) { 
+                            if (pictureBox1.Image != null) {
                                 oldImg = pictureBox1.Image; }
 
                             pictureBox1.Image = clipImg;
@@ -393,6 +393,23 @@ namespace ImgBrowser
                     if (pictureBox1.Image != null)
                     {
                         FlipImageX(((Control.ModifierKeys & Keys.Control) == Keys.Control));
+                    }
+                    break;
+                // Duplicate current image into a new window
+                case "D":
+                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control) {
+                        string exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+                        if (!File.Exists(exePath))
+                            return;
+
+                        if (imgLocation != "")
+                        {
+                           System.Diagnostics.Process.Start(exePath, imgLocation + "/" + imgName);
+                        }
+                        else if (pictureBox1.Image != null) {
+                           Clipboard.SetImage(pictureBox1.Image);
+                           System.Diagnostics.Process.Start(exePath);
+                        }
                     }
                     break;
                 case "F":
