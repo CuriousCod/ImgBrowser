@@ -73,6 +73,9 @@ namespace ImgBrowser
         // Keeps track of image flipping
         private bool imageFlipped = false;
 
+        // Keeps track of image rotation
+        private int imageRotation = 0;
+
         // Tracks any edits to the bitmap
         private bool imageEdited = false;
         //private string randString = Convert.ToBase64String(Guid.NewGuid().ToByteArray()); // A random string to use with the temp image name
@@ -402,13 +405,15 @@ namespace ImgBrowser
                         if (!File.Exists(exePath))
                             return;
 
+                        string args = GetCurrentArgs();
+
                         if (imgLocation != "")
                         {
-                           System.Diagnostics.Process.Start(exePath, imgLocation + "/" + imgName);
+                           System.Diagnostics.Process.Start(exePath, $"\"{imgLocation}/{imgName}\" {args} -center true");
                         }
                         else if (pictureBox1.Image != null) {
                            Clipboard.SetImage(pictureBox1.Image);
-                           System.Diagnostics.Process.Start(exePath);
+                           System.Diagnostics.Process.Start(exePath, $"{args} -center true");
                         }
                     }
                     break;
@@ -475,6 +480,13 @@ namespace ImgBrowser
                             displayMessage("Background visible");
                             TransparencyKey = Control.DefaultBackColor;
                         }
+                    }
+                    break;
+                // Close app
+                case "W":
+                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control && (Control.ModifierKeys & Keys.Shift) == Keys.Shift)
+                    {
+                        Application.Exit();
                     }
                     break;
                 // Display image name
@@ -809,7 +821,7 @@ namespace ImgBrowser
             messageLabelShadowTop.Font = new Font(messageLabel.Font.FontFamily, messageLabel.Font.Size, FontStyle.Bold);
         }
 
-        private void FlipImageX(bool ctrl)
+        private void FlipImageX(bool ctrl = false)
         {
             Image img = pictureBox1.Image;
 
@@ -839,13 +851,12 @@ namespace ImgBrowser
             }
         }
 
-        private void RotateImage(bool CCW)
+        private void RotateImage(bool CCW = false)
         {
             Image img = pictureBox1.Image;
 
             int x = pictureBox1.Location.X;
             int y = pictureBox1.Location.Y;
-
             Point rotate;
 
             // Check that the image is larger than the current window size
@@ -853,6 +864,8 @@ namespace ImgBrowser
 
             if (CCW) { 
                 img.RotateFlip(RotateFlipType.Rotate270FlipNone);
+                imageRotation = imageRotation <= 0 ? 3 : imageRotation - 1;
+
                 if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize && WindowState != FormWindowState.Maximized && sizeVsFrame) { 
                     ClientSize = new Size(ClientSize.Height, ClientSize.Width);
                     rotate = new Point(0 - Math.Abs(y), -pictureBox1.Image.Height + ClientSize.Height + Math.Abs(x));
@@ -861,6 +874,8 @@ namespace ImgBrowser
             }
             else { 
                 img.RotateFlip(RotateFlipType.Rotate90FlipNone);
+                imageRotation = imageRotation >= 3 ? 0 : imageRotation + 1;
+
                 if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize && WindowState != FormWindowState.Maximized && sizeVsFrame)
                 {
                     ClientSize = new Size(ClientSize.Height, ClientSize.Width);
@@ -1014,65 +1029,107 @@ namespace ImgBrowser
                     updateFormName();
                 }
             }
-            // Argument two contains settings for form Top,Left,Width,Height
-            if (argsLength > 2)
+
+            // Process other arguments
+            for (int i = 0; i < cmdArgs.Length; i++)
             {
-                ProcessLaunchCoordinates(cmdArgs[2]);
-            }
-            // Argument three contains setting for fitting the image to window
-            if (argsLength > 3)
-            {
-                bool elementsDisabled;
-                if(bool.TryParse(cmdArgs[3], out elementsDisabled))
+                switch (cmdArgs[i])
                 {
-                    if (elementsDisabled) {
-                        if (pictureBox1.Image != null)
-                        {
-                            FitImageToWindow();
+                    // Center to mouse
+                    case "-center":
+                        if (ProcessLaunchBool(cmdArgs[i + 1])) { 
+                            Top = Cursor.Position.Y - ClientSize.Height / 2;
+                            Left = Cursor.Position.X - ClientSize.Width / 2;
                         }
-                    }
+                        break;
+                    // Window width and height
+                    case "-c":
+                        string[] sizeValues = cmdArgs[i + 1].Split(',');
+
+                        if (sizeValues.Length != 2)
+                            return;
+
+                        if (!int.TryParse(sizeValues[0], out int formWidth) || !int.TryParse(sizeValues[1], out int formHeight))
+                            return;
+
+                        if (formWidth == 0 || formHeight == 0)
+                            return;
+
+                        ClientSize = new Size(formWidth, formHeight);
+                        break;
+                    // Window position
+                    case "-p":
+                        string[] posValues = cmdArgs[i + 1].Split(',');
+
+                        if (posValues.Length != 2)
+                            return;
+
+                        if (!int.TryParse(posValues[0], out int posLeft) || !int.TryParse(posValues[1], out int posTop))
+                            return;
+
+                        Top = posTop;
+                        Left = posLeft;
+                        break;
+                    // Enable transparency
+                    case "-t":
+                        if (ProcessLaunchBool(cmdArgs[i + 1]))
+                            TransparencyKey = BackColor;
+                        break;
+                    // Rotation
+                    case "-r":
+                        if (int.TryParse(cmdArgs[i + 1], out int direction))
+                            if (direction > 3)
+                                break;
+                            for (int x = 0; x < direction; x++)
+                            {
+                                RotateImage();
+                            }
+                        break;
+                    // FlipX
+                    case "-f":
+                        if (ProcessLaunchBool(cmdArgs[i + 1]))
+                            FlipImageX();
+                            break;
+                    //Setting for fitting the image to window
+                    case "-b":
+                        if (ProcessLaunchBool(cmdArgs[i + 1]))
+                            if (pictureBox1.Image != null)
+                                FitImageToWindow();
+                        break;
+                    // Lock image
+                    case "-l":
+                        if (ProcessLaunchBool(cmdArgs[i + 1]))
+                            lockImage = true;
+                        break;
+                    default:
+                        break;
                 }
             }
         }
 
-        void ProcessLaunchCoordinates(string launchArg)
+        bool ProcessLaunchBool(string arg)
         {
-            try { 
-                string[] values = launchArg.Split(',');
+            bool.TryParse(arg, out bool toggle);
+            return toggle;
+        }
 
-                List<int> coordinates = new List<int>();
+        // Gets the current application settings and converts them into launch arguments
+        private string GetCurrentArgs()
+        {
+            string args = "";
 
-                int formTop;
-                if (int.TryParse(values[0], out formTop)) { }
+            if (TransparencyKey == BackColor)
+                args += "-t true ";
+            if (lockImage)
+                args += "-l true ";
+            if (FormBorderStyle == FormBorderStyle.None)
+                args += "-b true ";
 
-                int formLeft;
-                if (int.TryParse(values[1], out formLeft)) { }
+            args += $"-r {imageRotation} ";
+            args += $"-f {imageFlipped} ";
+            args += $"-c {ClientSize.Width},{ClientSize.Height} ";
 
-                int formWidth;
-                if (int.TryParse(values[2], out formWidth)) { }
-
-                int formHeight;
-                if (int.TryParse(values[3], out formHeight)) { }
-
-                // Prevent window from going over the top border
-                // TODO This should check monitor resolution
-                if (formTop > -6)
-                    Top = formTop;
-
-                Left = formLeft;
-
-                if (formWidth > 0)
-                    Width = formWidth;
-
-                if (formHeight > 0)
-                    Height = formHeight;
-
-            }
-            catch (IndexOutOfRangeException)
-            {
-                displayMessage("Invalid launch argument");
-            }
-
+            return args;
         }
 
         public Color GetColorAt(Point location)
