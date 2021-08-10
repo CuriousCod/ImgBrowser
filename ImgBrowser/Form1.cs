@@ -413,7 +413,7 @@ namespace ImgBrowser
                         }
                         else if (pictureBox1.Image != null) {
                            Clipboard.SetImage(pictureBox1.Image);
-                           System.Diagnostics.Process.Start(exePath, $"{args} -center true");
+                           System.Diagnostics.Process.Start(exePath, $"noImg {args} -center true");
                         }
                     }
                     break;
@@ -1013,7 +1013,7 @@ namespace ImgBrowser
 
             int argsLength = cmdArgs.Length;
 
-            if (argsLength > 1)
+            if (argsLength > 1 && cmdArgs[1] != "noImg")
             {
                 loadNewImg(cmdArgs[1]); 
             }
