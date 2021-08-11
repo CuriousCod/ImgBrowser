@@ -1403,8 +1403,13 @@ namespace ImgBrowser
                     oldImg.Dispose();
                 }
 
-                Bitmap newImg = new Bitmap(Image.FromFile(imgLocation + "\\" + imgName)); 
-                pictureBox1.Image = newImg;
+                // Separate handling for gif files to make the animation work
+                if (!imgName.EndsWith(".gif")) { 
+                    Bitmap newImg = new Bitmap(Image.FromFile(imgLocation + "\\" + imgName)); // This way files won't be locked to the application
+                    pictureBox1.Image = newImg;
+                }
+                else
+                    pictureBox1.Image = Image.FromFile(imgLocation + "\\" + imgName);
             }
 
             if (removeImagePath) { 
