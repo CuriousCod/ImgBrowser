@@ -1101,6 +1101,10 @@ namespace ImgBrowser
                         if (ProcessLaunchBool(cmdArgs[i + 1]))
                             lockImage = true;
                         break;
+                    // Always on top
+                    case "-topmost":
+                        TopMost = true;
+                        break;
                     default:
                         break;
                 }
@@ -1124,6 +1128,10 @@ namespace ImgBrowser
                 args += "-l true ";
             if (FormBorderStyle == FormBorderStyle.None)
                 args += "-b true ";
+            if (TopMost)
+                args += "-topmost ";
+            
+                
 
             args += $"-r {imageRotation} ";
             args += $"-f {imageFlipped} ";
