@@ -863,12 +863,12 @@ namespace ImgBrowser
             Text = $"ImgBrowser - {name} - {size}";
         }
 
-        private string[] UpdateFileList()
+        private string[] UpdateFileList(bool allDirectories = false)
         {
 
             if (imgLocation != "")
             {
-                IEnumerable<string> files = Directory.EnumerateFiles(imgLocation + "\\", "*.*", SearchOption.TopDirectoryOnly)
+                IEnumerable<string> files = Directory.EnumerateFiles(imgLocation + "\\", "*.*", allDirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)
                 .Where(s => s.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
                 s.EndsWith(".gif", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase) ||
                 s.EndsWith(".tif", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".svg", StringComparison.OrdinalIgnoreCase) ||
@@ -1284,6 +1284,11 @@ namespace ImgBrowser
                 if (lowerCase.EndsWith(".jpg") || lowerCase.EndsWith(".png") || lowerCase.EndsWith(".gif") || lowerCase.EndsWith(".bmp") || lowerCase.EndsWith(".tif") || lowerCase.EndsWith(".svg") || lowerCase.EndsWith(".jfif") || lowerCase.EndsWith(".jpeg"))
                 {
                     LoadNewImg(files[0]);
+                }
+                else if (Directory.Exists(files[0]))
+                {
+                    imgLocation = files[0];
+                    fileEntries = UpdateFileList(true);
                 }
             }
 
