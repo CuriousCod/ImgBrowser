@@ -1289,6 +1289,11 @@ namespace ImgBrowser
                 {
                     imgLocation = files[0];
                     fileEntries = UpdateFileList(true);
+
+                    if (fileEntries.Length > 0)
+                        browseForward();
+                    else
+                        imgLocation = "";
                 }
             }
 
