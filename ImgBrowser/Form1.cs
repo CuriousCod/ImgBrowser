@@ -300,7 +300,7 @@ namespace ImgBrowser
                 // Restore unedited image
                 case "F10":
                     if (imageEdited)
-                        RestoreImage();
+                        RestoreImage(true);
                     break;
                 case "F11":
                     maxOrNormalizeWindow();
@@ -848,7 +848,7 @@ namespace ImgBrowser
             if (File.Exists(tempPath + "//" + tempName))
             {
                 LoadNewImg(tempPath + "//" + tempName, true);
-                lockImage = true;
+                //lockImage = true;
                 return true;
             }
 
@@ -1170,6 +1170,9 @@ namespace ImgBrowser
 
         public void pictureBoxUnZoom(double multiplier)
         {
+            if (pictureBox1.SizeMode == PictureBoxSizeMode.Zoom)
+                return;
+
             if (pictureBox1.Image != null)
             {
 
@@ -1191,7 +1194,7 @@ namespace ImgBrowser
                 // Do not zoom out if it makes image smaller than screen
                 if ((pictureBox1.Image.Width / multiplier < Width) && (pictureBox1.Image.Height / multiplier < Height))
                 {
-                    SizeModeZoom();
+                    RestoreImage(false);
                     return;
                 }
 
@@ -1269,14 +1272,15 @@ namespace ImgBrowser
         }
 
         // Restore unedited image from file or from the temp folder
-        public void RestoreImage()
+        public void RestoreImage(bool showMessage = true)
         {
             if (!string.IsNullOrEmpty(imgName) && !string.IsNullOrEmpty(imgLocation))
                 LoadNewImg(imgLocation + "\\" + imgName);
             else
                 LoadImageFromTemp(randString);
 
-            DisplayMessage("Image restored");
+            if (showMessage)
+                DisplayMessage("Image restored");
         }
 
         private void Form1_DragDrop(object sender, DragEventArgs e)
@@ -1491,6 +1495,7 @@ namespace ImgBrowser
 
         private void maxOrNormalizeWindow()
         {
+
             if (this.WindowState == FormWindowState.Maximized)
             {
                 if (this.FormBorderStyle == FormBorderStyle.None)
@@ -1522,8 +1527,6 @@ namespace ImgBrowser
             }
             else
             {
-                panel1.HorizontalScroll.Value = 0;
-                panel1.VerticalScroll.Value = 0;
                 pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
                 pictureBox1.Dock = DockStyle.Fill;
 
@@ -1742,6 +1745,7 @@ namespace ImgBrowser
 
                     currentPositionX = Cursor.Position.X;
                 }
+                zoomLocation = pictureBox1.Location;
             }
             if (pictureBox1.Image.Height > Height)
             {
@@ -1767,6 +1771,7 @@ namespace ImgBrowser
 
                     currentPositionY = Cursor.Position.Y;
                 }
+                zoomLocation = pictureBox1.Location;
             }
         }
 
@@ -1826,9 +1831,17 @@ namespace ImgBrowser
 
         private void SizeModeZoom()
         {
+            int x = 0;
+            int y = 0;
 
             // Update current zoomed in position
-            zoomLocation = pictureBox1.Location;
+            if (pictureBox1.Image.Width > ClientSize.Width && pictureBox1.Location.X < 0)
+                x = pictureBox1.Location.X;
+
+            if (pictureBox1.Image.Height > ClientSize.Height && pictureBox1.Location.Y < 0)
+                y = pictureBox1.Location.Y;
+
+            zoomLocation = new Point(x, y);
 
             pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
             pictureBox1.Dock = DockStyle.Fill;
@@ -1842,7 +1855,8 @@ namespace ImgBrowser
 
             CenterImage();
 
-            pictureBox1.Location = zoomLocation;
+            if (zoomLocation.X < -1 && zoomLocation.Y < -1)
+                pictureBox1.Location = zoomLocation;
 
         }
 
@@ -2047,6 +2061,20 @@ namespace ImgBrowser
             }
             catch (IOException) {
             }
+        }
+
+        // Detect when user presses maximize/normalize button of the window
+        protected override void WndProc(ref Message m)
+        {
+            FormWindowState org = this.WindowState;
+            base.WndProc(ref m);
+            if (this.WindowState != org)
+                this.OnFormWindowStateChanged(EventArgs.Empty);
+        }
+
+        private void OnFormWindowStateChanged(EventArgs e)
+        {
+            CenterImage();
         }
     }
 }
