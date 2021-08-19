@@ -873,7 +873,7 @@ namespace ImgBrowser
         private string[] UpdateFileList(bool allDirectories = false)
         {
 
-            if (imgLocation != "")
+            if (imgLocation != "" && imgLocation != Path.GetTempPath())
             {
                 IEnumerable<string> files = Directory.EnumerateFiles(imgLocation + "\\", "*.*", allDirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)
                 .Where(s => s.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
