@@ -35,7 +35,7 @@ namespace ImgBrowser
 {
     public partial class Form1 : Form
     {
-        private string[] fileEntries;
+        private string[] fileEntries = new string[0]{};
 
         // Current image information
         private string imgName = "";
@@ -858,9 +858,16 @@ namespace ImgBrowser
         private void UpdateFormName()
         {
             string name = imgName != "" ? $"{imgName}" : "Image";
-            string size = pictureBox1.Image != null ? $"{pictureBox1.Image.Width} x {pictureBox1.Image.Height}" : ""; 
+            string size = pictureBox1.Image != null ? $"{pictureBox1.Image.Width} x {pictureBox1.Image.Height}" : "";
 
-            Text = $"ImgBrowser - {name} - {size}";
+            string position = $"";
+
+            if (fileEntries.Length > 0) { 
+                int index = Array.IndexOf(fileEntries, imgLocation + "\\" + imgName);
+                position = $" - {index + 1} / {fileEntries.Length}";
+            }
+
+            Text = $"ImgBrowser - {name} - {size}{position}";
         }
 
         private string[] UpdateFileList(bool allDirectories = false)
