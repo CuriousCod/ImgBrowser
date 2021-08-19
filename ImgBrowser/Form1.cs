@@ -1834,7 +1834,7 @@ namespace ImgBrowser
             int x = 0;
             int y = 0;
 
-            // Update current zoomed in position
+            // Update current zoomed in position 
             if (pictureBox1.Image.Width > ClientSize.Width && pictureBox1.Location.X < 0)
                 x = pictureBox1.Location.X;
 
