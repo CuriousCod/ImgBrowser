@@ -329,7 +329,8 @@ namespace ImgBrowser
                     // Check for control key
                     if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
                     {
-                        Image clipImg = Clipboard.GetImage();
+                        //Image clipImg = Clipboard.GetImage();
+                        Image clipImg = GetAlphaImageFromClipboard();
                         if (clipImg != null)
                         {
                             Image oldImg = null;
@@ -398,7 +399,7 @@ namespace ImgBrowser
                         }
                         else if (pictureBox1.Image != null) {
                            Clipboard.SetImage(pictureBox1.Image);
-                           System.Diagnostics.Process.Start(exePath, $"noImg {args} -center");
+                           System.Diagnostics.Process.Start(exePath, $"-noImage {args} -center");
                         }
                     }
                     break;
@@ -926,13 +927,14 @@ namespace ImgBrowser
 
             int argsLength = cmdArgs.Length;
 
-            if (argsLength > 1 && cmdArgs[1] != "noImg")
+            if (argsLength > 1 && cmdArgs[1] != "-noImage")
             {
                 LoadNewImg(cmdArgs[1]); 
             }
             else
             {
-                Image clipImg = Clipboard.GetImage();
+                //Image clipImg = Clipboard.GetImage();
+                Image clipImg = GetAlphaImageFromClipboard();
 
                 if (clipImg != null)
                 {
@@ -1834,7 +1836,7 @@ namespace ImgBrowser
             int x = 0;
             int y = 0;
 
-            // Update current zoomed in position 
+            // Update current zoomed in position
             if (pictureBox1.Image.Width > ClientSize.Width && pictureBox1.Location.X < 0)
                 x = pictureBox1.Location.X;
 
@@ -2076,5 +2078,67 @@ namespace ImgBrowser
         {
             CenterImage();
         }
+
+        // http://ostack.cn/?qa=95752/
+        // Get the real image from clipboard (this supports the alpha channel)
+        private Image GetAlphaImageFromClipboard()
+        {
+            if (Clipboard.GetDataObject() == null) return null;
+            if (Clipboard.GetDataObject().GetDataPresent(DataFormats.Dib))
+            {
+
+                // Sometimes getting the image data fails and results in a "System.NullReferenceException" error - probably because clipboard handling also can be messy and complex
+                byte[] dib;
+                try
+                {
+                    dib = ((System.IO.MemoryStream)Clipboard.GetData(DataFormats.Dib)).ToArray();
+                }
+                catch (Exception ex)
+                {
+                    return Clipboard.ContainsImage() ? Clipboard.GetImage() : null;
+                }
+
+                var width = BitConverter.ToInt32(dib, 4);
+                var height = BitConverter.ToInt32(dib, 8);
+                var bpp = BitConverter.ToInt16(dib, 14);
+                if (bpp == 32)
+                {
+                    var gch = GCHandle.Alloc(dib, GCHandleType.Pinned);
+                    Bitmap bmp = null;
+                    try
+                    {
+                        var ptr = new IntPtr((long)gch.AddrOfPinnedObject() + 52); // 52 appears to be the correct address offset
+                        bmp = new Bitmap(width, height, width * 4, System.Drawing.Imaging.PixelFormat.Format32bppArgb, ptr);
+                        bmp.RotateFlip(RotateFlipType.Rotate180FlipX);
+                        return new Bitmap(bmp);
+                    }
+                    finally
+                    {
+                        gch.Free();
+                        if (bmp != null) bmp.Dispose();
+                    }
+                }
+            }
+            return Clipboard.ContainsImage() ? Clipboard.GetImage() : null;
+        }
+
+        // Check if the image contains any transparency
+        private static bool IsImageTransparent(Image image)
+        {
+            Bitmap img = new Bitmap(image);
+            for (int y = 0; y < img.Height; ++y)
+            {
+                for (int x = 0; x < img.Width; ++x)
+                {
+                    if (img.GetPixel(x, y).A != 255)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+
     }
 }
