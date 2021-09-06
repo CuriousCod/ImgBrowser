@@ -440,7 +440,23 @@ namespace ImgBrowser
                     break;
                 // Snipping tool, captured when button is released
                 case "S":
-                    if (screenCapButtonHeld == false)
+                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
+                    {
+                        if (pictureBox1.Image != null) {
+                            SaveFileDialog saveDialog = new SaveFileDialog
+                            {
+                                Filter = "PNG (*.png)|*.png|All files (*.*)|*.*",
+                                FilterIndex = 0,
+                                RestoreDirectory = true,
+                                FileName = imgName == "" ? "Image" : imgName
+                            };
+
+                            if (saveDialog.ShowDialog() == DialogResult.OK)
+                                pictureBox1.Image.Save(saveDialog.FileName, ImageFormat.Png);   
+                        }
+                    }
+
+                    else if (screenCapButtonHeld == false)
                     {
                         screenCapButtonHeld = true;
                         screenCapPosX = Cursor.Position.X;
