@@ -1,14 +1,12 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
-using System.Threading;
 using System.Runtime.InteropServices;
 using Microsoft.VisualBasic.FileIO;
 using System.Threading.Tasks;
@@ -38,8 +36,8 @@ namespace ImgBrowser
         private string[] fileEntries = new string[0]{};
 
         // Current image information
-        private string imgName = "";
-        private string imgLocation = "";
+        //private string currentImg.Name = "";
+        //private string currentImg.Path = "";
 
         // Locks current image, so browsing doesn't work
         private bool lockImage = false;
@@ -100,6 +98,14 @@ namespace ImgBrowser
         public static extern int BitBlt(IntPtr hDC, int x, int y, int nWidth, int nHeight, IntPtr hSrcDC, int xSrc, int ySrc, int dwRop);
         //-------------------------------------------
 
+        enum BrowseDirection
+        {
+            Forward,
+            Backward
+        }
+
+        ImageObject currentImg;
+
         public Form1()
         {
             InitializeComponent();
@@ -159,7 +165,7 @@ namespace ImgBrowser
                         if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
                             pictureBoxZoom(1.5);
                         else
-                            browseForward();
+                            BrowseForward();
                     }
 
                 }
@@ -228,7 +234,7 @@ namespace ImgBrowser
                         }
                     }
                     else
-                        browseForward();
+                        BrowseForward();
                     break;
                 case "Up":
                     if ((Control.ModifierKeys & Keys.Control) == Keys.Control) {
@@ -289,9 +295,9 @@ namespace ImgBrowser
                     break;
                 // Open image location
                 case "F3":
-                    if (imgLocation != "")
+                    if (currentImg.Path != "")
                     {
-                        System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{imgLocation}\\{imgName}\"");
+                        System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{currentImg.Path}\\{currentImg.Name}\"");
                     }
                     break;
                 case "F5":
@@ -338,8 +344,7 @@ namespace ImgBrowser
                                 oldImg = pictureBox1.Image; }
 
                             pictureBox1.Image = clipImg;
-                            imgLocation = "";
-                            imgName = "";
+                            currentImg = new ImageObject("");
 
                             pictureBox1.Location = new Point(0, 0);
                             SizeModeZoom();
@@ -393,9 +398,9 @@ namespace ImgBrowser
 
                         string args = GetCurrentArgs();
 
-                        if (imgLocation != "")
+                        if (currentImg.Path != "")
                         {
-                           System.Diagnostics.Process.Start(exePath, $"\"{imgLocation}/{imgName}\" {args} -center");
+                           System.Diagnostics.Process.Start(exePath, $"\"{currentImg.FullFilename}\" {args} -center");
                         }
                         else if (pictureBox1.Image != null) {
                            Clipboard.SetImage(pictureBox1.Image);
@@ -448,7 +453,7 @@ namespace ImgBrowser
                                 Filter = "PNG (*.png)|*.png|All files (*.*)|*.*",
                                 FilterIndex = 0,
                                 RestoreDirectory = true,
-                                FileName = imgName == "" ? "Image" : imgName
+                                FileName = currentImg.Name == "" ? "image" : currentImg.Name
                             };
 
                             if (saveDialog.ShowDialog() == DialogResult.OK)
@@ -493,39 +498,40 @@ namespace ImgBrowser
                     break;
                 // Display image name
                 case "N":
-                    if (!string.IsNullOrEmpty(imgName))
-                        DisplayMessage(imgName);
+                    if (!string.IsNullOrEmpty(currentImg.Name))
+                        DisplayMessage(currentImg.Name);
                     break;
                 // Move image to recycle bin
                 case "Delete":
-                    if ((imgLocation != "") && (imgName != "") && (pictureBox1.Image != null))
+                    if ((currentImg.Path != "") && (currentImg.Name != "") && (pictureBox1.Image != null))
                     {
                         // Get info from the image that is going to be deleted
-                        string delImgLocation = imgLocation;
-                        string delImgName = imgName;
+                        string delImgPath = currentImg.Path;
+                        string delImgName = currentImg.Name;
 
                         lockImage = false;
 
                         // Move to next image, so picturebox won't keep it locked
                         // This also keeps the file indexes working, otherwise index will be 0 after deletion
-                        browseForward();
+                        BrowseForward();
 
                         // Remove image from picturebox, if it is the only image in the folder
-                        if (imgName == delImgName)
+                        if (currentImg.Name == delImgName)
                         {
                             Image img = pictureBox1.Image;
                             pictureBox1.Image = null;
                             img.Dispose();
+                            currentImg = new ImageObject("");
                         }
                         try
                         {
-                            FileSystem.DeleteFile(delImgLocation + "\\" + delImgName, UIOption.AllDialogs, RecycleOption.SendToRecycleBin);
+                            FileSystem.DeleteFile(delImgPath + "\\" + delImgName, UIOption.AllDialogs, RecycleOption.SendToRecycleBin);
                             fileEntries = UpdateFileList();
                             DisplayMessage("Image moved to recycle bin");
                         }
                         catch (OperationCanceledException)
                         {
-                            pictureBox1.Image = Image.FromFile(imgLocation + "\\" + imgName);
+                            pictureBox1.Image = Image.FromFile(currentImg.FullFilename);
                         }
 
                     }
@@ -552,7 +558,7 @@ namespace ImgBrowser
                 case "Pause":
                     if ((Control.ModifierKeys & Keys.Alt) == Keys.Alt) {
                         DisplayMessage("Image path and window size added to clipboard");
-                        Clipboard.SetText($"{imgLocation}\\{imgName} {Top},{Left},{Height},{Width}");
+                        Clipboard.SetText($"{currentImg.Path}\\{currentImg.Name} {Top},{Left},{Height},{Width}");
                     }
                     break;
                 case "Add":
@@ -633,42 +639,50 @@ namespace ImgBrowser
             }
         }
 
-        private void browseForward()
+        private void BrowseForward()
         {
-            if ((imgLocation != "") && lockImage == false)
+            LoadNewImg(GetNextImageFilename(BrowseDirection.Forward), false, true);
+        }
+
+        private void BrowseBackward()
+        {
+            LoadNewImg(GetNextImageFilename(BrowseDirection.Backward), false, true);
+        }
+
+        ImageObject GetNextImageFilename(BrowseDirection bd)
+        {
+
+            if (fileEntries.Length < 2 || currentImg.Path == "" || lockImage)
+                return new ImageObject("");
+
+            string file;
+
+            if (bd == BrowseDirection.Forward)
             {
-                int index = Array.IndexOf(fileEntries, imgLocation + "\\" + imgName);
-                string file;
+                int index = Array.IndexOf(fileEntries, currentImg.FullFilename);
 
                 if (index + 1 <= fileEntries.Length - 1)
                     file = fileEntries[index + 1];
                 else
                     file = fileEntries[0];
-
-                LoadNewImg(file, false, true);
             }
-        }
-
-        private void BrowseBackward()
-        {
-            if ((imgLocation != "") && lockImage == false)
+            else
             {
-                int index = Array.IndexOf(fileEntries, imgLocation + "\\" + imgName);
-                string file;
+                int index = Array.IndexOf(fileEntries, currentImg.FullFilename);
 
                 if (index - 1 >= 0)
                     file = fileEntries[index - 1];
                 else
                     file = fileEntries[fileEntries.Length - 1];
-
-                LoadNewImg(file, false, true);
             }
-        }
 
+            return new ImageObject(file);
+
+        }
         private void JumpToImage(int index)
         {
-            if ((!lockImage) && ((imgLocation != ""))) 
-                LoadNewImg(fileEntries[index], false, true);
+            if ((!lockImage) && ((currentImg.Path != "")))
+                LoadNewImg(new ImageObject(fileEntries[index]), false, true);
         }
 
         private void FitImageToWindow()
@@ -716,12 +730,12 @@ namespace ImgBrowser
             if (TopMost)
             {
                 DisplayMessage("Stay on Top: False");
-                TopMost = false;
+                TopMost = !TopMost;
             }
             else
             {
                 DisplayMessage("Stay on Top: True");
-                TopMost = true;
+                TopMost = !TopMost;
             }
         }
 
@@ -864,7 +878,7 @@ namespace ImgBrowser
 
             if (File.Exists(tempPath + "//" + tempName))
             {
-                LoadNewImg(tempPath + "//" + tempName, true);
+                LoadNewImg(new ImageObject(tempPath + "//" + tempName), true);
                 //lockImage = true;
                 return true;
             }
@@ -874,13 +888,13 @@ namespace ImgBrowser
 
         private void UpdateFormName()
         {
-            string name = imgName != "" ? $"{imgName}" : "Image";
+            string name = currentImg.Name != "" ? $"{currentImg.Name}" : "Image";
             string size = pictureBox1.Image != null ? $"{pictureBox1.Image.Width} x {pictureBox1.Image.Height}" : "";
 
             string position = $"";
 
             if (fileEntries.Length > 0) { 
-                int index = Array.IndexOf(fileEntries, imgLocation + "\\" + imgName);
+                int index = Array.IndexOf(fileEntries, currentImg.FullFilename);
                 position = $" - {index + 1} / {fileEntries.Length}";
             }
 
@@ -890,9 +904,9 @@ namespace ImgBrowser
         private string[] UpdateFileList(bool allDirectories = false)
         {
 
-            if (imgLocation != "" && imgLocation != Path.GetTempPath())
+            if (currentImg.Path != "" && currentImg.Path != Path.GetTempPath())
             {
-                IEnumerable<string> files = Directory.EnumerateFiles(imgLocation + "\\", "*.*", allDirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)
+                IEnumerable<string> files = Directory.EnumerateFiles(currentImg.Path + "\\", "*.*", allDirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)
                 .Where(s => s.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
                 s.EndsWith(".gif", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase) ||
                 s.EndsWith(".tif", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".svg", StringComparison.OrdinalIgnoreCase) ||
@@ -945,7 +959,7 @@ namespace ImgBrowser
 
             if (argsLength > 1 && cmdArgs[1] != "-noImage")
             {
-                LoadNewImg(cmdArgs[1]); 
+                LoadNewImg(new ImageObject(cmdArgs[1])); 
             }
             else
             {
@@ -955,8 +969,7 @@ namespace ImgBrowser
                 if (clipImg != null)
                 {
                     pictureBox1.Image = clipImg;
-                    imgName = "";
-                    imgLocation = "";
+                    currentImg = new ImageObject("");
                     UpdateFormName();
                 }
             }
@@ -1089,7 +1102,7 @@ namespace ImgBrowser
                 // Make a backup of the current image
                 if (!imageEdited)
                 {
-                    if (imgLocation == "")
+                    if (currentImg.Path == "")
                         SaveImageToTemp(randString);
                     imageEdited = true;
                 }
@@ -1197,7 +1210,7 @@ namespace ImgBrowser
                 // Make a backup of the current image
                 if (!imageEdited)
                 {
-                    if (imgLocation == "")
+                    if (currentImg.Path == "")
                         SaveImageToTemp(randString);
                     imageEdited = true;
                 }
@@ -1292,8 +1305,8 @@ namespace ImgBrowser
         // Restore unedited image from file or from the temp folder
         public void RestoreImage(bool showMessage = true)
         {
-            if (!string.IsNullOrEmpty(imgName) && !string.IsNullOrEmpty(imgLocation))
-                LoadNewImg(imgLocation + "\\" + imgName);
+            if (!string.IsNullOrEmpty(currentImg.Name) && !string.IsNullOrEmpty(currentImg.Path))
+                LoadNewImg(new ImageObject(currentImg.FullFilename));
             else
                 LoadImageFromTemp(randString);
 
@@ -1312,49 +1325,55 @@ namespace ImgBrowser
 
                 if (lowerCase.EndsWith(".jpg") || lowerCase.EndsWith(".png") || lowerCase.EndsWith(".gif") || lowerCase.EndsWith(".bmp") || lowerCase.EndsWith(".tif") || lowerCase.EndsWith(".svg") || lowerCase.EndsWith(".jfif") || lowerCase.EndsWith(".jpeg"))
                 {
-                    LoadNewImg(files[0]);
+                    LoadNewImg(new ImageObject(files[0]));
                 }
                 else if (Directory.Exists(files[0]))
                 {
-                    imgLocation = files[0];
+                    currentImg = new ImageObject(files[0]);
                     fileEntries = UpdateFileList(true);
 
                     if (fileEntries.Length > 0)
-                        browseForward();
+                        JumpToImage(0);
                     else
-                        imgLocation = "";
+                        currentImg.FullFilename = "";
                 }
             }
 
 
         }
 
-        private void LoadNewImg(string file, bool removeImagePath = false, bool skipRefresh = false)
+        private void LoadNewImg(ImageObject imgObj, bool removeImagePath = false, bool skipRefresh = false)
         {
-            imgName = Path.GetFileName(file);
-            imgLocation = Path.GetDirectoryName(file).TrimEnd('\\');
+            if (imgObj.Name == "" || !imgObj.Valid)
+                return;
 
-            if (verifyImg(imgLocation + "\\" + imgName))
-            {
-                if (pictureBox1.Image != null)
-                {
-                    Image oldImg = pictureBox1.Image;
-                    pictureBox1.Image = null;
-                    oldImg.Dispose();
-                }
-
-                // Separate handling for gif files to make the animation work
-                if (!imgName.EndsWith(".gif")) { 
-                    Bitmap newImg = new Bitmap(Image.FromFile(imgLocation + "\\" + imgName)); // This way files won't be locked to the application
-                    pictureBox1.Image = newImg;
-                }
-                else
-                    pictureBox1.Image = Image.FromFile(imgLocation + "\\" + imgName);
+            if (imgObj.ImageData == null) { 
+                DisplayImageError();
+                return;
             }
 
-            if (removeImagePath) { 
-                imgLocation = "";
-                imgName = "";
+            currentImg = imgObj;
+
+            if (pictureBox1.Image != null)
+            {
+                Image oldImg = pictureBox1.Image;
+                pictureBox1.Image = null;
+                oldImg.Dispose();
+            }
+
+            // Separate handling for gif files to make the animation work
+            if (!currentImg.Name.EndsWith(".gif"))
+            {
+                // This way files won't be locked to the application
+                pictureBox1.Image = imgObj.ImageData;
+            }
+            else {
+                imgObj.ImageData.Dispose();
+                pictureBox1.Image = Image.FromFile(currentImg.FullFilename); // This locks the image to the application
+            }
+
+            if (removeImagePath) {
+                currentImg.FullFilename = "";
             }
 
             UpdateFormName();
@@ -1377,40 +1396,6 @@ namespace ImgBrowser
             GC.Collect();
         }
 
-        private bool verifyImg(string file)
-        {
-            try
-            {
-                // Check if image can be loaded
-                Image img = Image.FromFile(file);
-                // using (img)
-                // { }
-                img.Dispose();
-                return true;
-            }
-            catch (OutOfMemoryException ex)
-            {
-                Console.WriteLine(ex);
-                pictureBox1.Image = imageError();
-                return false;
-            }
-            // This actually doesn't catch these errors, since it also requires HandleProcessCorruptedStateExceptions 
-            // Got this one while trying to access corrupt image
-            // https://social.msdn.microsoft.com/Forums/vstudio/en-US/4de25cc0-9235-4e40-9cd7-d7c934d78cc6/sehexception-is-not-caught-in-managed-code-windows-just-kills-the-process?forum=clr
-            catch (SEHException ex)
-            {
-                Console.WriteLine(ex);
-                pictureBox1.Image = imageError();
-                return false;
-            }
-            catch (FileNotFoundException ex)
-            {
-                Console.WriteLine(ex);
-                pictureBox1.Image = imageError();
-                return false;
-            }
-        }
-
         private void ResetImageModifiers()
         {
             // Reset image modifiers
@@ -1418,10 +1403,16 @@ namespace ImgBrowser
             imageEdited = false;
         }
 
-        private Image imageError()
+        private void DisplayImageError()
         {
+            if (pictureBox1.Image != null)
+            {
+                Image oldImg = pictureBox1.Image;
+                pictureBox1.Image = null;
+                oldImg.Dispose();
+            }
+
             DisplayMessage("Unable to load image");
-            return null;
         }
 
         private void CopyCurrentDisplaytoClipboard()
@@ -1839,9 +1830,8 @@ namespace ImgBrowser
 
                     if (clipImg != null)
                     {
+                        currentImg = new ImageObject("");
                         pictureBox1.Image = clipImg;
-                        imgName = "";
-                        imgLocation = "";
                     }
                 }
             }
@@ -1849,6 +1839,7 @@ namespace ImgBrowser
 
         private void SizeModeZoom()
         {
+
             int x = 0;
             int y = 0;
 
