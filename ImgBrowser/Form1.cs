@@ -903,7 +903,6 @@ namespace ImgBrowser
 
         private string[] UpdateFileList(bool allDirectories = false)
         {
-
             if (currentImg.Path != "" && currentImg.Path != Path.GetTempPath())
             {
                 IEnumerable<string> files = Directory.EnumerateFiles(currentImg.Path + "\\", "*.*", allDirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)
@@ -1329,7 +1328,7 @@ namespace ImgBrowser
                 }
                 else if (Directory.Exists(files[0]))
                 {
-                    currentImg = new ImageObject(files[0]);
+                    currentImg = new ImageObject(files[0]  + "\\");
                     fileEntries = UpdateFileList(true);
 
                     if (fileEntries.Length > 0)
@@ -1376,10 +1375,10 @@ namespace ImgBrowser
                 currentImg.FullFilename = "";
             }
 
-            UpdateFormName();
-
             if (!skipRefresh)
                 fileEntries = UpdateFileList();
+
+            UpdateFormName();
 
             // Reset zoomed in position
             pictureBox1.Location = new Point(0, 0);
