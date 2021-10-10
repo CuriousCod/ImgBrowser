@@ -892,11 +892,18 @@ namespace ImgBrowser
             {
                 try { 
                     string tempPath = Path.GetTempPath();
-                    string tempName = "imgBrowserTemp" + ordinalValue + ".png";
+                    string tempName;
+
                     if (!overridePath)
-                        pictureBox1.Image.Save(tempPath + "\\" + tempName, ImageFormat.Png);
+                        tempName = "imgBrowserTemp" + ordinalValue + ".png";
                     else
-                        pictureBox1.Image.Save(tempPath + "\\" + ordinalValue + ".png", ImageFormat.Png);
+                        tempName = ordinalValue + ".png";
+
+                    if (File.Exists(tempName))
+                        File.Delete(tempName);
+
+                    pictureBox1.Image.Save(tempPath + "\\" + tempName, ImageFormat.Png);
+
                     return true;
                 }
                 // This occurs when trying to rewrite a currently opened image
