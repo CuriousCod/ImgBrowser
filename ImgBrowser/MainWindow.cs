@@ -899,9 +899,6 @@ namespace ImgBrowser
                     else
                         tempName = ordinalValue + ".png";
 
-                    if (File.Exists(tempName))
-                        File.Delete(tempName);
-
                     pictureBox1.Image.Save(tempPath + "\\" + tempName, ImageFormat.Png);
 
                     return true;
