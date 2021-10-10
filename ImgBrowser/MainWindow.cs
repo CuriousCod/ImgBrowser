@@ -9,29 +9,26 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using Microsoft.VisualBasic.FileIO;
+using System.Threading;
 using System.Threading.Tasks;
 using SearchOption = System.IO.SearchOption;
 
-
-// TODO Config for window start position
+// TODO Improve temp image handling
 // TODO Button config
 // TODO Randomized slideshow? <-----------
-// TODO Verify if other image changing methods require dispose(), copy+paste, rotate, etc
 // TODO Arrow keys to navigate when zoomed in
 // TODO Tabs?
 // TODO Folder image count
-// TODO Open folder in app and os.walk an image array
 // TODO Randomize image array order?
 // BUG Image can slighty overfill the screen when in autosize + fullscreen mode
 // BUG Dragging a full screen image into a small window will make the window slightly smaller every time
-// BUG Tempfile deletion does not work when closing the application
 // TODO Scale image to screen?
 // TODO Remember rotate position for next image
 // TODO Z-index adjust
 
 namespace ImgBrowser
 {
-    public partial class Form1 : Form
+    public partial class MainWindow : Form
     {
         private string[] fileEntries = new string[0]{};
 
@@ -39,7 +36,7 @@ namespace ImgBrowser
         //private string currentImg.Name = "";
         //private string currentImg.Path = "";
 
-        // Locks current image, so browsing doesn't work
+        // Locks current image, so image doesn't change on accidental input
         private bool lockImage = false;
 
         // Mouse position
@@ -94,9 +91,28 @@ namespace ImgBrowser
         [DllImportAttribute("user32.dll")]
         public static extern bool ReleaseCapture();
 
+        [DllImport("user32.dll")]
+        public static extern bool MoveWindow(IntPtr hWnd, int x, int Y, int nWidth, int nHeight, bool bRepaint);
+
+        [DllImport("user32.dll")]
+        static extern IntPtr GetActiveWindow();
+
         [DllImport("gdi32.dll", CharSet = CharSet.Auto, SetLastError = true, ExactSpelling = true)]
         public static extern int BitBlt(IntPtr hDC, int x, int y, int nWidth, int nHeight, IntPtr hSrcDC, int xSrc, int ySrc, int dwRop);
-        //-------------------------------------------
+
+        IntPtr thisWindow;
+        
+        public class WindowShake
+        {
+            public bool Enabled { get => Token != null; }
+            public int AnimSpeed = 1;
+            public int Distance { get => Math.Abs(Math.Abs(StartX) - Math.Abs(EndX));}
+            public int StartX = 0;
+            public int EndX = 100;
+            public bool StartSet = false;
+
+            public CancellationTokenSource Token;
+        }
 
         enum BrowseDirection
         {
@@ -105,8 +121,11 @@ namespace ImgBrowser
         }
 
         ImageObject currentImg;
+        WindowShake windowShake = new WindowShake(); 
 
-        public Form1()
+        //-------------------------------------------
+
+        public MainWindow()
         {
             InitializeComponent();
             InitializeMessageBox();
@@ -197,17 +216,21 @@ namespace ImgBrowser
         {
             Console.WriteLine(e.KeyCode);
 
+            bool ctrlHeld = (Control.ModifierKeys & Keys.Control) == Keys.Control;
+            bool altHeld = (Control.ModifierKeys & Keys.Alt) == Keys.Alt;
+            bool shiftHeld = (Control.ModifierKeys & Keys.Shift) == Keys.Shift;
+
             switch (e.KeyCode.ToString())
             {
                 case "Left":
                     // Pixel movement
-                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
+                    if (ctrlHeld)
                     {
-                        int modifier = ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) ? 5 : 1;
+                        int modifier = shiftHeld ? 5 : 1;
                         Location = Point.Subtract(Location, new Size(modifier, 0));
                     }
                     // Size adjust
-                    else if ((Control.ModifierKeys & Keys.Alt) == Keys.Alt)
+                    else if (altHeld)
                     {
                         int modifier = ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) ? 5 : 1;
                         Size = Size.Subtract(Size, new Size(modifier, 0));
@@ -220,11 +243,11 @@ namespace ImgBrowser
                         BrowseBackward();
                     break;
                 case "Right":
-                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control) {
+                    if (ctrlHeld) {
                         int modifier = ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) ? 5 : 1;
                         Location = Point.Add(Location, new Size(modifier, 0));
                     }
-                    else if ((Control.ModifierKeys & Keys.Alt) == Keys.Alt)
+                    else if (altHeld)
                     {
                         int modifier = ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) ? 5 : 1;
                         Size = Size.Add(Size, new Size(modifier, 0));
@@ -237,13 +260,13 @@ namespace ImgBrowser
                         BrowseForward();
                     break;
                 case "Up":
-                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control) {
-                        int modifier = ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) ? 3 : 1;
+                    if (ctrlHeld) {
+                        int modifier = shiftHeld ? 3 : 1;
                         Location = Point.Subtract(Location, new Size(0, modifier));
                     }
-                    else if ((Control.ModifierKeys & Keys.Alt) == Keys.Alt)
+                    else if (altHeld)
                     {
-                        int modifier = ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) ? 3 : 1;
+                        int modifier = shiftHeld ? 3 : 1;
                         Size = Size.Subtract(Size, new Size(0, modifier));
                         if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
                         {
@@ -254,7 +277,7 @@ namespace ImgBrowser
                     }
                     break;
                 case "Down":
-                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control) {
+                    if (ctrlHeld) {
                         int modifier = ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) ? 3 : 1;
                         Location = Point.Add(Location, new Size(0, modifier));
                     }
@@ -270,16 +293,14 @@ namespace ImgBrowser
                     }
                     break;
                 case "Y":
-                    for (int x = 0; x < 20; x++) { 
-                        for (int i = 0; i < 200; i++) { 
-                        if (i < 100)
-                            Location = Point.Add(Location, new Size(1,0));
-                        else
-                            Location = Point.Subtract(Location, new Size(1, 0));
-                        }
+                    if (altHeld && !windowShake.StartSet)
+                    {
+                        windowShake.StartX = Location.X;
+                        windowShake.StartSet = true;
                     }
+                    else
+                        ShakeWindow();
                     break;
-
                 case "F1":
                     ToggleAlwaysOnTop();
                     break;
@@ -302,6 +323,7 @@ namespace ImgBrowser
                     break;
                 case "F5":
                     fileEntries = UpdateFileList();
+                    LoadNewImg(currentImg);
                     break;
                 // Restore unedited image
                 case "F10":
@@ -314,7 +336,7 @@ namespace ImgBrowser
                 // Copy image to clipboard
                 case "C":
                     // Check for control key
-                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
+                    if (ctrlHeld)
                     {
                         if (pictureBox1.Image != null) {
                             if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) {
@@ -333,7 +355,7 @@ namespace ImgBrowser
                 // Display image from clipboard
                 case "V":
                     // Check for control key
-                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
+                    if (ctrlHeld)
                     {
                         //Image clipImg = Clipboard.GetImage();
                         Image clipImg = GetAlphaImageFromClipboard();
@@ -376,7 +398,7 @@ namespace ImgBrowser
                         }
                         */
 
-                        if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
+                        if (ctrlHeld)
                             RotateImage(true);
                         else
                             RotateImage(false);
@@ -386,12 +408,12 @@ namespace ImgBrowser
                 case "M":
                     if (pictureBox1.Image != null)
                     {
-                        FlipImageX(((Control.ModifierKeys & Keys.Control) == Keys.Control));
+                        FlipImageX((ctrlHeld));
                     }
                     break;
                 // Duplicate current image into a new window
                 case "D":
-                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control) {
+                    if (ctrlHeld) {
                         string exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
                         if (!File.Exists(exePath))
                             return;
@@ -445,7 +467,7 @@ namespace ImgBrowser
                     break;
                 // Snipping tool, captured when button is released
                 case "S":
-                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
+                    if (ctrlHeld)
                     {
                         if (pictureBox1.Image != null) {
                             SaveFileDialog saveDialog = new SaveFileDialog
@@ -476,7 +498,7 @@ namespace ImgBrowser
                     break;
                 // TODO This can make the image transparent as well if the color matches the form's bg
                 case "T":
-                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control) { 
+                    if (ctrlHeld) { 
                         if (TransparencyKey != BackColor)
                         {
                             DisplayMessage("Background hidden");
@@ -491,7 +513,7 @@ namespace ImgBrowser
                     break;
                 // Close app
                 case "W":
-                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control && (Control.ModifierKeys & Keys.Shift) == Keys.Shift)
+                    if (ctrlHeld && (Control.ModifierKeys & Keys.Shift) == Keys.Shift)
                     {
                         Application.Exit();
                     }
@@ -561,30 +583,44 @@ namespace ImgBrowser
                         Clipboard.SetText($"{currentImg.Path}\\{currentImg.Name} {Top},{Left},{Height},{Width}");
                     }
                     break;
+                case "Escape":
+                    if (windowShake.Enabled)
+                        windowShake.Token.Cancel();
+                    break;
                 case "Add":
                     // Hold ctrl for smaller zoom value
-                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control) pictureBoxZoom(1.2);
+                    if (ctrlHeld) pictureBoxZoom(1.2);
                     else pictureBoxZoom(1.5);
                     break;
                 case "Subtract":
                     // Hold ctrl for smaller zoom value
-                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control) pictureBoxUnZoom(1.2);
+                    if (ctrlHeld) pictureBoxUnZoom(1.2);
                     else pictureBoxUnZoom(1.5);
                     break;
                 case "D1":
                     TempImageHandling("01");
+                    if (windowShake.Enabled)
+                        windowShake.AnimSpeed = 1;
                     break;
                 case "D2":
                     TempImageHandling("02");
+                    if (windowShake.Enabled)
+                        windowShake.AnimSpeed = 2;
                     break;
                 case "D3":
                     TempImageHandling("03");
+                    if (windowShake.Enabled)
+                        windowShake.AnimSpeed = 3;
                     break;
                 case "D4":
                     TempImageHandling("04");
+                    if (windowShake.Enabled)
+                        windowShake.AnimSpeed = 4;
                     break;
                 case "D5":
                     TempImageHandling("05");
+                    if (windowShake.Enabled)
+                        windowShake.AnimSpeed = 5;
                     break;
                 case "D6":
                     TempImageHandling("06");
@@ -675,7 +711,6 @@ namespace ImgBrowser
                 else
                     file = fileEntries[fileEntries.Length - 1];
             }
-
             return new ImageObject(file);
 
         }
@@ -851,14 +886,17 @@ namespace ImgBrowser
                         DisplayMessage("Temp image loaded");
         }
 
-        private bool SaveImageToTemp(string ordinalValue)
+        private bool SaveImageToTemp(string ordinalValue, bool overridePath = false)
         {
             if (pictureBox1.Image != null)
             {
                 try { 
                     string tempPath = Path.GetTempPath();
                     string tempName = "imgBrowserTemp" + ordinalValue + ".png";
-                    pictureBox1.Image.Save(tempPath + "\\" + tempName, ImageFormat.Png);
+                    if (!overridePath)
+                        pictureBox1.Image.Save(tempPath + "\\" + tempName, ImageFormat.Png);
+                    else
+                        pictureBox1.Image.Save(tempPath + "\\" + ordinalValue + ".png", ImageFormat.Png);
                     return true;
                 }
                 // This occurs when trying to rewrite a currently opened image
@@ -938,6 +976,56 @@ namespace ImgBrowser
                 adjustmentValue = new Size(1, 1);
 
             return adjustmentValue;
+        }
+
+        void ShakeWindow()
+        {
+            if (windowShake.Enabled)
+            {
+                windowShake.Token.Cancel();
+                return;
+            }
+
+            thisWindow = GetActiveWindow();
+            //Point originalPos = Location;
+
+            windowShake.Token = new CancellationTokenSource();
+            CancellationToken ct = windowShake.Token.Token;
+
+            Task.Run(() =>
+            {
+                try
+                {
+                    for (; ; )
+                    {
+                        for (int i = 0; i < windowShake.Distance / windowShake.AnimSpeed; i++)
+                        {
+                            if (i < windowShake.Distance / 2 / windowShake.AnimSpeed)
+                                MoveWindow(thisWindow, Location.X + (1 * windowShake.AnimSpeed), Location.Y, Width, Height, false);
+                            else
+                                MoveWindow(thisWindow, Location.X - (1 * windowShake.AnimSpeed), Location.Y, Width, Height, false);
+
+                            if (ct.IsCancellationRequested)
+                                ct.ThrowIfCancellationRequested();
+
+                            Thread.Sleep(2);
+                        }
+                    }
+
+                    // token.Dispose();
+                    // token = null;
+                }
+                catch (OperationCanceledException)
+                {
+                    //MoveWindow(thisWindow, originalPos.X, originalPos.Y, Width, Height, false);
+                }
+                finally
+                {
+                    windowShake.Token.Dispose();
+                    windowShake.Token = null;
+                }
+
+            }, windowShake.Token.Token);
         }
 
         private void pictureBox1_Click(object sender, EventArgs e)
@@ -1448,6 +1536,13 @@ namespace ImgBrowser
 
             if (e.Button.ToString() == "Left")
             {
+                if ((Control.ModifierKeys & Keys.Alt) == Keys.Alt)
+                    if (pictureBox1.Image != null)
+                    {
+                        DragImageFromApp();
+                        return;
+                    }
+
                 // Get mouse position for image scroll
                 currentPositionX = Cursor.Position.X;
                 currentPositionY = Cursor.Position.Y;
@@ -1491,7 +1586,7 @@ namespace ImgBrowser
                             Top = Cursor.Position.Y - ClientSize.Height / 2;
                         }*/
 
-                        // Raw commands for moving window with mouse// Raw commands for moving window with mouse
+                        // Raw commands for moving window with mouse
                         ReleaseCapture();
                         SendMessage(Handle, WM_NCLBUTTONDOWN, HT_CAPTION, 0);
 
@@ -1499,6 +1594,34 @@ namespace ImgBrowser
                 }
             }
 
+        }
+        void DragImageFromApp()
+        {
+            string file;
+
+            if (!currentImg.Valid)
+            {
+                SaveImageToTemp("ClipImage", true); // Create temp image with clean name
+                file = Path.GetTempPath() + "/" + "ClipImage.png";
+            }
+            else
+                file = currentImg.FullFilename;
+
+            if (!File.Exists(file))
+                return;
+
+            DataObject dataObject = new DataObject();
+            DragFileInfo filesInfo = new DragFileInfo(file);
+
+            using (MemoryStream infoStream = GetFileDescriptor(filesInfo),
+                                contentStream = GetFileContents(filesInfo))
+            {
+                dataObject.SetData(CFSTR_FILEDESCRIPTORW, infoStream);
+                dataObject.SetData(CFSTR_FILECONTENTS, contentStream);
+                dataObject.SetData(CFSTR_PERFORMEDDROPEFFECT, null);
+
+                DoDragDrop(dataObject, DragDropEffects.All);
+            }
         }
 
         private void maxOrNormalizeWindow()
@@ -1930,41 +2053,16 @@ namespace ImgBrowser
 
         private void Form1_KeyUp(object sender, KeyEventArgs e)
         {
+            bool ctrlHeld = (Control.ModifierKeys & Keys.Control) == Keys.Control;
+            bool altHeld = (Control.ModifierKeys & Keys.Alt) == Keys.Alt;
+
             switch (e.KeyCode.ToString())
             {
-
-                // Moved to separate form window
-
-
-                // Capture screen from the rectangle drawn by cursor
-                // https://stackoverflow.com/questions/13103682/draw-a-bitmap-image-on-the-screen
-                case "S":
-                    /*
-                    screenCapButtonHeld = false;
-                    pictureBox1.Cursor = Cursors.Default;
-
-                    // Get start and end coordinates
-                    int p1 = Math.Min(screenCapPosX, Cursor.Position.X);
-                    int p2 = Math.Min(screenCapPosY, Cursor.Position.Y);
-                    int s1 = Math.Max(screenCapPosX, Cursor.Position.X);
-                    int s2 = Math.Max(screenCapPosY, Cursor.Position.Y);
-
-                    // Create rectangle from coordinates
-                    Rectangle rect = new Rectangle(new Point(p1, p2), new Size(s1 - p1, s2 - p2));
-
-                    if (rect.Width == 0 || rect.Height == 0) break;
-
-                    Bitmap BM = new Bitmap(rect.Width, rect.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                    using (Graphics g = Graphics.FromImage(BM))
-                    {
-                        g.CopyFromScreen(rect.Left, rect.Top, 0, 0, rect.Size);
-                        Clipboard.SetImage(BM);
+                case "Y":
+                    if (windowShake.StartSet) { 
+                        windowShake.EndX = Location.X;
+                        windowShake.StartSet = false;
                     }
-
-                    BM.Dispose();
-                    displayMessage("Selection copied to clipboard");
-                    */
-
                     break;
                 case "I":
                     Color currentColor = GetColorAt(Cursor.Position);
@@ -2060,12 +2158,16 @@ namespace ImgBrowser
         private void OnApplicationExit(object sender, EventArgs e)
         {
             string tempFile = Path.GetTempPath() + "/" + "imgBrowserTemp" + randString + ".png";
+            string tempFile2 = Path.GetTempPath() + "/" + "ClipImage.png";
 
-            // Attempt to delete the temporary file
+            // Attempt to delete the temporary files
             try 
             { 
                 if (File.Exists(tempFile))
                     File.Delete(tempFile);
+
+                if (File.Exists(tempFile2))
+                    File.Delete(tempFile2);
             }
             catch (IOException) {
             }
