@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 
 namespace ImgBrowser
 {
-
     // Support for dragging images from the application to other software
     // https://stackoverflow.com/questions/1845654/how-to-use-filegroupdescriptor-to-drag-file-to-explorer-c-sharp
 

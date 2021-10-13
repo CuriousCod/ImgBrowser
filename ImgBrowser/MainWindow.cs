@@ -13,7 +13,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using SearchOption = System.IO.SearchOption;
 
-// TODO Improve temp image handling
 // TODO Button config
 // TODO Randomized slideshow? <-----------
 // TODO Arrow keys to navigate when zoomed in
@@ -293,7 +292,7 @@ namespace ImgBrowser
                     }
                     break;
                 case "Y":
-                    if (altHeld && !windowShake.StartSet)
+                    if (shiftHeld && !windowShake.StartSet)
                     {
                         windowShake.StartX = Location.X;
                         windowShake.StartSet = true;
@@ -878,7 +877,6 @@ namespace ImgBrowser
                         }
                         else
                             DisplayMessage($"Saved to temp {ordinalValue}");
-                        
                     }
                 }
                 else
@@ -886,7 +884,7 @@ namespace ImgBrowser
                         DisplayMessage("Temp image loaded");
         }
 
-        private bool SaveImageToTemp(string ordinalValue, bool overridePath = false)
+        private bool SaveImageToTemp(string ordinalValue, bool overrideName = false)
         {
             if (pictureBox1.Image != null)
             {
@@ -894,7 +892,7 @@ namespace ImgBrowser
                     string tempPath = Path.GetTempPath();
                     string tempName;
 
-                    if (!overridePath)
+                    if (!overrideName)
                         tempName = "imgBrowserTemp" + ordinalValue + ".png";
                     else
                         tempName = ordinalValue + ".png";
@@ -1435,12 +1433,14 @@ namespace ImgBrowser
 
         private void LoadNewImg(ImageObject imgObj, bool removeImagePath = false, bool skipRefresh = false)
         {
+            bool imageError = false;
+
             if (imgObj.Name == "" || !imgObj.Valid)
                 return;
 
             if (imgObj.ImageData == null) { 
                 DisplayImageError();
-                return;
+                imageError = true;
             }
 
             currentImg = imgObj;
@@ -1452,15 +1452,17 @@ namespace ImgBrowser
                 oldImg.Dispose();
             }
 
-            // Separate handling for gif files to make the animation work
-            if (!currentImg.Name.EndsWith(".gif"))
-            {
-                // This way files won't be locked to the application
-                pictureBox1.Image = imgObj.ImageData;
-            }
-            else {
-                imgObj.ImageData.Dispose();
-                pictureBox1.Image = Image.FromFile(currentImg.FullFilename); // This locks the image to the application
+            if (!imageError) { 
+                // Separate handling for gif files to make the animation work
+                if (!currentImg.Name.EndsWith(".gif"))
+                {
+                    // This way files won't be locked to the application
+                    pictureBox1.Image = imgObj.ImageData;
+                }
+                else {
+                    imgObj.ImageData.Dispose();
+                    pictureBox1.Image = Image.FromFile(currentImg.FullFilename); // This locks the image to the application
+                }
             }
 
             if (removeImagePath) {
@@ -1605,8 +1607,8 @@ namespace ImgBrowser
 
             if (!currentImg.Valid)
             {
-                SaveImageToTemp("ClipImage", true); // Create temp image with clean name
-                file = Path.GetTempPath() + "/" + "ClipImage.png";
+                SaveImageToTemp("TempImage", true); // Create temp image with clean name
+                file = Path.GetTempPath() + "/" + "TempImage.png";
             }
             else
                 file = currentImg.FullFilename;
@@ -1708,102 +1710,6 @@ namespace ImgBrowser
                             Location = new Point(Cursor.Position.X - currentPositionX + frameLeft, Cursor.Position.Y - currentPositionY + frameTop);
                         }
                     }
-
-                    // Old code scrolling using scrollbars with panel autoscroll
-                    /*
-                    if (Cursor.Position.X - minMov > currentPositionX)
-                    {
-                        if (panel1.HorizontalScroll.Value - scrollOffset * 2 >= panel1.HorizontalScroll.Minimum)
-                        {
-                            panel1.HorizontalScroll.Value -= (int)(scrollOffset) * 2;
-                        }
-                        else
-                        {
-                            panel1.HorizontalScroll.Value = panel1.HorizontalScroll.Minimum;
-                        }
-
-                    }
-                    if (Cursor.Position.X + minMov < currentPositionX)
-                    {
-                        if (panel1.HorizontalScroll.Value + scrollOffset * 2 <= panel1.HorizontalScroll.Maximum)
-                        {
-                            panel1.HorizontalScroll.Value += (int)(scrollOffset) * 2;
-                        }
-                        else
-                        {
-                            panel1.HorizontalScroll.Value = panel1.HorizontalScroll.Maximum;
-                        }
-                    }
-
-                    if (Cursor.Position.Y - minMov > currentPositionY)
-                    {
-                        if (panel1.VerticalScroll.Value - scrollOffset >= panel1.VerticalScroll.Minimum)
-                        {
-                            panel1.VerticalScroll.Value -= (int)(scrollOffset);
-                        }
-                        else
-                        {
-                            panel1.VerticalScroll.Value = panel1.VerticalScroll.Minimum;
-                        }
-                    }
-                    if (Cursor.Position.Y + minMov < currentPositionY)
-                    {
-                        if (panel1.VerticalScroll.Value + scrollOffset <= panel1.VerticalScroll.Maximum)
-                        {
-                            panel1.VerticalScroll.Value += (int)(scrollOffset);
-                        }
-                        else
-                        {
-                            panel1.VerticalScroll.Value = panel1.VerticalScroll.Maximum;
-                        }
-
-                    }
-                }
-                */
-
-                    // Changed to use the Windows function ReleaseCapture();
-                    // Move frame with mouse
-                    /*
-                    else
-                    {
-                        Location = new Point(Cursor.Position.X - currentPositionX + frameLeft, Cursor.Position.Y - currentPositionY + frameTop);
-                    }
-                    */
-
-                    // Old image move code
-                    /*
-                    // Grab mouse X direction
-                    double deltaDirection = currentPositionX - e.X;
-                    directionX = deltaDirection > 0 ? -1 : 1;
-                    currentPositionX = e.X;
-                    Console.WriteLine("X: " + directionX);
-
-                    // Move image based on direction
-                    if ((directionX == 1) && (panel1.HorizontalScroll.Value + 5 <= panel1.HorizontalScroll.Maximum))
-                    {
-                        panel1.HorizontalScroll.Value += 5;
-                    }
-                    else if (panel1.HorizontalScroll.Value - 5 >= panel1.HorizontalScroll.Minimum)
-                    {
-                        panel1.HorizontalScroll.Value -= 5;
-                    }
-
-                    // Grab mouse Y direction
-                    deltaDirection = currentPositionY - e.Y;
-                    directionY = deltaDirection > 0 ? -1 : 1;
-                    currentPositionX = e.Y;
-                    Console.WriteLine("Y: " + directionY);
-
-                    // Move image based on direction
-                    if ((directionY == 1) && (panel1.VerticalScroll.Value + 5 <= panel1.VerticalScroll.Maximum))
-                    {
-                        panel1.VerticalScroll.Value += 5;
-                    }
-                    else if (panel1.VerticalScroll.Value - 5 >= panel1.VerticalScroll.Minimum)
-                    {
-                        panel1.VerticalScroll.Value -= 5;
-                    }
-                    */
                 }
                 else
                 {
@@ -1952,7 +1858,7 @@ namespace ImgBrowser
                 // Paste image from clipboard, if picturebox is empty
                 // This does not dispose the previous image, but this also only works when the picturebox image is null
                 else { 
-                    Image clipImg = Clipboard.GetImage();
+                    Image clipImg = GetAlphaImageFromClipboard();
 
                     if (clipImg != null)
                     {
@@ -1965,6 +1871,8 @@ namespace ImgBrowser
 
         private void SizeModeZoom()
         {
+            if (pictureBox1.Image == null)
+                return;
 
             int x = 0;
             int y = 0;
@@ -2162,7 +2070,7 @@ namespace ImgBrowser
         private void OnApplicationExit(object sender, EventArgs e)
         {
             string tempFile = Path.GetTempPath() + "/" + "imgBrowserTemp" + randString + ".png";
-            string tempFile2 = Path.GetTempPath() + "/" + "ClipImage.png";
+            string tempFile2 = Path.GetTempPath() + "/" + "TempImage.png";
 
             // Attempt to delete the temporary files
             try 
