@@ -119,7 +119,7 @@ namespace ImgBrowser
             Backward
         }
 
-        ImageObject currentImg;
+        ImageObject currentImg = new ImageObject("");
         readonly WindowHover windowHover = new WindowHover(); 
 
         //-------------------------------------------
@@ -317,7 +317,7 @@ namespace ImgBrowser
                     break;
                 // Open image location
                 case "F3":
-                    if (currentImg.Path != "")
+                    if (currentImg.Valid)
                     {
                         System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{currentImg.Path}\\{currentImg.Name}\"");
                     }
@@ -399,7 +399,7 @@ namespace ImgBrowser
 
                         string args = GetCurrentArgs();
 
-                        if (currentImg.Path != "")
+                        if (currentImg.Valid)
                         {
                            System.Diagnostics.Process.Start(exePath, $"\"{currentImg.FullFilename}\" {args} -center");
                         }
@@ -499,12 +499,12 @@ namespace ImgBrowser
                     break;
                 // Display image name
                 case "N":
-                    if (currentImg != null && !string.IsNullOrEmpty(currentImg.Name))
+                    if (currentImg.Valid)
                         DisplayMessage(currentImg.Name);
                     break;
                 // Move image to recycle bin
                 case "Delete":
-                    if ((currentImg.Path != "") && (currentImg.Name != "") && (pictureBox1.Image != null))
+                    if (currentImg.Valid && (pictureBox1.Image != null))
                     {
                         // Get info from the image that is going to be deleted
                         string delImgPath = currentImg.Path;
