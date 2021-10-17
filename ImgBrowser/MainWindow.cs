@@ -120,7 +120,7 @@ namespace ImgBrowser
         }
 
         ImageObject currentImg;
-        WindowHover windowHover = new WindowHover(); 
+        readonly WindowHover windowHover = new WindowHover(); 
 
         //-------------------------------------------
 
@@ -499,7 +499,7 @@ namespace ImgBrowser
                     break;
                 // Display image name
                 case "N":
-                    if (!string.IsNullOrEmpty(currentImg.Name))
+                    if (currentImg != null && !string.IsNullOrEmpty(currentImg.Name))
                         DisplayMessage(currentImg.Name);
                     break;
                 // Move image to recycle bin
@@ -1608,6 +1608,8 @@ namespace ImgBrowser
             }
 
         }
+
+        // Extra effort to support image drag to other applications
         void DragImageFromApp()
         {
             string file;
@@ -2114,6 +2116,7 @@ namespace ImgBrowser
                 }
                 catch (Exception ex)
                 {
+                    Console.WriteLine(ex);
                     return Clipboard.ContainsImage() ? Clipboard.GetImage() : null;
                 }
 
