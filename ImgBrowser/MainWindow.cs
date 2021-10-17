@@ -358,7 +358,27 @@ namespace ImgBrowser
                     // Check for control key
                     if (ctrlHeld)
                     {
-                        LoadNewImgFromClipboard();
+                        //Image clipImg = Clipboard.GetImage();
+                        Image clipImg = GetAlphaImageFromClipboard();
+                        if (clipImg != null)
+                        {
+                            Image oldImg = null;
+                            if (pictureBox1.Image != null) {
+                                oldImg = pictureBox1.Image; }
+
+                            pictureBox1.Image = clipImg;
+                            currentImg = new ImageObject("");
+
+                            pictureBox1.Location = new Point(0, 0);
+                            SizeModeZoom();
+
+                            if (oldImg != null) { oldImg.Dispose(); }
+
+                            UpdateFormName();
+
+                            ResetImageModifiers();
+                        }
+
                     }
                     break;
                 // Rotate
@@ -1034,7 +1054,15 @@ namespace ImgBrowser
             }
             else
             {
-                LoadNewImgFromClipboard();
+                //Image clipImg = Clipboard.GetImage();
+                Image clipImg = GetAlphaImageFromClipboard();
+
+                if (clipImg != null)
+                {
+                    pictureBox1.Image = clipImg;
+                    currentImg = new ImageObject("");
+                    UpdateFormName();
+                }
             }
 
             // Process other arguments
@@ -1401,42 +1429,8 @@ namespace ImgBrowser
                         currentImg.FullFilename = "";
                 }
             }
-        }
 
-        private void LoadNewImgFromClipboard()
-        {
-            Image clipImg;
 
-            try { 
-                clipImg = GetAlphaImageFromClipboard();
-            }
-            catch (ExternalException e)
-            {
-                DisplayMessage("Could not load image from clipboard");
-                Console.WriteLine(e);
-                return;
-            }
-
-            if (clipImg == null)
-                return;
-            
-            Image oldImg = null;
-
-            if (pictureBox1.Image != null)
-                oldImg = pictureBox1.Image;
-
-            pictureBox1.Image = clipImg;
-            currentImg = new ImageObject("");
-
-            pictureBox1.Location = new Point(0, 0);
-            SizeModeZoom();
-
-            if (oldImg != null) { oldImg.Dispose(); }
-
-            UpdateFormName();
-
-            ResetImageModifiers();
-            
         }
 
         private void LoadNewImg(ImageObject imgObj, bool removeImagePath = false, bool skipRefresh = false)
@@ -1865,8 +1859,14 @@ namespace ImgBrowser
                 }
                 // Paste image from clipboard, if picturebox is empty
                 // This does not dispose the previous image, but this also only works when the picturebox image is null
-                else {
-                    LoadNewImgFromClipboard();
+                else { 
+                    Image clipImg = GetAlphaImageFromClipboard();
+
+                    if (clipImg != null)
+                    {
+                        currentImg = new ImageObject("");
+                        pictureBox1.Image = clipImg;
+                    }
                 }
             }
         }
