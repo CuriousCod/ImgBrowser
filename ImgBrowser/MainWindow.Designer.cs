@@ -107,7 +107,7 @@ namespace ImgBrowser
             this.messageLabel.TabIndex = 2;
             this.messageLabel.Text = "Message Display";
             // 
-            // Form1
+            // MainWindow
             // 
             this.AllowDrop = true;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -117,18 +117,18 @@ namespace ImgBrowser
             this.Controls.Add(this.panel1);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.KeyPreview = true;
-            this.Name = "Form1";
+            this.Name = "MainWindow";
             this.Text = "ImgBrowser";
-            this.Load += new System.EventHandler(this.Form1_Load);
-            this.ResizeBegin += new System.EventHandler(this.Form1_ResizeBegin);
-            this.ResizeEnd += new System.EventHandler(this.Form1_ResizeEnd);
-            this.DragDrop += new System.Windows.Forms.DragEventHandler(this.Form1_DragDrop);
-            this.DragEnter += new System.Windows.Forms.DragEventHandler(this.Form1_DragEnter);
-            this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.Form1_KeyDown);
-            this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.Form1_KeyUp);
-            this.MouseWheel += new System.Windows.Forms.MouseEventHandler(this.Form1_MouseWheel);
-            this.Move += new System.EventHandler(this.Form1_Move);
-            this.PreviewKeyDown += new System.Windows.Forms.PreviewKeyDownEventHandler(this.Form1_PreviewKeyDown);
+            this.Load += new System.EventHandler(this.MainWindow_Load);
+            this.ResizeBegin += new System.EventHandler(this.MainWindow_ResizeBegin);
+            this.ResizeEnd += new System.EventHandler(this.MainWindow_ResizeEnd);
+            this.DragDrop += new System.Windows.Forms.DragEventHandler(this.MainWindow_DragDrop);
+            this.DragEnter += new System.Windows.Forms.DragEventHandler(this.MainWindow_DragEnter);
+            this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.MainWindow_KeyDown);
+            this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.MainWindow_KeyUp);
+            this.MouseWheel += new System.Windows.Forms.MouseEventHandler(this.MainWindow_MouseWheel);
+            this.Move += new System.EventHandler(this.MainWindow_Move);
+            this.PreviewKeyDown += new System.Windows.Forms.PreviewKeyDownEventHandler(this.MainWindow_PreviewKeyDown);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();

@@ -101,7 +101,7 @@ namespace ImgBrowser
 
         IntPtr thisWindow;
         
-        public class WindowShake
+        public class WindowHover
         {
             public bool Enabled { get => Token != null; }
             public int AnimSpeed = 1;
@@ -120,7 +120,7 @@ namespace ImgBrowser
         }
 
         ImageObject currentImg;
-        WindowShake windowShake = new WindowShake(); 
+        WindowHover windowHover = new WindowHover(); 
 
         //-------------------------------------------
 
@@ -152,7 +152,7 @@ namespace ImgBrowser
             messageLabelShadowTop.Location = new Point(0, 0);
         }
 
-        private void Form1_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
+        private void MainWindow_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
         {
             switch (e.KeyCode)
             {
@@ -164,7 +164,7 @@ namespace ImgBrowser
             }
         }
 
-        private void Form1_MouseWheel(object sender, MouseEventArgs e)
+        private void MainWindow_MouseWheel(object sender, MouseEventArgs e)
         {
                 if (e.Delta > 0)
                 {
@@ -211,7 +211,7 @@ namespace ImgBrowser
 
         }
 
-        private void Form1_KeyDown(object sender, KeyEventArgs e)
+        private void MainWindow_KeyDown(object sender, KeyEventArgs e)
         {
             Console.WriteLine(e.KeyCode);
 
@@ -291,14 +291,16 @@ namespace ImgBrowser
                         }
                     }
                     break;
-                case "Y":
-                    if (shiftHeld && !windowShake.StartSet)
+                // TODO Borderline experimental
+                case "H":
+                    if (shiftHeld && !windowHover.StartSet)
                     {
-                        windowShake.StartX = Location.X;
-                        windowShake.StartSet = true;
+                        windowHover.StartX = Location.X;
+                        windowHover.StartSet = true;
                     }
                     else
-                        ShakeWindow();
+                        if (ctrlHeld)
+                            HoverWindow();
                     break;
                 case "F1":
                     ToggleAlwaysOnTop();
@@ -583,8 +585,8 @@ namespace ImgBrowser
                     }
                     break;
                 case "Escape":
-                    if (windowShake.Enabled)
-                        windowShake.Token.Cancel();
+                    if (windowHover.Enabled)
+                        windowHover.Token.Cancel();
                     break;
                 case "Add":
                     // Hold ctrl for smaller zoom value
@@ -598,28 +600,28 @@ namespace ImgBrowser
                     break;
                 case "D1":
                     TempImageHandling("01");
-                    if (windowShake.Enabled)
-                        windowShake.AnimSpeed = 1;
+                    if (windowHover.Enabled)
+                        windowHover.AnimSpeed = 1;
                     break;
                 case "D2":
                     TempImageHandling("02");
-                    if (windowShake.Enabled)
-                        windowShake.AnimSpeed = 2;
+                    if (windowHover.Enabled)
+                        windowHover.AnimSpeed = 2;
                     break;
                 case "D3":
                     TempImageHandling("03");
-                    if (windowShake.Enabled)
-                        windowShake.AnimSpeed = 3;
+                    if (windowHover.Enabled)
+                        windowHover.AnimSpeed = 3;
                     break;
                 case "D4":
                     TempImageHandling("04");
-                    if (windowShake.Enabled)
-                        windowShake.AnimSpeed = 4;
+                    if (windowHover.Enabled)
+                        windowHover.AnimSpeed = 4;
                     break;
                 case "D5":
                     TempImageHandling("05");
-                    if (windowShake.Enabled)
-                        windowShake.AnimSpeed = 5;
+                    if (windowHover.Enabled)
+                        windowHover.AnimSpeed = 5;
                     break;
                 case "D6":
                     TempImageHandling("06");
@@ -980,19 +982,19 @@ namespace ImgBrowser
             return adjustmentValue;
         }
 
-        void ShakeWindow()
+        void HoverWindow()
         {
-            if (windowShake.Enabled)
+            if (windowHover.Enabled)
             {
-                windowShake.Token.Cancel();
+                windowHover.Token.Cancel();
                 return;
             }
 
             thisWindow = GetActiveWindow();
             //Point originalPos = Location;
 
-            windowShake.Token = new CancellationTokenSource();
-            CancellationToken ct = windowShake.Token.Token;
+            windowHover.Token = new CancellationTokenSource();
+            CancellationToken ct = windowHover.Token.Token;
 
             Task.Run(() =>
             {
@@ -1000,12 +1002,12 @@ namespace ImgBrowser
                 {
                     for (; ; )
                     {
-                        for (int i = 0; i < windowShake.Distance / windowShake.AnimSpeed; i++)
+                        for (int i = 0; i < windowHover.Distance / windowHover.AnimSpeed; i++)
                         {
-                            if (i < windowShake.Distance / 2 / windowShake.AnimSpeed)
-                                MoveWindow(thisWindow, Location.X + (1 * windowShake.AnimSpeed), Location.Y, Width, Height, false);
+                            if (i < windowHover.Distance / 2 / windowHover.AnimSpeed)
+                                MoveWindow(thisWindow, Location.X + (1 * windowHover.AnimSpeed), Location.Y, Width, Height, false);
                             else
-                                MoveWindow(thisWindow, Location.X - (1 * windowShake.AnimSpeed), Location.Y, Width, Height, false);
+                                MoveWindow(thisWindow, Location.X - (1 * windowHover.AnimSpeed), Location.Y, Width, Height, false);
 
                             if (ct.IsCancellationRequested)
                                 ct.ThrowIfCancellationRequested();
@@ -1023,11 +1025,11 @@ namespace ImgBrowser
                 }
                 finally
                 {
-                    windowShake.Token.Dispose();
-                    windowShake.Token = null;
+                    windowHover.Token.Dispose();
+                    windowHover.Token = null;
                 }
 
-            }, windowShake.Token.Token);
+            }, windowHover.Token.Token);
         }
 
         private void pictureBox1_Click(object sender, EventArgs e)
@@ -1035,7 +1037,7 @@ namespace ImgBrowser
             // MouseEventArgs me = (MouseEventArgs)e;
         }
 
-        private void Form1_Load(object sender, EventArgs e)
+        private void MainWindow_Load(object sender, EventArgs e)
         {
             var cmdArgs = Environment.GetCommandLineArgs();
 
@@ -1403,7 +1405,7 @@ namespace ImgBrowser
                 DisplayMessage("Image restored");
         }
 
-        private void Form1_DragDrop(object sender, DragEventArgs e)
+        private void MainWindow_DragDrop(object sender, DragEventArgs e)
         {
             string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
             //Console.WriteLine(files[0]);
@@ -1531,7 +1533,7 @@ namespace ImgBrowser
             DisplayMessage("Current display copied to clipboard.");
         }
 
-        private void Form1_DragEnter(object sender, DragEventArgs e)
+        private void MainWindow_DragEnter(object sender, DragEventArgs e)
         {
             // Change cursor graphic
             e.Effect = DragDropEffects.Move;
@@ -1944,7 +1946,7 @@ namespace ImgBrowser
             }
         }
 
-        private void Form1_Move(object sender, EventArgs e)
+        private void MainWindow_Move(object sender, EventArgs e)
         {
             if (FormBorderStyle == FormBorderStyle.None && showBorder == true)
             {
@@ -1963,17 +1965,17 @@ namespace ImgBrowser
             // PositionMessageDisplay();
         }
 
-        private void Form1_KeyUp(object sender, KeyEventArgs e)
+        private void MainWindow_KeyUp(object sender, KeyEventArgs e)
         {
             bool ctrlHeld = (Control.ModifierKeys & Keys.Control) == Keys.Control;
             bool altHeld = (Control.ModifierKeys & Keys.Alt) == Keys.Alt;
 
             switch (e.KeyCode.ToString())
             {
-                case "Y":
-                    if (windowShake.StartSet) { 
-                        windowShake.EndX = Location.X;
-                        windowShake.StartSet = false;
+                case "H":
+                    if (windowHover.StartSet) { 
+                        windowHover.EndX = Location.X;
+                        windowHover.StartSet = false;
                     }
                     break;
                 case "I":
@@ -2020,7 +2022,7 @@ namespace ImgBrowser
             */
         }
 
-        private void Form1_ResizeEnd(object sender, EventArgs e)
+        private void MainWindow_ResizeEnd(object sender, EventArgs e)
         {
             // Recenter image when window is being resized
             if ((pictureBox1.Image != null) && (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) && (windowResizeBegin != Size))
@@ -2050,7 +2052,7 @@ namespace ImgBrowser
 
         }
 
-        private void Form1_ResizeBegin(object sender, EventArgs e)
+        private void MainWindow_ResizeBegin(object sender, EventArgs e)
         {
             windowResizeBegin = Size;
         }
