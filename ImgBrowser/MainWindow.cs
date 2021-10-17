@@ -741,16 +741,8 @@ namespace ImgBrowser
 
         private void ToggleAlwaysOnTop()
         {
-            if (TopMost)
-            {
-                DisplayMessage("Stay on Top: False");
-                TopMost = !TopMost;
-            }
-            else
-            {
-                DisplayMessage("Stay on Top: True");
-                TopMost = !TopMost;
-            }
+            DisplayMessage($"Stay on Top: {!TopMost}");
+            TopMost = !TopMost;
         }
 
         private void AdjustTextSize(string text)
@@ -1365,7 +1357,7 @@ namespace ImgBrowser
         // Restore unedited image from file or from the temp folder
         public void RestoreImage(bool showMessage = true)
         {
-            if (!string.IsNullOrEmpty(currentImg.Name) && !string.IsNullOrEmpty(currentImg.Path))
+            if (currentImg.Valid)
                 LoadNewImg(new ImageObject(currentImg.FullFilename));
             else
                 LoadImageFromTemp(randString);
@@ -1686,47 +1678,45 @@ namespace ImgBrowser
 
         private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
         {
-            if (pictureBox1.Image != null)
+            if (pictureBox1.Image == null)
+                return;
+            
+            if (e.Button.ToString() == "Left")
             {
 
-                if (e.Button.ToString() == "Left")
+                if ((pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) && (FormBorderStyle == FormBorderStyle.Sizable) || 
+                    (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) && (WindowState == FormWindowState.Maximized) ||
+                    (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) && ((Control.ModifierKeys & Keys.Control) == Keys.Control))
                 {
-
-                    if ((pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) && (FormBorderStyle == FormBorderStyle.Sizable) || 
-                        (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) && (WindowState == FormWindowState.Maximized) ||
-                        (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) && ((Control.ModifierKeys & Keys.Control) == Keys.Control))
-                    {
-                        MovePictureBox();
-                    }
-                    else
-                    {
-                        // Classic style window drag anywhere to move feature
-                        // Useful when you don't want window to snap to screen edges
-                        if (TransparencyKey == BackColor) 
-                        {
-                            if ((Cursor.Position.X != currentPositionX) && (Cursor.Position.Y != currentPositionY) && (WindowState == FormWindowState.Maximized))
-                            {
-                                WindowState = FormWindowState.Normal;
-
-                                // Center window on mouse
-                                Location = Cursor.Position;
-                                frameTop = Top - (int)(Height / 2);
-                                frameLeft = Left - (int)(Width / 2);
-                            }
-                            
-                            // Keep border hidden when restoring window
-                            showBorder = false;
-                            Location = new Point(Cursor.Position.X - currentPositionX + frameLeft, Cursor.Position.Y - currentPositionY + frameTop);
-                        }
-                    }
+                    MovePictureBox();
                 }
                 else
                 {
-                    //currentPositionX = e.X;
-                    //currentPositionY = e.Y;
+                    // Classic style window drag anywhere to move feature
+                    // Useful when you don't want window to snap to screen edges
+                    if (TransparencyKey == BackColor) 
+                    {
+                        if ((Cursor.Position.X != currentPositionX) && (Cursor.Position.Y != currentPositionY) && (WindowState == FormWindowState.Maximized))
+                        {
+                            WindowState = FormWindowState.Normal;
+
+                            // Center window on mouse
+                            Location = Cursor.Position;
+                            frameTop = Top - (int)(Height / 2);
+                            frameLeft = Left - (int)(Width / 2);
+                        }
+                            
+                        // Keep border hidden when restoring window
+                        showBorder = false;
+                        Location = new Point(Cursor.Position.X - currentPositionX + frameLeft, Cursor.Position.Y - currentPositionY + frameTop);
+                    }
                 }
             }
-
+            else
+            {
+                //currentPositionX = e.X;
+                //currentPositionY = e.Y;
+            }         
         }
 
         // Moves the picturebox image when dragging the mouse on the image
@@ -1906,43 +1896,43 @@ namespace ImgBrowser
 
         private void CenterImage(bool updateZoom = true)
         {
+            if (pictureBox1.Image == null)
+                return;
 
-            if (pictureBox1.Image != null)
-            {
-                // Return to zoom mode, if image is smaller than the frame
-                if (Width > pictureBox1.Image.Width && Height > pictureBox1.Image.Height) {
-                    SizeModeZoom();
-                    return;
-                }
+            // Return to zoom mode, if image is smaller than the frame
+            if (Width > pictureBox1.Image.Width && Height > pictureBox1.Image.Height) {
+                SizeModeZoom();
+                return;
+            }
                 
-                // Calculate padding to center image
-                if (ClientSize.Width > pictureBox1.Image.Width)
-                {
-                    pictureBox1.Left = (Width - pictureBox1.Image.Width) / 2;
-                    // Update zoom location to center image
-                    if (updateZoom) { 
-                        zoomLocation = new Point(pictureBox1.Left, zoomLocation.Y);
-                        pictureBox1.Top = 0;
-                    }
-                }
-                else if (ClientSize.Height > pictureBox1.Image.Height)
-                {
-                    pictureBox1.Top = (Height - pictureBox1.Image.Height) / 2;
-
-                    // Update zoom location to center image
-                    if (updateZoom) { 
-                        zoomLocation = new Point(zoomLocation.X, pictureBox1.Top);
-                        pictureBox1.Left = 0;
-                    }
-                }
-                else
-                {
-                    if (updateZoom) { 
-                        pictureBox1.Top = 0;
-                        pictureBox1.Left = 0;
-                    }
+            // Calculate padding to center image
+            if (ClientSize.Width > pictureBox1.Image.Width)
+            {
+                pictureBox1.Left = (Width - pictureBox1.Image.Width) / 2;
+                // Update zoom location to center image
+                if (updateZoom) { 
+                    zoomLocation = new Point(pictureBox1.Left, zoomLocation.Y);
+                    pictureBox1.Top = 0;
                 }
             }
+            else if (ClientSize.Height > pictureBox1.Image.Height)
+            {
+                pictureBox1.Top = (Height - pictureBox1.Image.Height) / 2;
+
+                // Update zoom location to center image
+                if (updateZoom) { 
+                    zoomLocation = new Point(zoomLocation.X, pictureBox1.Top);
+                    pictureBox1.Left = 0;
+                }
+            }
+            else
+            {
+                if (updateZoom) { 
+                    pictureBox1.Top = 0;
+                    pictureBox1.Left = 0;
+                }
+            }
+            
         }
 
         private void MainWindow_Move(object sender, EventArgs e)
