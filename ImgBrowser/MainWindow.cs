@@ -13,6 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using SearchOption = System.IO.SearchOption;
 
+// TODO Fix slow gif animations
 // TODO Button config
 // TODO Randomized slideshow? <-----------
 // TODO Arrow keys to navigate when zoomed in
@@ -44,10 +45,6 @@ namespace ImgBrowser
 
         // ScreenCapButton is being held
         private bool screenCapButtonHeld = false;
-
-        // Screenshot start position
-        private int screenCapPosX;
-        private int screenCapPosY;
 
         // Stores window size during resizeStart
         private Size windowResizeBegin;
@@ -465,12 +462,15 @@ namespace ImgBrowser
                     else if (screenCapButtonHeld == false)
                     {
                         screenCapButtonHeld = true;
-                        screenCapPosX = Cursor.Position.X;
-                        screenCapPosY = Cursor.Position.Y;
+                        
+                        int screenCapPosX = Cursor.Position.X;
+                        int screenCapPosY = Cursor.Position.Y;
                         //pictureBox1.Cursor = Cursors.Cross;
 
                         Form f = new CaptureLayer();
-                        DisplayMessage("Selection copied to clipboard");
+
+                        if (screenCapPosX != Cursor.Position.X && screenCapPosY != Cursor.Position.Y) 
+                            DisplayMessage("Selection copied to clipboard");
                         screenCapButtonHeld = false;
 
                     }
@@ -701,42 +701,43 @@ namespace ImgBrowser
 
         private void FitImageToWindow()
         {
-            if (pictureBox1.Image != null)
+            if (pictureBox1.Image == null)
+                return;
+            
+            // Barebones adjust window size to aspect ratio feature
+            FormBorderStyle = FormBorderStyle.None;
+            if (pictureBox1.SizeMode == PictureBoxSizeMode.Zoom)
             {
-                // Barebones adjust window size to aspect ratio feature
-                FormBorderStyle = FormBorderStyle.None;
-                if (pictureBox1.SizeMode == PictureBoxSizeMode.Zoom)
-                {
-                    // Image aspect ratio
-                    double aspectRatio = (double)pictureBox1.Image.Width / (double)pictureBox1.Image.Height;
+                // Image aspect ratio
+                double aspectRatio = (double)pictureBox1.Image.Width / (double)pictureBox1.Image.Height;
                     
-                    // Window frame aspect ratio
-                    double windowAspectRatio = (double)ClientSize.Width / (double)ClientSize.Height;
+                // Window frame aspect ratio
+                double windowAspectRatio = (double)ClientSize.Width / (double)ClientSize.Height;
 
-                    int tempHeight = Height;
+                int tempHeight = Height;
 
-                    // Adjust frame size when there's a big difference between the image and frame aspect ratios
-                    // This prevent images from getting too large when readjusting frame size to the image
-                    if (windowAspectRatio + 2 < aspectRatio)
-                        while (windowAspectRatio + 2 < aspectRatio)
-                        {
-                            tempHeight = (int)(tempHeight * 0.95f);
-                            windowAspectRatio = (double)ClientSize.Width / (double)tempHeight;
-                        }
-                    else if (aspectRatio + 2 < windowAspectRatio)
-                        while (aspectRatio + 2 < windowAspectRatio)
-                        {
-                            tempHeight = (int)(tempHeight * 1.05f);
-                            windowAspectRatio = (double)ClientSize.Width / (double)tempHeight;
-                        }
+                // Adjust frame size when there's a big difference between the image and frame aspect ratios
+                // This prevent images from getting too large when readjusting frame size to the image
+                if (windowAspectRatio + 2 < aspectRatio)
+                    while (windowAspectRatio + 2 < aspectRatio)
+                    {
+                        tempHeight = (int)(tempHeight * 0.95f);
+                        windowAspectRatio = (double)ClientSize.Width / (double)tempHeight;
+                    }
+                else if (aspectRatio + 2 < windowAspectRatio)
+                    while (aspectRatio + 2 < windowAspectRatio)
+                    {
+                        tempHeight = (int)(tempHeight * 1.05f);
+                        windowAspectRatio = (double)ClientSize.Width / (double)tempHeight;
+                    }
 
-                    Height = tempHeight;
+                Height = tempHeight;
 
-                    // Set frame size to match the image aspect ratio
-                    Size = new Size((int)(aspectRatio * Size.Height), Size.Height);
+                // Set frame size to match the image aspect ratio
+                Size = new Size((int)(aspectRatio * Size.Height), Size.Height);
 
-                }
             }
+            
         }
 
         private void ToggleAlwaysOnTop()
@@ -858,29 +859,28 @@ namespace ImgBrowser
 
         private bool SaveImageToTemp(string ordinalValue, bool overrideName = false)
         {
-            if (pictureBox1.Image != null)
-            {
-                try { 
-                    string tempPath = Path.GetTempPath();
-                    string tempName;
+            if (pictureBox1.Image is null)
+                return false;
+            
+            try { 
+                string tempPath = Path.GetTempPath();
+                string tempName;
 
-                    if (!overrideName)
-                        tempName = "imgBrowserTemp" + ordinalValue + ".png";
-                    else
-                        tempName = ordinalValue + ".png";
+                if (!overrideName)
+                    tempName = "imgBrowserTemp" + ordinalValue + ".png";
+                else
+                    tempName = ordinalValue + ".png";
 
-                    pictureBox1.Image.Save(tempPath + "\\" + tempName, ImageFormat.Png);
+                pictureBox1.Image.Save(tempPath + "\\" + tempName, ImageFormat.Png);
 
-                    return true;
-                }
-                // This occurs when trying to rewrite a currently opened image
-                catch (ExternalException)
-                {  
-                    return false;
-                }
+                return true;
+            }
+            // This occurs when trying to rewrite a currently opened image
+            catch (ExternalException)
+            {  
+                return false;
             }
 
-            return false;
         }
 
         private bool LoadImageFromTemp(string ordinalValue)
@@ -888,14 +888,13 @@ namespace ImgBrowser
             string tempPath = Path.GetTempPath();
             string tempName = "imgBrowserTemp" + ordinalValue + ".png";
 
-            if (File.Exists(tempPath + "//" + tempName))
-            {
-                LoadNewImg(new ImageObject(tempPath + "//" + tempName), true);
-                //lockImage = true;
-                return true;
-            }
-
-            return false;
+            if (!File.Exists(tempPath + "//" + tempName))
+                return false;
+            
+            LoadNewImg(new ImageObject(tempPath + "//" + tempName), true);
+            //lockImage = true;
+            return true;
+            
         }
 
         private void UpdateFormName()
@@ -1012,20 +1011,15 @@ namespace ImgBrowser
             var cmdArgs = Environment.GetCommandLineArgs();
 
             foreach (string i in cmdArgs)
-            {
                 Console.WriteLine(i);
-            }
 
             int argsLength = cmdArgs.Length;
 
             if (argsLength > 1 && cmdArgs[1] != "-noImage")
-            {
                 LoadNewImg(new ImageObject(cmdArgs[1])); 
-            }
             else
                 LoadNewImgFromClipboard();
             
-
             // Process other arguments
             for (int i = 0; i < cmdArgs.Length; i++)
             {
@@ -1683,10 +1677,11 @@ namespace ImgBrowser
             
             if (e.Button.ToString() == "Left")
             {
+                bool autoSizeMode = pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize;
 
-                if ((pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) && (FormBorderStyle == FormBorderStyle.Sizable) || 
-                    (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) && (WindowState == FormWindowState.Maximized) ||
-                    (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) && ((Control.ModifierKeys & Keys.Control) == Keys.Control))
+                if (autoSizeMode && FormBorderStyle == FormBorderStyle.Sizable || 
+                    autoSizeMode && WindowState == FormWindowState.Maximized ||
+                    autoSizeMode && (Control.ModifierKeys & Keys.Control) == Keys.Control)
                 {
                     MovePictureBox();
                 }

@@ -63,31 +63,39 @@ namespace ImgBrowser
                 // Capture screen from the rectangle drawn by cursor
                 // https://stackoverflow.com/questions/13103682/draw-a-bitmap-image-on-the-screen
                 case "S":
-                    capturing = false;
-                    
-                    // Clear rectangle drawing
-                    captureBox.Refresh();
-
-                    // Create rectangle from current coordinates
-                    Rectangle rect = GetRectangle(new Point(mouseStartX, mouseStartY), Cursor.Position);
-
-                    if (rect.Width == 0 || rect.Height == 0) break;
-
-                    using (Bitmap BM = new Bitmap(rect.Width, rect.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
-                    {
-                        using (Graphics g = Graphics.FromImage(BM))
-                        {
-                            g.CopyFromScreen(rect.Left, rect.Top, 0, 0, rect.Size);
-                            Clipboard.SetImage(BM);
-                        }
-                    }
-
-                    Close();
+                    CaptureCurrentSelection();
                     break;
                 default:
                     Close();
                     break;
             }
+        }
+
+        void CaptureCurrentSelection()
+        {
+            capturing = false;
+
+            // Clear rectangle drawing
+            captureBox.Refresh();
+
+            // Create rectangle from current coordinates
+            Rectangle rect = GetRectangle(new Point(mouseStartX, mouseStartY), Cursor.Position);
+
+            if (rect.Width == 0 || rect.Height == 0) { 
+                Close();
+                return;
+            }
+
+            using (Bitmap BM = new Bitmap(rect.Width, rect.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
+            {
+                using (Graphics g = Graphics.FromImage(BM))
+                {
+                    g.CopyFromScreen(rect.Left, rect.Top, 0, 0, rect.Size);
+                    Clipboard.SetImage(BM);
+                }
+            }
+
+            Close();
         }
 
         // Does not work when form is transparent, worthless
@@ -138,6 +146,11 @@ namespace ImgBrowser
 
             }
 
+        }
+
+        private void CaptureLayer_Deactivate(object sender, EventArgs e)
+        {
+            CaptureCurrentSelection();
         }
     }
 }

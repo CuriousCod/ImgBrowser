@@ -71,6 +71,7 @@ namespace ImgBrowser
             this.Text = "CaptureLayer";
             this.TopMost = true;
             this.TransparencyKey = this.BackColor;
+            this.Deactivate += new System.EventHandler(this.CaptureLayer_Deactivate);
             this.Load += new System.EventHandler(this.CaptureLayer_Load);
             this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.CaptureLayer_KeyUp);
             this.MouseMove += new System.Windows.Forms.MouseEventHandler(this.CaptureLayer_MouseMove);
