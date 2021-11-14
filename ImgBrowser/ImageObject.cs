@@ -12,7 +12,7 @@ namespace ImgBrowser
     public class ImageObject
     {
         public string FullFilename;
-        public Image ImageData { get => VerifyImg(FullFilename); }
+        public Bitmap ImageData { get => VerifyImg(FullFilename); }
         public string Name { get => FullFilename == "" ? "" : System.IO.Path.GetFileName(FullFilename); }
         public string Path { get => FullFilename == "" ? "" : System.IO.Path.GetDirectoryName(FullFilename).TrimEnd('\\'); }
         public bool Valid { get => File.Exists(FullFilename); }
@@ -27,7 +27,8 @@ namespace ImgBrowser
             try
             {
                 // Check if image can be loaded
-                return new Bitmap(Image.FromFile(file));
+                using (var temp = new Bitmap(file))
+                    return new Bitmap(temp);                      
             }
             catch (OutOfMemoryException ex)
             {

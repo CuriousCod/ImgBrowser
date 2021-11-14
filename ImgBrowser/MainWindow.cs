@@ -1454,7 +1454,7 @@ namespace ImgBrowser
                 }
                 else {
                     imgObj.ImageData.Dispose();
-                    pictureBox1.Image = Image.FromFile(currentImg.FullFilename); // This locks the image to the application
+                    pictureBox1.Image = new Bitmap(currentImg.FullFilename); // This locks the image to the application
                 }
             }
 
