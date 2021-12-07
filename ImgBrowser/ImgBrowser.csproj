@@ -70,30 +70,24 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DragEvents.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="ImageObject.cs" />
-    <Compile Include="MainWindow.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="MainWindow.Designer.cs">
-      <DependentUpon>MainWindow.cs</DependentUpon>
-    </Compile>
-    <Compile Include="CaptureLayer.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="CaptureLayer.Designer.cs">
-      <DependentUpon>CaptureLayer.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <EmbeddedResource Include="CaptureLayer.resx">
+    <Compile Include="src\CaptureLayer.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="src\CaptureLayer.Designer.cs">
       <DependentUpon>CaptureLayer.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="MainWindow.resx">
+    </Compile>
+    <Compile Include="src\DragEvents.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="src\ImageObject.cs" />
+    <Compile Include="src\MainWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="src\MainWindow.Designer.cs">
       <DependentUpon>MainWindow.cs</DependentUpon>
-    </EmbeddedResource>
+    </Compile>
+    <Compile Include="src\Program.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -103,6 +97,12 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="src\CaptureLayer.resx">
+      <DependentUpon>CaptureLayer.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="src\MainWindow.resx">
+      <DependentUpon>MainWindow.cs</DependentUpon>
+    </EmbeddedResource>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>

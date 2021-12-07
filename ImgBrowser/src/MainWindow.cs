@@ -15,12 +15,10 @@ using SearchOption = System.IO.SearchOption;
 
 // TODO Fix slow gif animations
 // TODO Button config
-// TODO Randomized slideshow? <-----------
+// TODO Randomized slideshow?
 // TODO Arrow keys to navigate when zoomed in
-// TODO Tabs?
-// TODO Folder image count
 // TODO Randomize image array order?
-// BUG Image can slighty overfill the screen when in autosize + fullscreen mode
+// BUG Image can slightly overfill the screen when in autosize + fullscreen mode
 // BUG Dragging a full screen image into a small window will make the window slightly smaller every time
 // TODO Scale image to screen?
 // TODO Remember rotate position for next image
@@ -31,10 +29,6 @@ namespace ImgBrowser
     public partial class MainWindow : Form
     {
         private string[] fileEntries = new string[0]{};
-
-        // Current image information
-        //private string currentImg.Name = "";
-        //private string currentImg.Path = "";
 
         // Locks current image, so image doesn't change on accidental input
         private bool lockImage = false;
@@ -387,7 +381,7 @@ namespace ImgBrowser
                 case "M":
                     if (pictureBox1.Image != null)
                     {
-                        FlipImageX((ctrlHeld));
+                        FlipImageX(ctrlHeld);
                     }
                     break;
                 // Duplicate current image into a new window
@@ -507,38 +501,7 @@ namespace ImgBrowser
                     break;
                 // Move image to recycle bin
                 case "Delete":
-                    if (currentImg.Valid && (pictureBox1.Image != null))
-                    {
-                        // Get info from the image that is going to be deleted
-                        string delImgPath = currentImg.Path;
-                        string delImgName = currentImg.Name;
-
-                        lockImage = false;
-
-                        // Move to next image, so picturebox won't keep it locked
-                        // This also keeps the file indexes working, otherwise index will be 0 after deletion
-                        BrowseForward();
-
-                        // Remove image from picturebox, if it is the only image in the folder
-                        if (currentImg.Name == delImgName)
-                        {
-                            Image img = pictureBox1.Image;
-                            pictureBox1.Image = null;
-                            img.Dispose();
-                            currentImg = new ImageObject("");
-                        }
-                        try
-                        {
-                            FileSystem.DeleteFile(delImgPath + "\\" + delImgName, UIOption.AllDialogs, RecycleOption.SendToRecycleBin);
-                            fileEntries = GetImageFiles(currentImg.Path);
-                            DisplayMessage("Image moved to recycle bin");
-                        }
-                        catch (OperationCanceledException)
-                        {
-                            pictureBox1.Image = Image.FromFile(currentImg.FullFilename);
-                        }
-
-                    }
+                    DeleteImage();
                     break;
                 case "Home":
                     JumpToImage(0);
@@ -621,6 +584,41 @@ namespace ImgBrowser
                     break;
                 default:
                     break;
+            }
+        }
+
+        private void DeleteImage()
+        {
+            if (!currentImg.Valid || pictureBox1.Image == null) return;
+            
+            // Get info from the image that is going to be deleted
+            string delImgPath = currentImg.Path;
+            string delImgName = currentImg.Name;
+
+            lockImage = false;
+
+            // Move to next image, so picturebox won't keep it locked
+            // This also keeps the file indexes working, otherwise index will be 0 after deletion
+            BrowseForward();
+
+            // Remove image from picturebox, if it is the only image in the folder
+            if (currentImg.Name == delImgName)
+            {
+                Image img = pictureBox1.Image;
+                pictureBox1.Image = null;
+                img.Dispose();
+                currentImg = new ImageObject("");
+            }
+
+            try
+            {
+                FileSystem.DeleteFile(delImgPath + "\\" + delImgName, UIOption.AllDialogs, RecycleOption.SendToRecycleBin);
+                fileEntries = GetImageFiles(currentImg.Path);
+                DisplayMessage("Image moved to recycle bin");
+            }
+            catch (OperationCanceledException)
+            {
+                LoadNewImg(currentImg);
             }
         }
 
@@ -1130,7 +1128,6 @@ namespace ImgBrowser
                 }
             }
 
-
             Color grabbedColor = screenPixel.GetPixel(0, 0);
             screenPixel.Dispose();
 
@@ -1139,106 +1136,90 @@ namespace ImgBrowser
 
         void PictureBoxZoomIn(double multiplier)
         {
-            if (pictureBox1.Image != null)
+            if (pictureBox1.Image == null) return;
+            
+            // Make a backup of the current image
+            if (!imageEdited)
             {
-                // Make a backup of the current image
-                if (!imageEdited)
-                {
-                    if (currentImg.Path == "")
-                        SaveImageToTemp(randString);
-                    imageEdited = true;
-                }
-
-                //Bitmap bm = new Bitmap(img, Convert.ToInt32(img.Width * size.Width), Convert.ToInt32(img.Height * size.Height));
-                //Bitmap bm = new Bitmap(img, Convert.ToInt32(img.Width * 1.5), Convert.ToInt32(img.Height * 1.5));
-
-                // Perform a rough image size check to avoid memory issues
-                if (pictureBox1.Image.Width * multiplier + pictureBox1.Image.Height * multiplier > 40000)
-                {
-                    DisplayMessage("Image too large to resize");
-                    return;
-                }
-
-                //https://stackoverflow.com/questions/1922040/how-to-resize-an-image-c-sharp
-
-                // Grab current image
-                Image img = pictureBox1.Image;
-                Bitmap resized = new Bitmap(1, 1);
-
-                // Creating a new resized bitmap
-                try
-                {
-                    resized = new Bitmap(img, Convert.ToInt32(img.Width * multiplier), Convert.ToInt32(img.Height * multiplier));
-                }
-                // Catch out of memory exceptions
-                // TODO This doesn't actually free up memory correctly, so it will eventually cause issues
-                catch (ArgumentException)
-                {
-                    pictureBox1.Image = null;
-                    img.Dispose();
-                    resized.Dispose();
-                    pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
-                    pictureBox1.Dock = DockStyle.Fill;
-                    return;
-                }
-                catch (OutOfMemoryException)
-                {
-                    pictureBox1.Image = null;
-                    img.Dispose();
-                    resized.Dispose();
-                    pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
-                    pictureBox1.Dock = DockStyle.Fill;
-                    return;
-                }
-                // This will rescale the image. Optional, but makes it look better
-                // Do not rescale images that are over 10 000 pixels, as it will cause memory and performance issues
-                if (img.Width + img.Height < 10000)
-                {
-
-                    using (Graphics grap = Graphics.FromImage(resized))
-                    {
-                        grap.CompositingMode = CompositingMode.SourceCopy;
-                        grap.CompositingQuality = CompositingQuality.HighQuality;
-                        grap.InterpolationMode = InterpolationMode.Bicubic;
-                        //grap.SmoothingMode = SmoothingMode.HighQuality;
-                        grap.PixelOffsetMode = PixelOffsetMode.HighQuality;
-
-                        // This draws the new image on top of the bitmap
-                        grap.DrawImage(img, 0, 0, Convert.ToInt32(img.Width * multiplier), Convert.ToInt32(img.Height * multiplier));
-                    }
-                }
-
-                // Calculate the current scroll position as a percentage
-                //double horPos;
-                //double verPos;
-                //horPos = (double)panel1.HorizontalScroll.Value / (double)panel1.HorizontalScroll.Maximum;
-                //verPos = (double)panel1.VerticalScroll.Value / (double)panel1.VerticalScroll.Maximum;
-
-                // Reset scroll position to keep the picturebox in proper position
-                //panel1.HorizontalScroll.Value = 0;
-                //panel1.VerticalScroll.Value = 0;
-
-                // Calculate new scroll position 
-                double posX = (double)(pictureBox1.Location.X * multiplier);
-                double posY = (double)(pictureBox1.Location.Y * multiplier);
-                if (posX > 0) posX = 0;
-                if (posY > 0) posY = 0;
-
-                pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
-                pictureBox1.Dock = DockStyle.None;
-                pictureBox1.Image = resized;
-
-                img.Dispose();
-                CenterImage();
-
-                // Set scroll if image fills the screen
-                if (pictureBox1.Image.Width > Width) pictureBox1.Location = new Point((int)posX, pictureBox1.Location.Y);
-                if (pictureBox1.Image.Height > Height) pictureBox1.Location = new Point(pictureBox1.Location.X, (int)posY);
-
-                // Set the scroll position to match the position before zooming
-                //panel1.HorizontalScroll.Value = (int)(panel1.HorizontalScroll.Maximum * horPos);
-                //panel1.VerticalScroll.Value = (int)(panel1.VerticalScroll.Maximum * verPos);
+                if (currentImg.Path == "")
+                    SaveImageToTemp(randString);
+                imageEdited = true;
             }
+
+            //Bitmap bm = new Bitmap(img, Convert.ToInt32(img.Width * size.Width), Convert.ToInt32(img.Height * size.Height));
+            //Bitmap bm = new Bitmap(img, Convert.ToInt32(img.Width * 1.5), Convert.ToInt32(img.Height * 1.5));
+
+            // Perform a rough image size check to avoid memory issues
+            if (pictureBox1.Image.Width * multiplier + pictureBox1.Image.Height * multiplier > 40000)
+            {
+                DisplayMessage("Image too large to resize");
+                return;
+            }
+
+            //https://stackoverflow.com/questions/1922040/how-to-resize-an-image-c-sharp
+
+            // Grab current image
+            Image img = pictureBox1.Image;
+            Bitmap resized = new Bitmap(1, 1);
+
+            // Creating a new resized bitmap
+            try
+            {
+                resized = new Bitmap(img, Convert.ToInt32(img.Width * multiplier), Convert.ToInt32(img.Height * multiplier));
+            }
+            // Catch out of memory exceptions
+            // TODO This doesn't actually free up memory correctly, so it will eventually cause issues
+            catch (ArgumentException)
+            {
+                pictureBox1.Image = null;
+                img.Dispose();
+                resized.Dispose();
+                pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+                pictureBox1.Dock = DockStyle.Fill;
+                return;
+            }
+            catch (OutOfMemoryException)
+            {
+                pictureBox1.Image = null;
+                img.Dispose();
+                resized.Dispose();
+                pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+                pictureBox1.Dock = DockStyle.Fill;
+                return;
+            }
+            // This will rescale the image. Optional, but makes it look better
+            // Do not rescale images that are over 10 000 pixels, as it will cause memory and performance issues
+            if (img.Width + img.Height < 10000)
+            {
+                using (Graphics grap = Graphics.FromImage(resized))
+                {
+                    grap.CompositingMode = CompositingMode.SourceCopy;
+                    grap.CompositingQuality = CompositingQuality.HighQuality;
+                    grap.InterpolationMode = InterpolationMode.Bicubic;
+                    //grap.SmoothingMode = SmoothingMode.HighQuality;
+                    grap.PixelOffsetMode = PixelOffsetMode.HighQuality;
+
+                    // This draws the new image on top of the bitmap
+                    grap.DrawImage(img, 0, 0, Convert.ToInt32(img.Width * multiplier), Convert.ToInt32(img.Height * multiplier));
+                }
+            }
+            
+            // Calculate new scroll position 
+            double posX = (double)(pictureBox1.Location.X * multiplier);
+            double posY = (double)(pictureBox1.Location.Y * multiplier);
+            if (posX > 0) posX = 0;
+            if (posY > 0) posY = 0;
+
+            pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
+            pictureBox1.Dock = DockStyle.None;
+            pictureBox1.Image = resized;
+
+            img.Dispose();
+            CenterImage();
+
+            // Set scroll if image fills the screen
+            if (pictureBox1.Image.Width > Width) pictureBox1.Location = new Point((int)posX, pictureBox1.Location.Y);
+            if (pictureBox1.Image.Height > Height) pictureBox1.Location = new Point(pictureBox1.Location.X, (int)posY);
         }
 
         void PictureBoxZoomOut(double multiplier)
@@ -1246,102 +1227,98 @@ namespace ImgBrowser
             if (pictureBox1.SizeMode == PictureBoxSizeMode.Zoom)
                 return;
 
-            if (pictureBox1.Image != null)
+            if (pictureBox1.Image == null) return;
+            
+            // Make a backup of the current image
+            if (!imageEdited)
             {
-
-                // Make a backup of the current image
-                if (!imageEdited)
-                {
-                    if (currentImg.Path == "")
-                        SaveImageToTemp(randString);
-                    imageEdited = true;
-                }
-
-                // Perform a rough image size check to avoid memory issues
-                if (pictureBox1.Image.Width / multiplier + pictureBox1.Image.Height / multiplier > 40000)
-                {
-                    DisplayMessage("Image too large to resize");
-                    return;
-                }
-
-                // Do not zoom out if it makes image smaller than screen
-                if ((pictureBox1.Image.Width / multiplier < Width) && (pictureBox1.Image.Height / multiplier < Height))
-                {
-                    RestoreImage(false);
-                    return;
-                }
-
-                //https://stackoverflow.com/questions/1922040/how-to-resize-an-image-c-sharp
-
-                // Grab current image
-                Image img = pictureBox1.Image;
-                Bitmap resized = new Bitmap(1, 1);
-
-                // Creating a new resized bitmap
-                try
-                {
-                    resized = new Bitmap(img, Convert.ToInt32(img.Width / multiplier), Convert.ToInt32(img.Height / multiplier));
-                }
-                // Catch out of memory exceptions
-                // TODO This doesn't actually free up memory correctly, so it will eventually cause issues
-                catch (ArgumentException)
-                {
-                    pictureBox1.Image = null;
-                    img.Dispose();
-                    resized.Dispose();
-                    pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
-                    pictureBox1.Dock = DockStyle.Fill;
-                    return;
-                }
-                catch (OutOfMemoryException)
-                {
-                    pictureBox1.Image = null;
-                    img.Dispose();
-                    resized.Dispose();
-                    pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
-                    pictureBox1.Dock = DockStyle.Fill;
-                    return;
-                }
-                // This will rescale the image. Optional, but makes it look better
-                // Do not rescale images that are over 10 000 pixels, as it will cause memory and performance issues
-                if (img.Width + img.Height < 10000)
-                {
-
-                    using (Graphics grap = Graphics.FromImage(resized))
-                    {
-                        grap.CompositingMode = CompositingMode.SourceCopy;
-                        grap.CompositingQuality = CompositingQuality.HighQuality;
-                        grap.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                        //grap.SmoothingMode = SmoothingMode.HighQuality;
-                        grap.PixelOffsetMode = PixelOffsetMode.HighQuality;
-
-                        // This draws the new image on top of the bitmap
-                        grap.DrawImage(img, 0, 0, Convert.ToInt32(img.Width / multiplier), Convert.ToInt32(img.Height / multiplier));
-                    }
-                }
-
-                // Calculate new scroll position 
-                double posX = (double)(pictureBox1.Location.X / multiplier);
-                double posY = (double)(pictureBox1.Location.Y / multiplier);
-
-                // Check that image stays within the borders
-                if (posX > 0) posX = 0;
-                if (posY > 0) posY = 0;
-                if (posX < -resized.Width + Width) posX = -resized.Width + Width;
-                if (posY < -resized.Height + Height) posY = -resized.Height + Height;
-
-                pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
-                pictureBox1.Dock = DockStyle.None;
-                pictureBox1.Image = resized;
-
-                img.Dispose();
-                CenterImage();
-
-                // Set scroll if image fills the screen
-                if (pictureBox1.Image.Width > Width) pictureBox1.Location = new Point((int)posX, pictureBox1.Location.Y);
-                if (pictureBox1.Image.Height > Height) pictureBox1.Location = new Point(pictureBox1.Location.X, (int)posY);
-
+                if (currentImg.Path == "")
+                    SaveImageToTemp(randString);
+                imageEdited = true;
             }
+
+            // Perform a rough image size check to avoid memory issues
+            if (pictureBox1.Image.Width / multiplier + pictureBox1.Image.Height / multiplier > 40000)
+            {
+                DisplayMessage("Image too large to resize");
+                return;
+            }
+
+            // Do not zoom out if it makes image smaller than screen
+            if (pictureBox1.Image.Width / multiplier < Width && pictureBox1.Image.Height / multiplier < Height)
+            {
+                RestoreImage(false);
+                return;
+            }
+
+            //https://stackoverflow.com/questions/1922040/how-to-resize-an-image-c-sharp
+
+            // Grab current image
+            Image img = pictureBox1.Image;
+            Bitmap resized = new Bitmap(1, 1);
+
+            // Creating a new resized bitmap
+            try
+            {
+                resized = new Bitmap(img, Convert.ToInt32(img.Width / multiplier), Convert.ToInt32(img.Height / multiplier));
+            }
+            // Catch out of memory exceptions
+            // TODO This doesn't actually free up memory correctly, so it will eventually cause issues
+            catch (ArgumentException)
+            {
+                pictureBox1.Image = null;
+                img.Dispose();
+                resized.Dispose();
+                pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+                pictureBox1.Dock = DockStyle.Fill;
+                return;
+            }
+            catch (OutOfMemoryException)
+            {
+                pictureBox1.Image = null;
+                img.Dispose();
+                resized.Dispose();
+                pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+                pictureBox1.Dock = DockStyle.Fill;
+                return;
+            }
+            // This will rescale the image. Optional, but makes it look better
+            // Do not rescale images that are over 10 000 pixels, as it will cause memory and performance issues
+            if (img.Width + img.Height < 10000)
+            {
+                using (Graphics grap = Graphics.FromImage(resized))
+                {
+                    grap.CompositingMode = CompositingMode.SourceCopy;
+                    grap.CompositingQuality = CompositingQuality.HighQuality;
+                    grap.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                    //grap.SmoothingMode = SmoothingMode.HighQuality;
+                    grap.PixelOffsetMode = PixelOffsetMode.HighQuality;
+
+                    // This draws the new image on top of the bitmap
+                    grap.DrawImage(img, 0, 0, Convert.ToInt32(img.Width / multiplier), Convert.ToInt32(img.Height / multiplier));
+                }
+            }
+
+            // Calculate new scroll position 
+            double posX = (double)(pictureBox1.Location.X / multiplier);
+            double posY = (double)(pictureBox1.Location.Y / multiplier);
+
+            // Check that image stays within the borders
+            if (posX > 0) posX = 0;
+            if (posY > 0) posY = 0;
+            if (posX < -resized.Width + Width) posX = -resized.Width + Width;
+            if (posY < -resized.Height + Height) posY = -resized.Height + Height;
+
+            pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
+            pictureBox1.Dock = DockStyle.None;
+            pictureBox1.Image = resized;
+
+            img.Dispose();
+            CenterImage();
+
+            // Set scroll if image fills the screen
+            if (pictureBox1.Image.Width > Width) pictureBox1.Location = new Point((int)posX, pictureBox1.Location.Y);
+            if (pictureBox1.Image.Height > Height) pictureBox1.Location = new Point(pictureBox1.Location.X, (int)posY);
         }
 
         // Restore unedited image from file or from the temp folder
