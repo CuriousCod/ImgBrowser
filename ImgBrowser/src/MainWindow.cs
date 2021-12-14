@@ -2038,12 +2038,15 @@ namespace ImgBrowser
             
             if (!Clipboard.GetDataObject().GetDataPresent(DataFormats.Dib))
                 return Clipboard.ContainsImage() ? Clipboard.GetImage() : null;
+
+            int byteOffset = 52; // Offset of the DIB bits. Different software use different offsets when copying image to clipboard
             
             // Sometimes getting the image data fails and results in a "System.NullReferenceException" error - probably because clipboard handling also can be messy and complex
             byte[] dib;
             try
             {
                 dib = ((System.IO.MemoryStream)Clipboard.GetData(DataFormats.Dib)).ToArray();
+                byteOffset = VerifyByteOffset(dib, byteOffset);
             }
             catch (Exception ex)
             {
@@ -2061,7 +2064,7 @@ namespace ImgBrowser
             Bitmap bmp = null;
             try
             {
-                var ptr = new IntPtr((long)gch.AddrOfPinnedObject() + 52); // 52 appears to be the correct address offset
+                var ptr = new IntPtr((long)gch.AddrOfPinnedObject() + byteOffset);
                 bmp = new Bitmap(width, height, width * 4, System.Drawing.Imaging.PixelFormat.Format32bppArgb, ptr);
                 bmp.RotateFlip(RotateFlipType.Rotate180FlipX);
                 return new Bitmap(bmp);
@@ -2072,6 +2075,30 @@ namespace ImgBrowser
                 if (bmp != null) bmp.Dispose();
             }
             return Clipboard.ContainsImage() ? Clipboard.GetImage() : null;
+        }
+
+        private int VerifyByteOffset(byte[] dib, int byteOffset)
+        {
+            // Check if the last empty byte is in its usual place
+            if (dib[byteOffset - 2] == 0) 
+                return byteOffset;
+            
+            byteOffset = FindLastEmptyByte(dib, 50) + 1;
+
+            if (byteOffset == -1)
+                byteOffset = 52;
+
+            return byteOffset;
+        }
+
+        int FindLastEmptyByte(Byte[] bytes, int startIndex)
+        {
+            for (int i = startIndex; i >= 0; i--)
+            {
+                if (bytes[i] == 0)
+                    return i;
+            }
+            return -1;
         }
 
         // Check if the image contains any transparency
