@@ -33,10 +33,6 @@ namespace ImgBrowser
         // Locks current image, so image doesn't change on accidental input
         private bool lockImage = false;
 
-        // Mouse position
-        private int currentPositionX = 0;
-        private int currentPositionY = 0;
-
         // ScreenCapButton is being held
         private bool screenCapButtonHeld = false;
 
@@ -106,15 +102,25 @@ namespace ImgBrowser
             public CancellationTokenSource Token;
         }
 
-        enum BrowseDirection
+        public class StoredMousePosition
         {
-            Forward,
-            Backward
+            public int X = 0;
+            public int Y = 0;
+            public Point Position { get => new Point(X, Y);
+                set
+                {
+                    X = value.X; 
+                    Y = value.Y; 
+                }
+                
+            }
         }
 
         ImageObject currentImg = new ImageObject("");
         readonly WindowHover windowHover = new WindowHover(); 
 
+        StoredMousePosition storedMousePosition = new StoredMousePosition();
+        
         //-------------------------------------------
 
         public MainWindow()
@@ -162,45 +168,48 @@ namespace ImgBrowser
         {
             if (e.Delta > 0)
             {
-                if ((Control.ModifierKeys & Keys.Alt) == Keys.Alt)
+                if ((ModifierKeys & Keys.Alt) == Keys.Alt)
                 {
                     // Increase window size
-                    if (WindowState == FormWindowState.Normal)
-                    {
-                        Size = Size.Add(Size, GetAdjustmentValue());
-                        if ((pictureBox1.SizeMode != PictureBoxSizeMode.AutoSize) && (FormBorderStyle == FormBorderStyle.None))
-                            FitImageToWindow();
-                    }
+                    if (WindowState != FormWindowState.Normal) 
+                        return;
+                    
+                    Size = Size.Add(Size, GetAdjustmentValue());
+                    if ((pictureBox1.SizeMode != PictureBoxSizeMode.AutoSize) && (FormBorderStyle == FormBorderStyle.None))
+                        FitImageToWindow();
                 }
                 else if (pictureBox1.SizeMode != PictureBoxSizeMode.AutoSize)
                 {
-                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
+                    if ((ModifierKeys & Keys.Control) == Keys.Control)
                         PictureBoxZoomIn(1.5);
                     else
                         BrowseForward();
                 }
+                else if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
+                    MovePictureBox(Definitions.MovementType.MouseScroll, Definitions.Direction.Up);
 
             }
             else if (e.Delta < 0)
             {
-                if ((Control.ModifierKeys & Keys.Alt) == Keys.Alt)
+                if ((ModifierKeys & Keys.Alt) == Keys.Alt)
                 {
                     // Decrease window size
-                    if (WindowState == FormWindowState.Normal)
-                    {
-                        Size = Size.Subtract(Size, GetAdjustmentValue());
-                        if ((pictureBox1.SizeMode != PictureBoxSizeMode.AutoSize) && (FormBorderStyle == FormBorderStyle.None))
-                            FitImageToWindow();
-                    }
+                    if (WindowState != FormWindowState.Normal) 
+                        return;
+                    
+                    Size = Size.Subtract(Size, GetAdjustmentValue());
+                    if ((pictureBox1.SizeMode != PictureBoxSizeMode.AutoSize) && (FormBorderStyle == FormBorderStyle.None))
+                        FitImageToWindow();
                 }
                 else if (pictureBox1.SizeMode != PictureBoxSizeMode.AutoSize)
                 {
-                    if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
+                    if ((ModifierKeys & Keys.Control) == Keys.Control)
                         PictureBoxZoomOut(1.5);
                     else
                         BrowseBackward();
                 }
-
+                else if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
+                    MovePictureBox(Definitions.MovementType.MouseScroll, Definitions.Direction.Down);
             }
 
         }
@@ -209,81 +218,23 @@ namespace ImgBrowser
         {
             Console.WriteLine(e.KeyCode);
 
-            bool ctrlHeld = (Control.ModifierKeys & Keys.Control) == Keys.Control;
-            bool altHeld = (Control.ModifierKeys & Keys.Alt) == Keys.Alt;
-            bool shiftHeld = (Control.ModifierKeys & Keys.Shift) == Keys.Shift;
+            bool ctrlHeld = (ModifierKeys & Keys.Control) == Keys.Control;
+            bool altHeld = (ModifierKeys & Keys.Alt) == Keys.Alt;
+            bool shiftHeld = (ModifierKeys & Keys.Shift) == Keys.Shift;
 
             switch (e.KeyCode.ToString())
             {
                 case "Left":
-                    // Pixel movement
-                    if (ctrlHeld)
-                    {
-                        int modifier = shiftHeld ? 5 : 1;
-                        Location = Point.Subtract(Location, new Size(modifier, 0));
-                    }
-                    // Size adjust
-                    else if (altHeld)
-                    {
-                        int modifier = ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) ? 5 : 1;
-                        Size = Size.Subtract(Size, new Size(modifier, 0));
-                        if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) {
-                            CenterImage(false);
-                            pictureBox1.Location = new Point(pictureBox1.Location.X - modifier, pictureBox1.Location.Y);
-                        }
-                    }
-                    else
-                        BrowseBackward();
+                    ProcessArrowKey(Definitions.Direction.Left, ctrlHeld, shiftHeld, altHeld);
                     break;
                 case "Right":
-                    if (ctrlHeld) {
-                        int modifier = ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) ? 5 : 1;
-                        Location = Point.Add(Location, new Size(modifier, 0));
-                    }
-                    else if (altHeld)
-                    {
-                        int modifier = ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) ? 5 : 1;
-                        Size = Size.Add(Size, new Size(modifier, 0));
-                        if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) {
-                            CenterImage(false);
-                            pictureBox1.Location = new Point(pictureBox1.Location.X + modifier, pictureBox1.Location.Y);
-                        }
-                    }
-                    else
-                        BrowseForward();
+                    ProcessArrowKey(Definitions.Direction.Right, ctrlHeld, shiftHeld, altHeld);
                     break;
                 case "Up":
-                    if (ctrlHeld) {
-                        int modifier = shiftHeld ? 3 : 1;
-                        Location = Point.Subtract(Location, new Size(0, modifier));
-                    }
-                    else if (altHeld)
-                    {
-                        int modifier = shiftHeld ? 3 : 1;
-                        Size = Size.Subtract(Size, new Size(0, modifier));
-                        if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
-                        {
-                            CenterImage(false);
-                            //pictureBox1.Location = new Point(pictureBox1.Location.X, pictureBox1.Location.Y - modifier);
-                        }
-
-                    }
+                    ProcessArrowKey(Definitions.Direction.Up, ctrlHeld, shiftHeld, altHeld);
                     break;
                 case "Down":
-                    if (ctrlHeld) {
-                        int modifier = ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) ? 3 : 1;
-                        Location = Point.Add(Location, new Size(0, modifier));
-                    }
-                    else if ((Control.ModifierKeys & Keys.Alt) == Keys.Alt)
-                    {
-                        int modifier = ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) ? 3 : 1;
-                        Size = Size.Add(Size, new Size(0, modifier));
-                        if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
-                        {
-                            CenterImage(false);
-                            //pictureBox1.Location = new Point(pictureBox1.Location.X, pictureBox1.Location.Y + modifier);
-                        }
-                    }
+                    ProcessArrowKey(Definitions.Direction.Down, ctrlHeld, shiftHeld, altHeld);
                     break;
                 // TODO Borderline experimental
                 case "H":
@@ -587,6 +538,75 @@ namespace ImgBrowser
             }
         }
 
+        private void ProcessArrowKey(Definitions.Direction direction, bool ctrlHeld, bool shiftHeld, bool altHeld)
+        {
+            // Pixel movement
+            if (ctrlHeld)
+            {
+                int distance = shiftHeld ? 5 : 1;
+
+                switch (direction)
+                {
+                    case Definitions.Direction.Up:
+                        Location = Point.Add(Location, new Size(0, -distance));
+                        break;
+                    case Definitions.Direction.Down:
+                        Location = Point.Add(Location, new Size(0, distance));
+                        break;
+                    case Definitions.Direction.Left:
+                        Location = Point.Add(Location, new Size(-distance, 0));
+                        break;
+                    case Definitions.Direction.Right:
+                        Location = Point.Add(Location, new Size(distance, 0));
+                        break;
+                }
+
+                return;
+            }
+            
+            // Size adjust
+            if (altHeld)
+            {
+                int modifier = (ModifierKeys & Keys.Shift) == Keys.Shift ? 5 : 1;
+                
+                switch (direction)
+                {
+                    case Definitions.Direction.Up:
+                        Size = Size.Add(Size, new Size(0, -modifier));
+                        break;
+                    case Definitions.Direction.Down:
+                        Size = Size.Add(Size, new Size(0, modifier));
+                        break;
+                    case Definitions.Direction.Left:
+                        Size = Size.Add(Size, new Size(-modifier, 0));
+                        break;
+                    case Definitions.Direction.Right:
+                        Size = Size.Add(Size, new Size(modifier, 0));
+                        break;
+                }
+                
+                if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
+                    CenterImage(false);
+                return;
+            }
+            
+            if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize){
+                MovePictureBox(Definitions.MovementType.Keyboard, direction);
+                return;
+            }
+
+            switch (direction)
+            {
+                case Definitions.Direction.Left:
+                    BrowseBackward();
+                    break;
+                case Definitions.Direction.Right:
+                    BrowseForward();
+                    break;
+            }
+            
+        }
+
         private void DeleteImage()
         {
             if (!currentImg.Valid || pictureBox1.Image == null) return;
@@ -659,15 +679,15 @@ namespace ImgBrowser
 
         private void BrowseForward()
         {
-            LoadNewImg(GetNextImageFilename(BrowseDirection.Forward), false, true);
+            LoadNewImg(GetNextImageFilename(Definitions.BrowseDirection.Forward), false, true);
         }
 
         private void BrowseBackward()
         {
-            LoadNewImg(GetNextImageFilename(BrowseDirection.Backward), false, true);
+            LoadNewImg(GetNextImageFilename(Definitions.BrowseDirection.Backward), false, true);
         }
 
-        ImageObject GetNextImageFilename(BrowseDirection bd)
+        ImageObject GetNextImageFilename(Definitions.BrowseDirection bd)
         {
 
             if (fileEntries.Length < 2 || currentImg.Path == "" || lockImage)
@@ -675,7 +695,7 @@ namespace ImgBrowser
 
             string file;
 
-            if (bd == BrowseDirection.Forward)
+            if (bd == Definitions.BrowseDirection.Forward)
             {
                 int index = Array.IndexOf(fileEntries, currentImg.FullFilename);
 
@@ -1523,8 +1543,7 @@ namespace ImgBrowser
                     }
 
                 // Get mouse position for image scroll
-                currentPositionX = Cursor.Position.X;
-                currentPositionY = Cursor.Position.Y;
+                storedMousePosition.Position = Cursor.Position;
             }
 
             if (WindowState != FormWindowState.Maximized)
@@ -1658,7 +1677,7 @@ namespace ImgBrowser
                     autoSizeMode && WindowState == FormWindowState.Maximized ||
                     autoSizeMode && (ModifierKeys & Keys.Control) == Keys.Control)
                 {
-                    MovePictureBox();
+                    MovePictureBox(Definitions.MovementType.MouseDrag, Definitions.Direction.None);
                 }
                 else
                 {
@@ -1666,7 +1685,7 @@ namespace ImgBrowser
                     // Useful when you don't want window to snap to screen edges
                     if (TransparencyKey != BackColor) return;
                     
-                    if ((Cursor.Position.X != currentPositionX) && (Cursor.Position.Y != currentPositionY) && (WindowState == FormWindowState.Maximized))
+                    if ((Cursor.Position.X != storedMousePosition.X) && (Cursor.Position.Y != storedMousePosition.Y) && (WindowState == FormWindowState.Maximized))
                     {
                         WindowState = FormWindowState.Normal;
 
@@ -1678,7 +1697,7 @@ namespace ImgBrowser
                             
                     // Keep border hidden when restoring window
                     showBorder = false;
-                    Location = new Point(Cursor.Position.X - currentPositionX + frameLeft, Cursor.Position.Y - currentPositionY + frameTop);
+                    Location = new Point(Cursor.Position.X - storedMousePosition.X + frameLeft, Cursor.Position.Y - storedMousePosition.Y + frameTop);
                 }
             }
             else
@@ -1686,119 +1705,6 @@ namespace ImgBrowser
                 //currentPositionX = e.X;
                 //currentPositionY = e.Y;
             }         
-        }
-
-        // Moves the picturebox image when dragging the mouse on the image
-        private void MovePictureBox()
-        {
-            if (pictureBox1.Image == null)
-                return;
-            
-            int minMov = (int)((Width + Height) * 0.01);
-
-            // Hide any currently displayed message
-            DisplayMessage("");
-            
-            // Only allow adjustments if the image is larger than the screen resolution
-            if (pictureBox1.Image.Width > Width)
-            {
-                int borderMin = 0;
-                int borderMax = -pictureBox1.Image.Width + ClientRectangle.Width;
-                
-                if (Math.Abs(Math.Abs(Cursor.Position.X) - Math.Abs(currentPositionX)) > minMov)
-                {
-                    int newPos = pictureBox1.Location.X + Cursor.Position.X - currentPositionX;
-
-                    if (newPos > borderMin)
-                        newPos = borderMin;
-                    
-                    if (newPos < borderMax)
-                        newPos = borderMax;
-                    
-                    pictureBox1.Location = new Point(newPos, pictureBox1.Location.Y);
-                    
-                    // Reset mouse position variable to stop infinite scrolling
-                    currentPositionX = Cursor.Position.X;
-
-                }
-                //
-                // if (Cursor.Position.X - minMov > currentPositionX)
-                // {
-                //     int newPos = pictureBox1.Location.X + Cursor.Position.X - currentPositionX;
-                //     
-                //     // Prevent picturebox from going over the left border
-                //     if (newPos > 0)
-                //         newPos = 0;
-                //     
-                //     pictureBox1.Location = new Point(newPos, pictureBox1.Location.Y);
-                //     
-                //     // Reset mouse position variable to stop infinite scrolling
-                //     currentPositionX = Cursor.Position.X;
-                // }
-                // if (Cursor.Position.X + minMov < currentPositionX)
-                // {
-                //     int newPos = pictureBox1.Location.X + Cursor.Position.X - currentPositionX;
-                //     int border = -pictureBox1.Image.Width + ClientRectangle.Width;
-                //
-                //     // Prevent picturebox from going over the right border
-                //     if (newPos < border)
-                //         newPos = border;
-                //
-                //     pictureBox1.Location = new Point(newPos, pictureBox1.Location.Y);
-                //
-                //     currentPositionX = Cursor.Position.X;
-                // }
-                zoomLocation = pictureBox1.Location;
-            }
-            if (pictureBox1.Image.Height > Height)
-            {
-                int borderMin = 0;
-                int borderMax = -pictureBox1.Image.Height + ClientRectangle.Height;
-                
-                if (Math.Abs(Math.Abs(Cursor.Position.Y) - Math.Abs(currentPositionY)) > minMov)
-                {
-                    int newPos = pictureBox1.Location.Y + Cursor.Position.Y - currentPositionY;
-
-                    if (newPos > borderMin)
-                        newPos = borderMin;
-                    
-                    if (newPos < borderMax)
-                        newPos = borderMax;
-                    
-                    pictureBox1.Location = new Point(pictureBox1.Location.X, newPos);
-                    
-                    // Reset mouse position variable to stop infinite scrolling
-                    currentPositionY = Cursor.Position.Y;
-
-                }
-                
-                // if (Cursor.Position.Y - minMov > currentPositionY)
-                // {
-                //     int newPos = pictureBox1.Location.Y + Cursor.Position.Y - currentPositionY;
-                //     
-                //     // Prevent picturebox from going over the top border
-                //     if (newPos > 0)
-                //         newPos = 0;
-                //
-                //     pictureBox1.Location = new Point(pictureBox1.Location.X, newPos);
-                //
-                //     currentPositionY = Cursor.Position.Y;
-                // }
-                // if (Cursor.Position.Y + minMov < currentPositionY)
-                // {
-                //     int newPos = pictureBox1.Location.Y + Cursor.Position.Y - currentPositionY;
-                //     int border = -pictureBox1.Image.Height + ClientRectangle.Height;
-                //
-                //     // Prevent picturebox from going over the bottom border
-                //     if (newPos < border)
-                //         newPos = border;
-                //     
-                //     pictureBox1.Location = new Point(pictureBox1.Location.X, newPos );
-                //
-                //     currentPositionY = Cursor.Position.Y;
-                // }
-                zoomLocation = pictureBox1.Location;
-            }
         }
 
         private void pictureBox1_MouseUp(object sender, MouseEventArgs e)
@@ -1878,47 +1784,6 @@ namespace ImgBrowser
             if (zoomLocation.X < -1 && zoomLocation.Y < -1)
                 pictureBox1.Location = zoomLocation;
 
-        }
-
-        private void CenterImage(bool updateZoom = true)
-        {
-            if (pictureBox1.Image == null)
-                return;
-
-            // Return to zoom mode, if image is smaller than the frame
-            if (Width > pictureBox1.Image.Width && Height > pictureBox1.Image.Height) {
-                SizeModeZoom();
-                return;
-            }
-                
-            // Calculate padding to center image
-            if (ClientSize.Width > pictureBox1.Image.Width)
-            {
-                pictureBox1.Left = (Width - pictureBox1.Image.Width) / 2;
-                // Update zoom location to center image
-                if (!updateZoom) return;
-                
-                zoomLocation = new Point(pictureBox1.Left, zoomLocation.Y);
-                pictureBox1.Top = 0;
-            }
-            else if (ClientSize.Height > pictureBox1.Image.Height)
-            {
-                pictureBox1.Top = (Height - pictureBox1.Image.Height) / 2;
-
-                // Update zoom location to center image
-                if (!updateZoom) return;
-                
-                zoomLocation = new Point(zoomLocation.X, pictureBox1.Top);
-                pictureBox1.Left = 0;
-            }
-            else
-            {
-                if (!updateZoom) return;
-                
-                pictureBox1.Top = 0;
-                pictureBox1.Left = 0;
-            }
-            
         }
 
         private void MainWindow_Move(object sender, EventArgs e)
