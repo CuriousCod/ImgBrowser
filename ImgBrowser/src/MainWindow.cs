@@ -1691,66 +1691,112 @@ namespace ImgBrowser
         // Moves the picturebox image when dragging the mouse on the image
         private void MovePictureBox()
         {
-
-            int range;
-            int minMov = (int)((double)((Width + Height) * 0.01));
+            if (pictureBox1.Image == null)
+                return;
+            
+            int minMov = (int)((Width + Height) * 0.01);
 
             // Hide any currently displayed message
             DisplayMessage("");
-
-            //pictureBox1.Refresh();
+            
             // Only allow adjustments if the image is larger than the screen resolution
             if (pictureBox1.Image.Width > Width)
             {
-                if (Cursor.Position.X - minMov > currentPositionX)
+                int borderMin = 0;
+                int borderMax = -pictureBox1.Image.Width + ClientRectangle.Width;
+                
+                if (Math.Abs(Math.Abs(Cursor.Position.X) - Math.Abs(currentPositionX)) > minMov)
                 {
-                    // Prevent picturebox from going over the left border
-                    if (pictureBox1.Location.X + Cursor.Position.X - currentPositionX > 0)
-                        pictureBox1.Location = new Point(0, pictureBox1.Location.Y);
-                    else if (pictureBox1.Location.X <= 0)
-                        pictureBox1.Location = new Point(pictureBox1.Location.X + Cursor.Position.X - currentPositionX, pictureBox1.Location.Y);
+                    int newPos = pictureBox1.Location.X + Cursor.Position.X - currentPositionX;
 
+                    if (newPos > borderMin)
+                        newPos = borderMin;
+                    
+                    if (newPos < borderMax)
+                        newPos = borderMax;
+                    
+                    pictureBox1.Location = new Point(newPos, pictureBox1.Location.Y);
+                    
                     // Reset mouse position variable to stop infinite scrolling
                     currentPositionX = Cursor.Position.X;
-                }
-                if (Cursor.Position.X + minMov < currentPositionX)
-                {
-                    range = -pictureBox1.Image.Width + ClientRectangle.Width;
 
-                    // Prevent picturebox from going over the right border
-                    if (pictureBox1.Location.X - currentPositionX + Cursor.Position.X < range)
-                        pictureBox1.Location = new Point(range, pictureBox1.Location.Y);
-                    else if (pictureBox1.Location.X >= range)
-                        pictureBox1.Location = new Point(pictureBox1.Location.X - currentPositionX + Cursor.Position.X, pictureBox1.Location.Y);
-
-                    currentPositionX = Cursor.Position.X;
                 }
+                //
+                // if (Cursor.Position.X - minMov > currentPositionX)
+                // {
+                //     int newPos = pictureBox1.Location.X + Cursor.Position.X - currentPositionX;
+                //     
+                //     // Prevent picturebox from going over the left border
+                //     if (newPos > 0)
+                //         newPos = 0;
+                //     
+                //     pictureBox1.Location = new Point(newPos, pictureBox1.Location.Y);
+                //     
+                //     // Reset mouse position variable to stop infinite scrolling
+                //     currentPositionX = Cursor.Position.X;
+                // }
+                // if (Cursor.Position.X + minMov < currentPositionX)
+                // {
+                //     int newPos = pictureBox1.Location.X + Cursor.Position.X - currentPositionX;
+                //     int border = -pictureBox1.Image.Width + ClientRectangle.Width;
+                //
+                //     // Prevent picturebox from going over the right border
+                //     if (newPos < border)
+                //         newPos = border;
+                //
+                //     pictureBox1.Location = new Point(newPos, pictureBox1.Location.Y);
+                //
+                //     currentPositionX = Cursor.Position.X;
+                // }
                 zoomLocation = pictureBox1.Location;
             }
             if (pictureBox1.Image.Height > Height)
             {
-                if (Cursor.Position.Y - minMov > currentPositionY)
+                int borderMin = 0;
+                int borderMax = -pictureBox1.Image.Height + ClientRectangle.Height;
+                
+                if (Math.Abs(Math.Abs(Cursor.Position.Y) - Math.Abs(currentPositionY)) > minMov)
                 {
-                    // Prevent picturebox from going over the top border
-                    if (pictureBox1.Location.Y + Cursor.Position.Y - currentPositionY > 0)
-                        pictureBox1.Location = new Point(pictureBox1.Location.X, 0);
-                    else if (pictureBox1.Location.Y <= 0)
-                        pictureBox1.Location = new Point(pictureBox1.Location.X, pictureBox1.Location.Y + Cursor.Position.Y - currentPositionY);
+                    int newPos = pictureBox1.Location.Y + Cursor.Position.Y - currentPositionY;
 
+                    if (newPos > borderMin)
+                        newPos = borderMin;
+                    
+                    if (newPos < borderMax)
+                        newPos = borderMax;
+                    
+                    pictureBox1.Location = new Point(pictureBox1.Location.X, newPos);
+                    
+                    // Reset mouse position variable to stop infinite scrolling
                     currentPositionY = Cursor.Position.Y;
-                }
-                if (Cursor.Position.Y + minMov < currentPositionY)
-                {
-                    range = -pictureBox1.Image.Height + ClientRectangle.Height;
 
-                    // Prevent picturebox from going over the bottom border
-                    if (pictureBox1.Location.Y - currentPositionY + Cursor.Position.Y < range)
-                        pictureBox1.Location = new Point(pictureBox1.Location.X, range);
-                    else if (pictureBox1.Location.Y >= range)
-                        pictureBox1.Location = new Point(pictureBox1.Location.X, pictureBox1.Location.Y - currentPositionY + Cursor.Position.Y);
-
-                    currentPositionY = Cursor.Position.Y;
                 }
+                
+                // if (Cursor.Position.Y - minMov > currentPositionY)
+                // {
+                //     int newPos = pictureBox1.Location.Y + Cursor.Position.Y - currentPositionY;
+                //     
+                //     // Prevent picturebox from going over the top border
+                //     if (newPos > 0)
+                //         newPos = 0;
+                //
+                //     pictureBox1.Location = new Point(pictureBox1.Location.X, newPos);
+                //
+                //     currentPositionY = Cursor.Position.Y;
+                // }
+                // if (Cursor.Position.Y + minMov < currentPositionY)
+                // {
+                //     int newPos = pictureBox1.Location.Y + Cursor.Position.Y - currentPositionY;
+                //     int border = -pictureBox1.Image.Height + ClientRectangle.Height;
+                //
+                //     // Prevent picturebox from going over the bottom border
+                //     if (newPos < border)
+                //         newPos = border;
+                //     
+                //     pictureBox1.Location = new Point(pictureBox1.Location.X, newPos );
+                //
+                //     currentPositionY = Cursor.Position.Y;
+                // }
                 zoomLocation = pictureBox1.Location;
             }
         }
@@ -1878,14 +1924,10 @@ namespace ImgBrowser
         private void MainWindow_Move(object sender, EventArgs e)
         {
             if (FormBorderStyle == FormBorderStyle.None && showBorder)
-            {
                 FormBorderStyle = FormBorderStyle.Sizable;
-                showBorder = false;
-            }
-            else
-            {
-                showBorder = false;
-            }
+            
+            showBorder = false;
+            
         }
 
         // TODO This doesn't work
