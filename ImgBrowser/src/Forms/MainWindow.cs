@@ -679,40 +679,44 @@ namespace ImgBrowser
 
         private void BrowseForward()
         {
-            LoadNewImg(GetNextImageFilename(Definitions.BrowseDirection.Forward), false, true);
+            LoadNewImg(GetNextImageFilename(Definitions.Direction.Right), false, true);
         }
 
         private void BrowseBackward()
         {
-            LoadNewImg(GetNextImageFilename(Definitions.BrowseDirection.Backward), false, true);
+            LoadNewImg(GetNextImageFilename(Definitions.Direction.Left), false, true);
         }
 
-        ImageObject GetNextImageFilename(Definitions.BrowseDirection bd)
+        ImageObject GetNextImageFilename(Definitions.Direction direction)
         {
 
             if (fileEntries.Length < 2 || currentImg.Path == "" || lockImage)
                 return new ImageObject("");
 
-            string file;
+            string file = "";
+            int index = 0;
 
-            if (bd == Definitions.BrowseDirection.Forward)
+            switch (direction)
             {
-                int index = Array.IndexOf(fileEntries, currentImg.FullFilename);
+                case Definitions.Direction.Right:
+                    index = Array.IndexOf(fileEntries, currentImg.FullFilename);
 
-                if (index + 1 <= fileEntries.Length - 1)
-                    file = fileEntries[index + 1];
-                else
-                    file = fileEntries[0];
-            }
-            else
-            {
-                int index = Array.IndexOf(fileEntries, currentImg.FullFilename);
+                    if (index + 1 <= fileEntries.Length - 1)
+                        file = fileEntries[index + 1];
+                    else
+                        file = fileEntries[0];
+                    break;
+                
+                case Definitions.Direction.Left:
+                    index = Array.IndexOf(fileEntries, currentImg.FullFilename);
 
-                if (index - 1 >= 0)
-                    file = fileEntries[index - 1];
-                else
-                    file = fileEntries[fileEntries.Length - 1];
+                    if (index - 1 >= 0)
+                        file = fileEntries[index - 1];
+                    else
+                        file = fileEntries[fileEntries.Length - 1];
+                    break;
             }
+
             return new ImageObject(file);
 
         }

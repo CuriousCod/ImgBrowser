@@ -78,7 +78,7 @@ namespace ImgBrowser
                         break;
                     
                     case Definitions.MovementType.MouseScroll:
-                        multiplier = (int)(pictureBox1.Image.Height * 0.01);
+                        multiplier = (int)(pictureBox1.Image.Height * 0.02);
                         
                         switch (direction)
                         {

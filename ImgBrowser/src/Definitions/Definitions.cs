@@ -2,12 +2,6 @@
 {
     public static class Definitions
     {
-        public enum BrowseDirection
-        {
-            Forward,
-            Backward
-        }
-        
         public enum Axis
         {
             X,
