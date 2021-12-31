@@ -28,7 +28,7 @@ namespace ImgBrowser
             {
                 // Check if image can be loaded
                 using (var temp = new Bitmap(file))
-                    return new Bitmap(temp);                      
+                    return new Bitmap(temp);
             }
             catch (OutOfMemoryException ex)
             {
@@ -44,6 +44,11 @@ namespace ImgBrowser
                 return null;
             }
             catch (FileNotFoundException ex)
+            {
+                Console.WriteLine(ex);
+                return null;
+            }
+            catch (ArgumentException ex)
             {
                 Console.WriteLine(ex);
                 return null;
