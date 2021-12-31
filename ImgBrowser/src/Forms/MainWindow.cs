@@ -941,7 +941,8 @@ namespace ImgBrowser
 
         private string[] GetImageFiles(string path, bool allDirectories = false)
         {
-            if (path == "" || path == Path.GetTempPath()) return Array.Empty<string>();
+            if (path == "" || path == Path.GetTempPath() || !Directory.Exists(path)) 
+                return Array.Empty<string>();
             
             IEnumerable<string> files = Directory.EnumerateFiles(path + "\\", "*.*", allDirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)
                 .Where(s => acceptedExtensions.Contains(Path.GetExtension(s).ToLowerInvariant()));
