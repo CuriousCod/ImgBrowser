@@ -36,13 +36,13 @@ namespace ImgBrowser
 
         // Finds the leftmost screen, screens left of the main screen are in minus coordinates
         // TODO This does not take vertical or some weird screen setups into consideration
-        public int GetLeftmostScreenStartPoint()
+        private int GetLeftmostScreenStartPoint()
         {
             int lowestX = 0;
 
-            foreach (Screen screeny in Screen.AllScreens)
+            foreach (Screen screen in Screen.AllScreens)
             {
-                if (screeny.Bounds.Left < lowestX) lowestX = screeny.Bounds.Left;
+                if (screen.Bounds.Left < lowestX) lowestX = screen.Bounds.Left;
             }
 
             return lowestX;
@@ -50,7 +50,7 @@ namespace ImgBrowser
 
 
         // Generates a rectangle based on given values
-        static public Rectangle GetRectangle(Point p1, Point p2)
+        private static Rectangle GetRectangle(Point p1, Point p2)
         {
             return new Rectangle(Math.Min(p1.X, p2.X), Math.Min(p1.Y, p2.Y),
                 Math.Abs(p1.X - p2.X), Math.Abs(p1.Y - p2.Y));
@@ -71,7 +71,7 @@ namespace ImgBrowser
             }
         }
 
-        void CaptureCurrentSelection()
+        private void CaptureCurrentSelection()
         {
             capturing = false;
 
@@ -117,9 +117,8 @@ namespace ImgBrowser
             // Fill monitors with the invisible form
             ClientSize = new System.Drawing.Size(SystemInformation.VirtualScreen.Width, SystemInformation.VirtualScreen.Height);
             Location = new System.Drawing.Point(GetLeftmostScreenStartPoint(), 0);
-
-            // TODO This doesn't actually show up properly, since the form is transparent (shows up when mouse is on rectangle -_-)
-            Cursor = System.Windows.Forms.Cursors.Cross;
+            
+            // Cursor = System.Windows.Forms.Cursors.Cross;
         }
 
         private void captureBox_MouseMove(object sender, MouseEventArgs e)
@@ -152,5 +151,6 @@ namespace ImgBrowser
         {
             CaptureCurrentSelection();
         }
+        
     }
 }

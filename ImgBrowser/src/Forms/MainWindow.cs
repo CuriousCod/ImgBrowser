@@ -181,7 +181,7 @@ namespace ImgBrowser
                 else if (pictureBox1.SizeMode != PictureBoxSizeMode.AutoSize)
                 {
                     if ((ModifierKeys & Keys.Control) == Keys.Control)
-                        PictureBoxZoomIn(1.5);
+                        ResizeImage(1.5);
                     else
                         BrowseForward();
                 }
@@ -204,7 +204,7 @@ namespace ImgBrowser
                 else if (pictureBox1.SizeMode != PictureBoxSizeMode.AutoSize)
                 {
                     if ((ModifierKeys & Keys.Control) == Keys.Control)
-                        PictureBoxZoomOut(1.5);
+                        ResizeImage(0.75);
                     else
                         BrowseBackward();
                 }
@@ -281,11 +281,10 @@ namespace ImgBrowser
                     break;
                 // Copy image to clipboard
                 case "C":
-                    // Check for control key
                     if (ctrlHeld)
                     {
                         if (pictureBox1.Image != null) {
-                            if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) {
+                            if (shiftHeld) {
                                 CopyCurrentDisplaytoClipboard();
                             }
                             else
@@ -300,7 +299,6 @@ namespace ImgBrowser
                     break;
                 // Display image from clipboard
                 case "V":
-                    // Check for control key
                     if (ctrlHeld)
                         LoadNewImgFromClipboard();
                     break;
@@ -308,25 +306,19 @@ namespace ImgBrowser
                 case "R":
                     if (pictureBox1.Image != null)
                     {
-                        /*
-                        Bitmap img = new Bitmap(pictureBox1.Image);
-                        using (Graphics grap = Graphics.FromImage(img))
-                        {
-                            grap.TranslateTransform(img.Width / 2, img.Height / 2);
+                        // Bitmap img = new Bitmap(pictureBox1.Image);
+                        // using (Graphics grap = Graphics.FromImage(img))
+                        // {
+                        //     grap.TranslateTransform(img.Width / 2, img.Height / 2);
+                        //
+                        //     grap.RotateTransform(90);
+                        //
+                        //     grap.TranslateTransform(-img.Width / 2, -img.Height / 2);
+                        //
+                        //     grap.DrawImage(img, 0, 0, pictureBox1.Image.Width, pictureBox1.Image.Height);
+                        // }
 
-                            grap.RotateTransform(90);
-
-                            grap.TranslateTransform(-img.Width / 2, -img.Height / 2);
-
-                            grap.DrawImage(img, 0, 0, pictureBox1.Image.Width, pictureBox1.Image.Height);
-                        }
-                        */
-
-                        if (ctrlHeld)
-                            RotateImage(true);
-                        else
-                            RotateImage(false);
-
+                        RotateImage(ctrlHeld);
                     }
                     break;
                 case "M":
@@ -365,23 +357,21 @@ namespace ImgBrowser
                     BackColor = currentColor;
 
                     colorHex = ColorTranslator.ToHtml(Color.FromArgb(currentColor.ToArgb()));
-                    if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift)
-                        DisplayMessage($"{currentColor.R}, {currentColor.G}, {currentColor.B}");
-                    else
-                        DisplayMessage(colorHex);
+
+                    DisplayMessage(shiftHeld ? $"{currentColor.R}, {currentColor.G}, {currentColor.B}" : colorHex);
 
                     break;
                 case "L":
                     if (pictureBox1.Image != null)
                     {
-                        if ((lockImage))
+                        if (lockImage)
                         {
                             lockImage = false;
                             DisplayMessage("Image unlocked");
                         }
                         else
                         {
-                            if ((fileEntries != null) && (fileEntries.Length > 0))
+                            if (fileEntries != null && fileEntries.Length > 0)
                             {
                                 lockImage = true;
                                 DisplayMessage("Image locked");
@@ -393,21 +383,9 @@ namespace ImgBrowser
                 case "S":
                     if (ctrlHeld)
                     {
-                        if (pictureBox1.Image != null) {
-                            SaveFileDialog saveDialog = new SaveFileDialog
-                            {
-                                Filter = "PNG (*.png)|*.png|All files (*.*)|*.*",
-                                FilterIndex = 0,
-                                RestoreDirectory = true,
-                                FileName = currentImg.Name == "" ? "image" : currentImg.Name
-                            };
-
-                            if (saveDialog.ShowDialog() == DialogResult.OK)
-                                pictureBox1.Image.Save(saveDialog.FileName, ImageFormat.Png);   
-                        }
+                        SaveCurrentImage();
                     }
-
-                    else if (screenCapButtonHeld == false)
+                    else if (!screenCapButtonHeld)
                     {
                         screenCapButtonHeld = true;
                         
@@ -420,27 +398,14 @@ namespace ImgBrowser
                         if (screenCapPosX != Cursor.Position.X && screenCapPosY != Cursor.Position.Y) 
                             DisplayMessage("Selection copied to clipboard");
                         screenCapButtonHeld = false;
-
                     }
                     break;
-                // TODO This can make the image transparent as well if the color matches the form's bg
                 case "T":
-                    if (ctrlHeld) { 
-                        if (TransparencyKey != BackColor)
-                        {
-                            DisplayMessage("Background hidden");
-                            TransparencyKey = BackColor;
-                        }
-                        else
-                        {
-                            DisplayMessage("Background visible");
-                            TransparencyKey = Control.DefaultBackColor;
-                        }
-                    }
+                    ToggleTransparentBackground();
                     break;
                 // Close app
                 case "W":
-                    if (ctrlHeld && (Control.ModifierKeys & Keys.Shift) == Keys.Shift)
+                    if (ctrlHeld && shiftHeld)
                     {
                         Application.Exit();
                     }
@@ -464,7 +429,7 @@ namespace ImgBrowser
                     }
                     break;
                 case "Return":
-                    if ((Control.ModifierKeys & Keys.Alt) == Keys.Alt)
+                    if (altHeld)
                     {
                         MaxOrNormalizeWindow();
                         //e.Handled = true;
@@ -474,7 +439,7 @@ namespace ImgBrowser
                     break;
                 // Copy image fullname and window coordinates to clipboard
                 case "Pause":
-                    if ((Control.ModifierKeys & Keys.Alt) == Keys.Alt) {
+                    if (altHeld) {
                         DisplayMessage("Image path and window size added to clipboard");
                         Clipboard.SetText($"{currentImg.Path}\\{currentImg.Name} {Top},{Left},{Height},{Width}");
                     }
@@ -485,13 +450,11 @@ namespace ImgBrowser
                     break;
                 case "Add":
                     // Hold ctrl for smaller zoom value
-                    if (ctrlHeld) PictureBoxZoomIn(1.2);
-                    else PictureBoxZoomIn(1.5);
+                    ResizeImage(ctrlHeld ? 1.2 : 1.5);
                     break;
                 case "Subtract":
                     // Hold ctrl for smaller zoom value
-                    if (ctrlHeld) PictureBoxZoomOut(1.2);
-                    else PictureBoxZoomOut(1.5);
+                    ResizeImage(ctrlHeld ? 0.9 : 0.75);
                     break;
                 case "D1":
                     TempImageHandling("01");
@@ -535,6 +498,38 @@ namespace ImgBrowser
                     break;
                 default:
                     break;
+            }
+        }
+
+        private void SaveCurrentImage()
+        {
+            if (pictureBox1.Image == null) 
+                return;
+            
+            SaveFileDialog saveDialog = new SaveFileDialog
+            {
+                Filter = "PNG (*.png)|*.png|All files (*.*)|*.*",
+                FilterIndex = 0,
+                RestoreDirectory = true,
+                FileName = currentImg.Name == "" ? "image" : currentImg.Name
+            };
+
+            if (saveDialog.ShowDialog() == DialogResult.OK)
+                pictureBox1.Image.Save(saveDialog.FileName, ImageFormat.Png);
+        }
+
+        // TODO This can make the image transparent as well if the color matches the form's bg
+        private void ToggleTransparentBackground()
+        {
+            if (TransparencyKey != BackColor)
+            {
+                DisplayMessage("Background hidden");
+                TransparencyKey = BackColor;
+            }
+            else
+            {
+                DisplayMessage("Background visible");
+                TransparencyKey = Control.DefaultBackColor;
             }
         }
 
@@ -689,7 +684,6 @@ namespace ImgBrowser
 
         ImageObject GetNextImageFilename(Definitions.Direction direction)
         {
-
             if (fileEntries.Length < 2 || currentImg.Path == "" || lockImage)
                 return new ImageObject("");
 
@@ -701,19 +695,13 @@ namespace ImgBrowser
                 case Definitions.Direction.Right:
                     index = Array.IndexOf(fileEntries, currentImg.FullFilename);
 
-                    if (index + 1 <= fileEntries.Length - 1)
-                        file = fileEntries[index + 1];
-                    else
-                        file = fileEntries[0];
+                    file = index + 1 < fileEntries.Length ? fileEntries[index + 1] : fileEntries[0];
                     break;
                 
                 case Definitions.Direction.Left:
                     index = Array.IndexOf(fileEntries, currentImg.FullFilename);
 
-                    if (index - 1 >= 0)
-                        file = fileEntries[index - 1];
-                    else
-                        file = fileEntries[fileEntries.Length - 1];
+                    file = index - 1 >= 0 ? fileEntries[index - 1] : fileEntries[fileEntries.Length - 1];
                     break;
             }
 
@@ -731,40 +719,39 @@ namespace ImgBrowser
             if (pictureBox1.Image == null)
                 return;
             
-            // Barebones adjust window size to aspect ratio feature
             FormBorderStyle = FormBorderStyle.None;
-            if (pictureBox1.SizeMode == PictureBoxSizeMode.Zoom)
-            {
-                // Image aspect ratio
-                double aspectRatio = (double)pictureBox1.Image.Width / (double)pictureBox1.Image.Height;
-                    
-                // Window frame aspect ratio
-                double windowAspectRatio = (double)ClientSize.Width / (double)ClientSize.Height;
-
-                int tempHeight = Height;
-
-                // Adjust frame size when there's a big difference between the image and frame aspect ratios
-                // This prevent images from getting too large when readjusting frame size to the image
-                if (windowAspectRatio + 2 < aspectRatio)
-                    while (windowAspectRatio + 2 < aspectRatio)
-                    {
-                        tempHeight = (int)(tempHeight * 0.95f);
-                        windowAspectRatio = (double)ClientSize.Width / (double)tempHeight;
-                    }
-                else if (aspectRatio + 2 < windowAspectRatio)
-                    while (aspectRatio + 2 < windowAspectRatio)
-                    {
-                        tempHeight = (int)(tempHeight * 1.05f);
-                        windowAspectRatio = (double)ClientSize.Width / (double)tempHeight;
-                    }
-
-                Height = tempHeight;
-
-                // Set frame size to match the image aspect ratio
-                Size = new Size((int)(aspectRatio * Size.Height), Size.Height);
-
-            }
             
+            if (pictureBox1.SizeMode != PictureBoxSizeMode.Zoom) 
+                return;
+
+            // Image aspect ratio
+            double aspectRatio = (double)pictureBox1.Image.Width / (double)pictureBox1.Image.Height;
+                    
+            // Window frame aspect ratio
+            double windowAspectRatio = (double)ClientSize.Width / (double)ClientSize.Height;
+
+            int tempHeight = Height;
+
+            // Adjust frame size when there's a big difference between the image and frame aspect ratios
+            // This prevent images from getting too large when readjusting frame size to the image
+            if (windowAspectRatio + 2 < aspectRatio)
+                while (windowAspectRatio + 2 < aspectRatio)
+                {
+                    tempHeight = (int)(tempHeight * 0.95f);
+                    windowAspectRatio = (double)ClientSize.Width / (double)tempHeight;
+                }
+            else if (aspectRatio + 2 < windowAspectRatio)
+                while (aspectRatio + 2 < windowAspectRatio)
+                {
+                    tempHeight = (int)(tempHeight * 1.05f);
+                    windowAspectRatio = (double)ClientSize.Width / (double)tempHeight;
+                }
+
+            Height = tempHeight;
+
+            // Set frame size to match the image aspect ratio
+            Size = new Size((int)(aspectRatio * Size.Height), Size.Height);
+
         }
 
         private void ToggleAlwaysOnTop()
@@ -868,20 +855,26 @@ namespace ImgBrowser
         }
 
         private void TempImageHandling(string ordinalValue)
-        {            
-            if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
-                if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift) { 
-                    if (pictureBox1.Image != null) { 
-                        if (!SaveImageToTemp(ordinalValue)) { 
-                            DisplayMessage("Unable to save image");
-                        }
-                        else
-                            DisplayMessage($"Saved to temp {ordinalValue}");
-                    }
+        {
+            if ((Control.ModifierKeys & Keys.Control) != Keys.Control) 
+                return;
+            
+            if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift)
+            {
+                if (pictureBox1.Image == null) 
+                    return;
+                
+                if (!SaveImageToTemp(ordinalValue)) { 
+                    DisplayMessage("Unable to save image");
                 }
                 else
-                    if (LoadImageFromTemp(ordinalValue))
-                        DisplayMessage("Temp image loaded");
+                    DisplayMessage($"Saved to temp {ordinalValue}");
+                
+                return;
+            }
+            
+            if (LoadImageFromTemp(ordinalValue))
+                DisplayMessage("Temp image loaded");
         }
 
         private bool SaveImageToTemp(string ordinalValue, bool overrideName = false)
@@ -1159,9 +1152,10 @@ namespace ImgBrowser
             return grabbedColor;
         }
 
-        void PictureBoxZoomIn(double multiplier)
+        void ResizeImage(double multiplier)
         {
-            if (pictureBox1.Image == null) return;
+            if (pictureBox1.Image == null) 
+                return;
             
             // Make a backup of the current image
             if (!imageEdited)
@@ -1170,14 +1164,20 @@ namespace ImgBrowser
                     SaveImageToTemp(randString);
                 imageEdited = true;
             }
-
-            //Bitmap bm = new Bitmap(img, Convert.ToInt32(img.Width * size.Width), Convert.ToInt32(img.Height * size.Height));
-            //Bitmap bm = new Bitmap(img, Convert.ToInt32(img.Width * 1.5), Convert.ToInt32(img.Height * 1.5));
-
+            
+            bool zoomOut = multiplier < 1;
+            
             // Perform a rough image size check to avoid memory issues
             if (pictureBox1.Image.Width * multiplier + pictureBox1.Image.Height * multiplier > 40000)
             {
                 DisplayMessage("Image too large to resize");
+                return;
+            }
+            
+            // Do not zoom out if it makes image smaller than screen
+            if (zoomOut && pictureBox1.Image.Width * multiplier < Width && pictureBox1.Image.Height * multiplier < Height)
+            {
+                RestoreImage(false);
                 return;
             }
 
@@ -1220,7 +1220,7 @@ namespace ImgBrowser
                 {
                     grap.CompositingMode = CompositingMode.SourceCopy;
                     grap.CompositingQuality = CompositingQuality.HighQuality;
-                    grap.InterpolationMode = InterpolationMode.Bicubic;
+                    grap.InterpolationMode = InterpolationMode.HighQualityBicubic;
                     //grap.SmoothingMode = SmoothingMode.HighQuality;
                     grap.PixelOffsetMode = PixelOffsetMode.HighQuality;
 
@@ -1234,105 +1234,12 @@ namespace ImgBrowser
             double posY = (double)(pictureBox1.Location.Y * multiplier);
             if (posX > 0) posX = 0;
             if (posY > 0) posY = 0;
-
-            pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
-            pictureBox1.Dock = DockStyle.None;
-            pictureBox1.Image = resized;
-
-            img.Dispose();
-            CenterImage();
-
-            // Set scroll if image fills the screen
-            if (pictureBox1.Image.Width > Width) pictureBox1.Location = new Point((int)posX, pictureBox1.Location.Y);
-            if (pictureBox1.Image.Height > Height) pictureBox1.Location = new Point(pictureBox1.Location.X, (int)posY);
-        }
-
-        void PictureBoxZoomOut(double multiplier)
-        {
-            if (pictureBox1.SizeMode == PictureBoxSizeMode.Zoom)
-                return;
-
-            if (pictureBox1.Image == null) return;
             
-            // Make a backup of the current image
-            if (!imageEdited)
-            {
-                if (currentImg.Path == "")
-                    SaveImageToTemp(randString);
-                imageEdited = true;
+            if (zoomOut){
+                // Check that image stays within the borders
+                if (posX < -resized.Width + Width) posX = -resized.Width + Width;
+                if (posY < -resized.Height + Height) posY = -resized.Height + Height;
             }
-
-            // Perform a rough image size check to avoid memory issues
-            if (pictureBox1.Image.Width / multiplier + pictureBox1.Image.Height / multiplier > 40000)
-            {
-                DisplayMessage("Image too large to resize");
-                return;
-            }
-
-            // Do not zoom out if it makes image smaller than screen
-            if (pictureBox1.Image.Width / multiplier < Width && pictureBox1.Image.Height / multiplier < Height)
-            {
-                RestoreImage(false);
-                return;
-            }
-
-            //https://stackoverflow.com/questions/1922040/how-to-resize-an-image-c-sharp
-
-            // Grab current image
-            Image img = pictureBox1.Image;
-            Bitmap resized = new Bitmap(1, 1);
-
-            // Creating a new resized bitmap
-            try
-            {
-                resized = new Bitmap(img, Convert.ToInt32(img.Width / multiplier), Convert.ToInt32(img.Height / multiplier));
-            }
-            // Catch out of memory exceptions
-            // TODO This doesn't actually free up memory correctly, so it will eventually cause issues
-            catch (ArgumentException)
-            {
-                pictureBox1.Image = null;
-                img.Dispose();
-                resized.Dispose();
-                pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
-                pictureBox1.Dock = DockStyle.Fill;
-                return;
-            }
-            catch (OutOfMemoryException)
-            {
-                pictureBox1.Image = null;
-                img.Dispose();
-                resized.Dispose();
-                pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
-                pictureBox1.Dock = DockStyle.Fill;
-                return;
-            }
-            // This will rescale the image. Optional, but makes it look better
-            // Do not rescale images that are over 10 000 pixels, as it will cause memory and performance issues
-            if (img.Width + img.Height < 10000)
-            {
-                using (Graphics grap = Graphics.FromImage(resized))
-                {
-                    grap.CompositingMode = CompositingMode.SourceCopy;
-                    grap.CompositingQuality = CompositingQuality.HighQuality;
-                    grap.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                    //grap.SmoothingMode = SmoothingMode.HighQuality;
-                    grap.PixelOffsetMode = PixelOffsetMode.HighQuality;
-
-                    // This draws the new image on top of the bitmap
-                    grap.DrawImage(img, 0, 0, Convert.ToInt32(img.Width / multiplier), Convert.ToInt32(img.Height / multiplier));
-                }
-            }
-
-            // Calculate new scroll position 
-            double posX = (double)(pictureBox1.Location.X / multiplier);
-            double posY = (double)(pictureBox1.Location.Y / multiplier);
-
-            // Check that image stays within the borders
-            if (posX > 0) posX = 0;
-            if (posY > 0) posY = 0;
-            if (posX < -resized.Width + Width) posX = -resized.Width + Width;
-            if (posY < -resized.Height + Height) posY = -resized.Height + Height;
 
             pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
             pictureBox1.Dock = DockStyle.None;
@@ -1992,10 +1899,12 @@ namespace ImgBrowser
         private int VerifyByteOffset(byte[] dib, int byteOffset)
         {
             // Check if the last empty byte is in its usual place
-            if (dib[byteOffset - 2] == 0) 
+            if (dib[byteOffset - 2] == 0 && dib[byteOffset] != 0) 
                 return byteOffset;
+
+            return 40;
             
-            byteOffset = FindLastEmptyByte(dib, 50) + 1;
+            byteOffset = FindFirstEmptyByteReverse(dib, 50) + 1;
 
             if (byteOffset == -1)
                 byteOffset = 52;
@@ -2003,7 +1912,7 @@ namespace ImgBrowser
             return byteOffset;
         }
 
-        int FindLastEmptyByte(Byte[] bytes, int startIndex)
+        int FindFirstEmptyByteReverse(Byte[] bytes, int startIndex)
         {
             for (int i = startIndex; i >= 0; i--)
             {
