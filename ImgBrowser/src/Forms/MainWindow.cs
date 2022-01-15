@@ -1466,7 +1466,7 @@ namespace ImgBrowser
             }
 
             // Maximize or normalize window
-            if (e.Button.ToString() == "Left" && e.Clicks == 2)
+            if (e.Button.ToString() == "Left" && e.Clicks == 2 && (ModifierKeys & Keys.Control) != Keys.Control)
             {
                 MaxOrNormalizeWindow();
             }
@@ -1901,7 +1901,7 @@ namespace ImgBrowser
             // Check if the last empty byte is in its usual place
             if (dib[byteOffset - 2] == 0 && dib[byteOffset] != 0) 
                 return byteOffset;
-
+            
             return 40;
             
             byteOffset = FindFirstEmptyByteReverse(dib, 50) + 1;
