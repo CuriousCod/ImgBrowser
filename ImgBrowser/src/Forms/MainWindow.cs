@@ -385,19 +385,9 @@ namespace ImgBrowser
                     {
                         SaveCurrentImage();
                     }
-                    else if (!screenCapButtonHeld)
+                    else
                     {
-                        screenCapButtonHeld = true;
-                        
-                        int screenCapPosX = Cursor.Position.X;
-                        int screenCapPosY = Cursor.Position.Y;
-                        //pictureBox1.Cursor = Cursors.Cross;
-
-                        Form f = new CaptureLayer();
-
-                        if (screenCapPosX != Cursor.Position.X && screenCapPosY != Cursor.Position.Y) 
-                            DisplayMessage("Selection copied to clipboard");
-                        screenCapButtonHeld = false;
+                        ActivateSnippingTool();
                     }
                     break;
                 case "T":
@@ -499,6 +489,29 @@ namespace ImgBrowser
                 default:
                     break;
             }
+        }
+
+        private void ActivateSnippingTool()
+        {
+            if (screenCapButtonHeld)
+                return;
+
+            screenCapButtonHeld = true;
+
+            int screenCapPosX = Cursor.Position.X;
+            int screenCapPosY = Cursor.Position.Y;
+            //pictureBox1.Cursor = Cursors.Cross;
+
+            Form f = new CaptureLayer();
+            
+            if (screenCapPosX != Cursor.Position.X && screenCapPosY != Cursor.Position.Y)
+                DisplayMessage("Selection copied to clipboard");
+
+            Task.Run(async () =>
+            {
+                await Task.Delay(100);
+                screenCapButtonHeld = false;
+            });
         }
 
         private void SaveCurrentImage()
@@ -1331,7 +1344,7 @@ namespace ImgBrowser
             ResetImageModifiers();
 
         }
-
+        
         private void LoadNewImg(ImageObject imgObj, bool removeImagePath = false, bool skipRefresh = false)
         {
             bool imageError = false;
