@@ -65,6 +65,11 @@ namespace ImgBrowser
         // When text is shown on the screen
         private bool displayingMessage = false;
 
+        // Stores the folder path if drag and drop is used to open a folder
+        private string rootImageFolder = string.Empty;
+        
+        private readonly Action<string> rootimageFolderChanged;
+
         // Timer for the text display
         private int textTimer;
 
@@ -129,6 +134,7 @@ namespace ImgBrowser
             InitializeMessageBox();
 
             Application.ApplicationExit += new EventHandler(OnApplicationExit);
+            rootimageFolderChanged = new Action<string>(OnRootImageFolderChange);
         }
 
         void InitializeMessageBox()
@@ -218,9 +224,9 @@ namespace ImgBrowser
         {
             Console.WriteLine(e.KeyCode);
 
-            bool ctrlHeld = (ModifierKeys & Keys.Control) == Keys.Control;
-            bool altHeld = (ModifierKeys & Keys.Alt) == Keys.Alt;
-            bool shiftHeld = (ModifierKeys & Keys.Shift) == Keys.Shift;
+            var ctrlHeld = (ModifierKeys & Keys.Control) == Keys.Control;
+            var altHeld = (ModifierKeys & Keys.Alt) == Keys.Alt;
+            var shiftHeld = (ModifierKeys & Keys.Shift) == Keys.Shift;
 
             switch (e.KeyCode.ToString())
             {
@@ -268,8 +274,10 @@ namespace ImgBrowser
                     }
                     break;
                 case "F5":
-                    fileEntries = GetImageFiles(currentImg.Path);
-                    LoadNewImg(currentImg);
+                    fileEntries = ReloadImageFiles();
+                    
+                    if (fileEntries.Length > 0)
+                        DisplayMessage("Images reloaded");
                     break;
                 // Restore unedited image
                 case "F10":
@@ -285,7 +293,7 @@ namespace ImgBrowser
                     {
                         if (pictureBox1.Image != null) {
                             if (shiftHeld) {
-                                CopyCurrentDisplaytoClipboard();
+                                CopyCurrentDisplayToClipboard();
                             }
                             else
                             {
@@ -489,6 +497,11 @@ namespace ImgBrowser
                 default:
                     break;
             }
+        }
+
+        private string[] ReloadImageFiles()
+        {
+            return rootImageFolder != string.Empty ? GetImageFiles(rootImageFolder, true) : GetImageFiles(currentImg.Path);
         }
 
         private void ActivateSnippingTool()
@@ -930,7 +943,7 @@ namespace ImgBrowser
             
         }
 
-        private void UpdateFormName()
+        private void UpdateWindowTitle()
         {
             string name = currentImg.Name != "" ? $"{currentImg.Name}" : "Image";
             string size = pictureBox1.Image != null ? $"{pictureBox1.Image.Width} x {pictureBox1.Image.Height}" : "";
@@ -1039,7 +1052,10 @@ namespace ImgBrowser
             int argsLength = cmdArgs.Length;
 
             if (argsLength > 1 && cmdArgs[1] != "-noImage")
-                LoadNewImg(new ImageObject(cmdArgs[1])); 
+            {
+                rootimageFolderChanged?.Invoke(string.Empty);
+                LoadNewImg(new ImageObject(cmdArgs[1]));
+            }
             else
                 LoadNewImgFromClipboard();
             
@@ -1288,23 +1304,18 @@ namespace ImgBrowser
 
             if (acceptedExtensions.Contains(Path.GetExtension(lowerCase)))
             {
+                rootimageFolderChanged?.Invoke(string.Empty);
                 LoadNewImg(new ImageObject(files[0]));
+                return;
             }
-            else if (Directory.Exists(files[0]))
-            {
-                var fileArray = GetImageFiles(files[0], true);
 
-                if (fileArray.Length <= 0)
-                {
-                    DisplayMessage("No images found");
-                    return;
-                }
-
-                currentImg = new ImageObject(files[0] + " \\");
-                fileEntries = fileArray;
-                JumpToImage(0);
-
-            }
+            rootimageFolderChanged?.Invoke(files[0]);
+            
+            if (rootImageFolder == string.Empty)
+                return;
+            
+            currentImg = new ImageObject(files[0] + " \\");
+            JumpToImage(0);
 
         }
 
@@ -1339,7 +1350,10 @@ namespace ImgBrowser
 
             if (oldImg != null) { oldImg.Dispose(); }
 
-            UpdateFormName();
+            rootimageFolderChanged?.Invoke(string.Empty);
+            fileEntries = Array.Empty<string>();
+            
+            UpdateWindowTitle();
 
             ResetImageModifiers();
 
@@ -1383,14 +1397,15 @@ namespace ImgBrowser
                 currentImg.FullFilename = "";
             }
 
-            if (!skipRefresh){
-                var files = GetImageFiles(currentImg.Path);
+            if (!skipRefresh)
+            {
+                var files = ReloadImageFiles();
 
                 if (files.Length > 0)
                     fileEntries = files;
             }
 
-            UpdateFormName();
+            UpdateWindowTitle();
 
             // Reset zoomed in position
             pictureBox1.Location = new Point(0, 0);
@@ -1426,7 +1441,7 @@ namespace ImgBrowser
             DisplayMessage("Unable to load image");
         }
 
-        private void CopyCurrentDisplaytoClipboard()
+        private void CopyCurrentDisplayToClipboard()
         {
             if (pictureBox1.SizeMode != PictureBoxSizeMode.AutoSize)
                 return;
@@ -1830,6 +1845,33 @@ namespace ImgBrowser
                 messageLabelShadowBottom.Location = new Point(11, 3);
         }
 
+        private void OnRootImageFolderChange(string folderName)
+        {
+            rootImageFolder = string.Empty;
+            
+            if (string.IsNullOrEmpty(folderName))
+            {
+                return;
+            }
+            
+            if (!Directory.Exists(folderName))
+            {
+                return;
+            }
+            
+            rootImageFolder = folderName;
+            var files = ReloadImageFiles();
+            
+            if (files.Length <= 0)
+            {
+                DisplayMessage("No images found");
+                rootImageFolder = string.Empty;
+                return;
+            }
+            
+            fileEntries = files;
+        }
+        
         private void OnApplicationExit(object sender, EventArgs e)
         {
             string tempFile = Path.GetTempPath() + "/" + "imgBrowserTemp" + randString + ".png";
