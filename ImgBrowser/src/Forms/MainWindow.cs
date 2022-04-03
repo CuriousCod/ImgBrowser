@@ -23,6 +23,7 @@ using SearchOption = System.IO.SearchOption;
 // TODO Scale image to screen?
 // TODO Remember rotate position for next image
 // TODO Z-index adjust
+// BUG Window positioning issues when using the maximize button
 
 namespace ImgBrowser
 {
@@ -67,8 +68,8 @@ namespace ImgBrowser
 
         // Stores the folder path if drag and drop is used to open a folder
         private string rootImageFolder = string.Empty;
-        
-        private readonly Action<string> rootimageFolderChanged;
+
+        private readonly Action<string> rootImageFolderChanged;
 
         // Timer for the text display
         private int textTimer;
@@ -134,7 +135,7 @@ namespace ImgBrowser
             InitializeMessageBox();
 
             Application.ApplicationExit += new EventHandler(OnApplicationExit);
-            rootimageFolderChanged = new Action<string>(OnRootImageFolderChange);
+            rootImageFolderChanged = new Action<string>(OnRootImageFolderChange);
         }
 
         void InitializeMessageBox()
@@ -1053,7 +1054,7 @@ namespace ImgBrowser
 
             if (argsLength > 1 && cmdArgs[1] != "-noImage")
             {
-                rootimageFolderChanged?.Invoke(string.Empty);
+                rootImageFolderChanged?.Invoke(string.Empty);
                 LoadNewImg(new ImageObject(cmdArgs[1]));
             }
             else
@@ -1304,12 +1305,12 @@ namespace ImgBrowser
 
             if (acceptedExtensions.Contains(Path.GetExtension(lowerCase)))
             {
-                rootimageFolderChanged?.Invoke(string.Empty);
+                rootImageFolderChanged?.Invoke(string.Empty);
                 LoadNewImg(new ImageObject(files[0]));
                 return;
             }
 
-            rootimageFolderChanged?.Invoke(files[0]);
+            rootImageFolderChanged?.Invoke(files[0]);
             
             if (rootImageFolder == string.Empty)
                 return;
@@ -1350,7 +1351,7 @@ namespace ImgBrowser
 
             if (oldImg != null) { oldImg.Dispose(); }
 
-            rootimageFolderChanged?.Invoke(string.Empty);
+            rootImageFolderChanged?.Invoke(string.Empty);
             fileEntries = Array.Empty<string>();
             
             UpdateWindowTitle();
@@ -1469,13 +1470,14 @@ namespace ImgBrowser
             // Change cursor graphic
             e.Effect = DragDropEffects.Move;
         }
-
+        
         private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
         {
-
-            if (e.Button.ToString() == "Left")
+            var mouseLeftDown = e.Button.ToString() == "Left";
+            
+            if (mouseLeftDown)
             {
-                if ((Control.ModifierKeys & Keys.Alt) == Keys.Alt)
+                if ((ModifierKeys & Keys.Alt) == Keys.Alt)
                     if (pictureBox1.Image != null)
                     {
                         DragImageFromApp();
@@ -1494,7 +1496,7 @@ namespace ImgBrowser
             }
 
             // Maximize or normalize window
-            if (e.Button.ToString() == "Left" && e.Clicks == 2 && (ModifierKeys & Keys.Control) != Keys.Control)
+            if (mouseLeftDown && e.Clicks == 2 && (ModifierKeys & Keys.Control) != Keys.Control)
             {
                 MaxOrNormalizeWindow();
             }
@@ -1509,26 +1511,9 @@ namespace ImgBrowser
                     // Exits this function and starts the MouseMove function
                     pictureBox1.Cursor = Cursors.SizeAll;
                 }
-                // Activate window drag
+                
                 else
                 {
-                    // Ignore if form is transparent, so the image can be moved without snapping to screen edges
-                    if ((TransparencyKey != BackColor) && ((Control.ModifierKeys & Keys.Control) != Keys.Control)) {
-                        
-                        /* This triggers with too early when just clicking the image
-                        // Center the window on the mouse if maximized
-                        if (WindowState == FormWindowState.Maximized)
-                        {
-                            WindowState = FormWindowState.Normal;
-                            Left = Cursor.Position.X - ClientSize.Width / 2;
-                            Top = Cursor.Position.Y - ClientSize.Height / 2;
-                        }*/
-
-                        // Raw commands for moving window with mouse
-                        ReleaseCapture();
-                        SendMessage(Handle, WM_NCLBUTTONDOWN, HT_CAPTION, 0);
-
-                    }
                 }
             }
 
@@ -1606,45 +1591,57 @@ namespace ImgBrowser
 
         private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
         {
-            if (pictureBox1.Image == null)
+            if (e.Button.ToString() != "Left")
                 return;
             
-            if (e.Button.ToString() == "Left")
+            if (e.Clicks == 2)
+                return;
+            
+            if (ShouldMovePictureBox())
             {
-                bool autoSizeMode = pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize;
-
-                if (autoSizeMode && FormBorderStyle == FormBorderStyle.Sizable || 
-                    autoSizeMode && WindowState == FormWindowState.Maximized ||
-                    autoSizeMode && (ModifierKeys & Keys.Control) == Keys.Control)
-                {
-                    MovePictureBox(Definitions.MovementType.MouseDrag, Definitions.Direction.None);
-                }
-                else
-                {
-                    // Classic style window drag anywhere to move feature
-                    // Useful when you don't want window to snap to screen edges
-                    if (TransparencyKey != BackColor) return;
-                    
-                    if ((Cursor.Position.X != storedMousePosition.X) && (Cursor.Position.Y != storedMousePosition.Y) && (WindowState == FormWindowState.Maximized))
-                    {
-                        WindowState = FormWindowState.Normal;
-
-                        // Center window on mouse
-                        Location = Cursor.Position;
-                        frameTop = Top - (int)(Height / 2);
-                        frameLeft = Left - (int)(Width / 2);
-                    }
-                            
-                    // Keep border hidden when restoring window
-                    showBorder = false;
-                    Location = new Point(Cursor.Position.X - storedMousePosition.X + frameLeft, Cursor.Position.Y - storedMousePosition.Y + frameTop);
-                }
+                MovePictureBox(Definitions.MovementType.MouseDrag, Definitions.Direction.None);
             }
+            // Activate window drag
             else
             {
-                //currentPositionX = e.X;
-                //currentPositionY = e.Y;
-            }         
+                var useModernWindowDrag =
+                    TransparencyKey != BackColor && (ModifierKeys & Keys.Control) != Keys.Control;
+                
+                if (WindowState == FormWindowState.Maximized)
+                {
+                    // Check if mouse has moved far enough to activate window drag
+                    if (Cursor.Position.X == storedMousePosition.X && Cursor.Position.Y == storedMousePosition.Y)
+                        return;
+                    
+                    WindowState = FormWindowState.Normal;
+
+                    // Center window on mouse
+                    Location = Cursor.Position;
+                    
+                    frameTop = Top - ClientSize.Height / 2;
+                    frameLeft = Left - ClientSize.Width / 2;
+                    
+                    Top = frameTop;
+                    Left = frameLeft;
+                }
+                
+                if (useModernWindowDrag) {
+
+                    // Raw commands for moving window with mouse
+                    ReleaseCapture();
+                    SendMessage(Handle, WM_NCLBUTTONDOWN, HT_CAPTION, 0);
+                    return;
+                }
+                
+                // Classic style window drag anywhere to move feature
+                // Useful when you don't want window to snap to screen edges
+                if (TransparencyKey != BackColor) 
+                    return;
+                
+                // Keep border hidden when restoring window
+                showBorder = false;
+                Location = new Point(Cursor.Position.X - storedMousePosition.X + frameLeft, Cursor.Position.Y - storedMousePosition.Y + frameTop);
+            }
         }
 
         private void pictureBox1_MouseUp(object sender, MouseEventArgs e)
@@ -1652,7 +1649,7 @@ namespace ImgBrowser
             pictureBox1.Cursor = Cursors.Arrow;
             PositionMessageDisplay();
         }
-
+        
         private void pictureBox1_MouseClick(object sender, MouseEventArgs e)
         {
             switch (e.Button.ToString())
@@ -1692,6 +1689,18 @@ namespace ImgBrowser
             }
         }
 
+        private bool ShouldMovePictureBox()
+        {
+            if(pictureBox1.Image == null)
+                return false;
+            
+            var autoSizeMode = pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize;
+
+            return autoSizeMode && FormBorderStyle == FormBorderStyle.Sizable || 
+                   autoSizeMode && WindowState == FormWindowState.Maximized ||
+                   autoSizeMode && (ModifierKeys & Keys.Control) == Keys.Control;
+        }
+        
         private void SizeModeZoom()
         {
             if (pictureBox1.Image == null)
@@ -1730,9 +1739,8 @@ namespace ImgBrowser
         {
             if (FormBorderStyle == FormBorderStyle.None && showBorder)
                 FormBorderStyle = FormBorderStyle.Sizable;
-            
+
             showBorder = false;
-            
         }
 
         // TODO This doesn't work
@@ -1895,12 +1903,15 @@ namespace ImgBrowser
         {
             FormWindowState org = this.WindowState;
             base.WndProc(ref m);
-            if (this.WindowState != org)
-                this.OnFormWindowStateChanged(EventArgs.Empty);
+            if (WindowState != org)
+                OnFormWindowStateChanged(WindowState);
         }
 
-        private void OnFormWindowStateChanged(EventArgs e)
+        private void OnFormWindowStateChanged(FormWindowState state)
         {
+            if(pictureBox1.SizeMode == PictureBoxSizeMode.Zoom)
+                return;
+            
             CenterImage();
         }
 
@@ -1993,7 +2004,5 @@ namespace ImgBrowser
             }
             return false;
         }
-
-
     }
 }
