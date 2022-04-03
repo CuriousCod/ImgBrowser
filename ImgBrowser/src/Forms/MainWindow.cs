@@ -123,11 +123,6 @@ namespace ImgBrowser
             }
         }
 
-        public class StoredWindowPosition
-        {
-            public Point Location = Point.Empty;
-        }
-
         private ImageObject currentImg = new ImageObject("");
         private readonly WindowHover windowHover = new WindowHover(); 
 
@@ -1610,8 +1605,6 @@ namespace ImgBrowser
             // Activate window drag
             else
             {
-                storedWindowPosition = Point.Empty;
-                
                 var useModernWindowDrag =
                     TransparencyKey != BackColor && (ModifierKeys & Keys.Control) != Keys.Control;
                 
@@ -1621,11 +1614,12 @@ namespace ImgBrowser
                     if (Cursor.Position.X == storedMousePosition.X && Cursor.Position.Y == storedMousePosition.Y)
                         return;
                     
+                    // TODO This reverts the window position to the position before the window was maximized
                     WindowState = FormWindowState.Normal;
 
                     // Center window on mouse
                     Location = Cursor.Position;
-                    
+
                     frameTop = Top - ClientSize.Height / 2;
                     frameLeft = Left - ClientSize.Width / 2;
                     
@@ -1635,11 +1629,6 @@ namespace ImgBrowser
                 
                 if (useModernWindowDrag)
                 {
-                    var screen = Screen.FromControl(this);
-                    
-                    storedWindowPosition = new Point(Location.X - screen.Bounds.Left,
-                        Location.Y - screen.Bounds.Top);
-
                     // Raw commands for moving window with mouse
                     ReleaseCapture();
                     SendMessage(Handle, WM_NCLBUTTONDOWN, HT_CAPTION, 0);
@@ -1755,13 +1744,7 @@ namespace ImgBrowser
 
             showBorder = false;
         }
-
-        // TODO This doesn't work
-        private void pictureBox1_LocationChanged(object sender, EventArgs e)
-        {
-            // PositionMessageDisplay();
-        }
-
+        
         private void MainWindow_KeyUp(object sender, KeyEventArgs e)
         {
             bool ctrlHeld = (Control.ModifierKeys & Keys.Control) == Keys.Control;
@@ -1911,18 +1894,30 @@ namespace ImgBrowser
             }
         }
 
-        // Detect when user presses maximize/normalize button of the window
+        // Catches window events for processing
         protected override void WndProc(ref Message m)
         {
-            FormWindowState org = this.WindowState;
+            FormWindowState org = WindowState;
+            var location = Location;
+            var screen = Screen.FromControl(this);
+
             base.WndProc(ref m);
+
             if (WindowState != org)
-                OnFormWindowStateChanged(WindowState);
+            {
+                if (org == FormWindowState.Normal)
+                {
+                    storedWindowPosition = new Point(location.X - screen.Bounds.Left,
+                        location.Y - screen.Bounds.Top);
+                }
+                
+                OnFormWindowStateChanged(org);
+            }
         }
 
-        private void OnFormWindowStateChanged(FormWindowState state)
+        private void OnFormWindowStateChanged(FormWindowState previousState)
         {
-            if (state == FormWindowState.Normal && storedWindowPosition != Point.Empty)
+            if (WindowState == FormWindowState.Normal && storedWindowPosition != Point.Empty)
             {
                 var screen = Screen.FromControl(this);
                 
