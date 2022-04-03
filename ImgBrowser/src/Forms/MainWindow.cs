@@ -70,6 +70,8 @@ namespace ImgBrowser
         private string rootImageFolder = string.Empty;
 
         private readonly Action<string> rootImageFolderChanged;
+        
+        private Point storedWindowPosition = Point.Empty;
 
         // Timer for the text display
         private int textTimer;
@@ -122,11 +124,16 @@ namespace ImgBrowser
             }
         }
 
-        ImageObject currentImg = new ImageObject("");
-        readonly WindowHover windowHover = new WindowHover(); 
+        public class StoredWindowPosition
+        {
+            public Point Location = Point.Empty;
+        }
 
-        StoredMousePosition storedMousePosition = new StoredMousePosition();
-        
+        private ImageObject currentImg = new ImageObject("");
+        private readonly WindowHover windowHover = new WindowHover(); 
+
+        private StoredMousePosition storedMousePosition = new StoredMousePosition();
+
         //-------------------------------------------
 
         public MainWindow()
@@ -1604,6 +1611,8 @@ namespace ImgBrowser
             // Activate window drag
             else
             {
+                storedWindowPosition = Point.Empty;
+                
                 var useModernWindowDrag =
                     TransparencyKey != BackColor && (ModifierKeys & Keys.Control) != Keys.Control;
                 
@@ -1625,7 +1634,12 @@ namespace ImgBrowser
                     Left = frameLeft;
                 }
                 
-                if (useModernWindowDrag) {
+                if (useModernWindowDrag)
+                {
+                    var screen = Screen.FromControl(this);
+                    
+                    storedWindowPosition = new Point(Location.X - screen.Bounds.Left,
+                        Location.Y - screen.Bounds.Top);
 
                     // Raw commands for moving window with mouse
                     ReleaseCapture();
@@ -1909,6 +1923,15 @@ namespace ImgBrowser
 
         private void OnFormWindowStateChanged(FormWindowState state)
         {
+            if (state == FormWindowState.Normal && storedWindowPosition != Point.Empty)
+            {
+                var screen = Screen.FromControl(this);
+                
+                var location = new Point(storedWindowPosition.X + screen.Bounds.Left, storedWindowPosition.Y + screen.Bounds.Top);
+
+                Location = location;
+            }
+
             if(pictureBox1.SizeMode == PictureBoxSizeMode.Zoom)
                 return;
             
