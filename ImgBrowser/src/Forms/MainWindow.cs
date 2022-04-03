@@ -19,11 +19,10 @@ using SearchOption = System.IO.SearchOption;
 // TODO Arrow keys to navigate when zoomed in
 // TODO Randomize image array order?
 // BUG Image can slightly overfill the screen when in autosize + fullscreen mode
-// BUG Dragging a full screen image into a small window will make the window slightly smaller every time
 // TODO Scale image to screen?
 // TODO Remember rotate position for next image
 // TODO Z-index adjust
-// BUG Window positioning issues when using the maximize button
+// BUG Window positioning issues when returning to normal window mode from maximized when initiated by a drag event
 
 namespace ImgBrowser
 {
