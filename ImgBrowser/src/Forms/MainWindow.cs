@@ -76,7 +76,7 @@ namespace ImgBrowser
         private int textTimer;
 
         private readonly string[] acceptedExtensions = new[] {".jpg", ".png", ".gif", ".bmp", ".tif", ".svg", ".jfif", ".jpeg" };
-
+        
         // Commands for moving window with mouse
         private const int WM_NCLBUTTONDOWN = 0xA1;
         private const int HT_CAPTION = 0x2;
@@ -1611,7 +1611,12 @@ namespace ImgBrowser
                 if (WindowState == FormWindowState.Maximized)
                 {
                     // Check if mouse has moved far enough to activate window drag
-                    if (Cursor.Position.X == storedMousePosition.X && Cursor.Position.Y == storedMousePosition.Y)
+                    var resolution = Screen.FromControl(this).Bounds.Size;
+
+                    var x = Math.Abs(Math.Abs(Cursor.Position.X) - Math.Abs(storedMousePosition.X)) > resolution.Width * 0.01;
+                    var y = Math.Abs(Math.Abs(Cursor.Position.Y) - Math.Abs(storedMousePosition.Y)) > resolution.Height * 0.01;
+                    
+                    if (!x && !y)
                         return;
                     
                     // TODO This reverts the window position to the position before the window was maximized
