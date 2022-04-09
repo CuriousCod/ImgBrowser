@@ -656,7 +656,7 @@ namespace ImgBrowser
             try
             {
                 FileSystem.DeleteFile(delImgPath + "\\" + delImgName, UIOption.AllDialogs, RecycleOption.SendToRecycleBin);
-                fileEntries = GetImageFiles(currentImg.Path);
+                fileEntries = ReloadImageFiles();
                 DisplayMessage("Image moved to recycle bin");
             }
             catch (OperationCanceledException)
