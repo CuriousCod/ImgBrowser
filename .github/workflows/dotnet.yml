@@ -16,7 +16,11 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v2
       with:
-        dotnet-version: 5.0.x
+        dotnet-version: 5.0.x   
+    - name: Setup NuGet
+      uses: NuGet/setup-nuget@v1.0.5  
+    - name: Restore Packages
+      run: nuget restore ImgBrowser.sln
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
