@@ -277,6 +277,7 @@ namespace ImgBrowser
                     break;
                 case "F5":
                     fileEntries = ReloadImageFiles();
+                    UpdateWindowTitle();
                     
                     if (fileEntries.Length > 0)
                         DisplayMessage("Images reloaded");
