@@ -270,7 +270,7 @@ namespace ImgBrowser
                     break;
                 // Open image location
                 case "F3":
-                    if (currentImg.Valid)
+                    if (currentImg.HasFile)
                     {
                         System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{currentImg.Path}\\{currentImg.Name}\"");
                     }
@@ -281,6 +281,10 @@ namespace ImgBrowser
                     
                     if (fileEntries.Length > 0)
                         DisplayMessage("Images reloaded");
+                    
+                    if (currentImg.HasFile)
+                        LoadNewImg(currentImg, false, true);
+                    
                     break;
                 // Restore unedited image
                 case "F10":
@@ -347,7 +351,7 @@ namespace ImgBrowser
 
                         string args = GetCurrentArgs();
 
-                        if (currentImg.Valid)
+                        if (currentImg.HasFile)
                         {
                            System.Diagnostics.Process.Start(exePath, $"\"{currentImg.FullFilename}\" {args} -center");
                         }
@@ -413,7 +417,7 @@ namespace ImgBrowser
                     break;
                 // Display image name
                 case "N":
-                    if (currentImg.Valid)
+                    if (currentImg.HasFile)
                         DisplayMessage(currentImg.Name);
                     break;
                 // Move image to recycle bin
@@ -633,7 +637,7 @@ namespace ImgBrowser
 
         private void DeleteImage()
         {
-            if (!currentImg.Valid || pictureBox1.Image == null) return;
+            if (!currentImg.HasFile || pictureBox1.Image == null) return;
             
             // Get info from the image that is going to be deleted
             string delImgPath = currentImg.Path;
@@ -1288,7 +1292,7 @@ namespace ImgBrowser
         // Restore unedited image from file or from the temp folder
         private void RestoreImage(bool showMessage = true)
         {
-            if (currentImg.Valid)
+            if (currentImg.HasFile)
                 LoadNewImg(new ImageObject(currentImg.FullFilename));
             else
                 LoadImageFromTemp(randString);
@@ -1366,7 +1370,7 @@ namespace ImgBrowser
         {
             bool imageError = false;
 
-            if (imgObj.Name == "" || !imgObj.Valid)
+            if (imgObj.Name == "" || !imgObj.HasFile)
                 return;
 
             if (imgObj.ImageData == null) { 
@@ -1526,7 +1530,7 @@ namespace ImgBrowser
         {
             string file;
 
-            if (!currentImg.Valid)
+            if (!currentImg.HasFile)
             {
                 SaveImageToTemp("TempImage", true); // Create temp image with clean name
                 file = Path.GetTempPath() + "/" + "TempImage.png";
