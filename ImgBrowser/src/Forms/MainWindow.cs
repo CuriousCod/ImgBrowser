@@ -483,6 +483,8 @@ namespace ImgBrowser
                     if (process == null)
                         break;
                     
+                    process.EnableRaisingEvents = true;
+                    
                     process.Exited += (s, a) =>
                     {
                         File.Delete(tempFile);
