@@ -102,10 +102,11 @@ namespace ImgBrowser
         {
             public bool Enabled { get => Token != null; }
             public int AnimSpeed = 1;
-            public int Distance { get => Math.Abs(Math.Abs(StartX) - Math.Abs(EndX));}
+            public int Distance { get => Math.Abs(StartX - EndX);}
             public int StartX = 0;
             public int EndX = 100;
             public bool StartSet = false;
+            public bool EndSet = false;
 
             public CancellationTokenSource Token;
         }
@@ -283,8 +284,16 @@ namespace ImgBrowser
                 case Inputs.InputActions.AdjustHoverPosition:
                     if (!windowHover.StartSet)
                     {
-                        windowHover.StartX = Location.X;
+                        windowHover.StartX = Cursor.Position.X;
                         windowHover.StartSet = true;
+                        DisplayMessage("Hover start position set " + windowHover.StartX);
+                        break;
+                    }
+                    if (!windowHover.EndSet)
+                    {
+                        windowHover.EndX = Cursor.Position.X;
+                        windowHover.EndSet = true;
+                        DisplayMessage("Hover end position set " + windowHover.EndX);
                     }
                     break;
                 case Inputs.InputActions.ToggleAlwaysOnTop:
@@ -1050,6 +1059,8 @@ namespace ImgBrowser
                 {
                     windowHover.Token.Dispose();
                     windowHover.Token = null;
+                    windowHover.StartSet = false;
+                    windowHover.EndSet = false;
                 }
 
             }, windowHover.Token.Token);
@@ -1796,8 +1807,7 @@ namespace ImgBrowser
                 case Inputs.InputActions.GetColorAtMousePosition:
                     var currentColor = GetColorAt(Cursor.Position);
                     var colorHex = ColorTranslator.ToHtml(Color.FromArgb(currentColor.ToArgb()));
-
-                    // TODO This is probably pointless
+                    
                     // Set chroma key if alt is held
                     if (mk.Alt)
                     { 

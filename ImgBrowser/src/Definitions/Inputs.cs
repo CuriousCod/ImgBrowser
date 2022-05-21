@@ -85,6 +85,7 @@ namespace ImgBrowser
             {"Ctrl+R", InputActions.RotateImage},
             {"Shift+H", InputActions.AdjustHoverPosition},
             {"Shift+I", InputActions.GetColorAtMousePosition},
+            {"Alt+I", InputActions.GetColorAtMousePosition},
             {"Alt+Return", InputActions.ToggleFullScreen},
             {"Alt+Pause", InputActions.CopyImagePathAndDataToClipboard},
             {"Ctrl+Shift+W", InputActions.CloseApplication},
