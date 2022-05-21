@@ -464,13 +464,17 @@ namespace ImgBrowser
                     
                     digit = digit.Replace("D", "");
                     
-                    if (digit != "1" || digit != "2" || digit != "3" || digit != "4" || digit != "5")
+                    if (digit != "1" && digit != "2" && digit != "3" && digit != "4" && digit != "5")
                         break;
 
                     var value = int.Parse(digit);
-                    
+
                     if (windowHover.Enabled)
+                    {
                         windowHover.AnimSpeed = value;
+                        DisplayMessage($"Hover speed set to {value}");
+                    }
+
                     break;
                 case Inputs.InputActions.ShowKeyBinds:
                     var keyBinds = Inputs.GetKeyBinds();
