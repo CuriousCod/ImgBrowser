@@ -341,7 +341,7 @@ namespace ImgBrowser
                         DisplayMessage("Images reloaded");
                     
                     if (currentImg.IsFile)
-                        LoadNewImg(currentImg, false, true);
+                        LoadNewImgFromFile(currentImg, false, true);
                     break;
                 case Inputs.InputActions.RestoreCurrentImage:
                     if (imageEdited)
@@ -395,21 +395,20 @@ namespace ImgBrowser
 
                     if (currentImg.IsFile)
                     {
-                        Process.Start(exePath, $"\"{currentImg.FullFilename}\" {args} -center");
+                        Process.Start(exePath, $"\"{currentImg.FullFilename}\" {args} {Definitions.LaunchArguments.CenterWindowToMouse}");
                     }
                     else if (pictureBox1.Image != null) 
                     {
                         Clipboard.SetImage(pictureBox1.Image);
-                        Process.Start(exePath, $"-noImage {args} -center");
+                        Process.Start(exePath, $"{Definitions.LaunchArguments.SkipImageFileLoading} {args} {Definitions.LaunchArguments.CenterWindowToMouse}");
                     }
                     break;
                 case Inputs.InputActions.GetColorAtMousePosition:
-                    Color currentColor = GetColorAt(Cursor.Position);
-                    string colorHex;
+                    var currentColor = GetColorAt(Cursor.Position);
 
                     BackColor = currentColor;
 
-                    colorHex = ColorTranslator.ToHtml(Color.FromArgb(currentColor.ToArgb()));
+                    var colorHex = ColorTranslator.ToHtml(Color.FromArgb(currentColor.ToArgb()));
 
                     DisplayMessage(mk.Shift ? $"{currentColor.R}, {currentColor.G}, {currentColor.B}" : colorHex);
                     break;
@@ -491,7 +490,9 @@ namespace ImgBrowser
                     
                     digit = digit.Replace("D", "");
                     
-                    if (digit != "1" && digit != "2" && digit != "3" && digit != "4" && digit != "5")
+                    var acceptedValues = new[] { "1", "2", "3", "4", "5" };
+                    
+                    if (!acceptedValues.Contains(digit))
                         break;
 
                     var value = int.Parse(digit);
@@ -691,7 +692,7 @@ namespace ImgBrowser
             }
             catch (OperationCanceledException)
             {
-                LoadNewImg(currentImg);
+                LoadNewImgFromFile(currentImg);
             }
         }
 
@@ -732,12 +733,12 @@ namespace ImgBrowser
 
         private void BrowseForward()
         {
-            LoadNewImg(GetNextImageFilename(Definitions.Direction.Right), false, true);
+            LoadNewImgFromFile(GetNextImageFilename(Definitions.Direction.Right), false, true);
         }
 
         private void BrowseBackward()
         {
-            LoadNewImg(GetNextImageFilename(Definitions.Direction.Left), false, true);
+            LoadNewImgFromFile(GetNextImageFilename(Definitions.Direction.Left), false, true);
         }
 
         ImageObject GetNextImageFilename(Definitions.Direction direction)
@@ -769,7 +770,7 @@ namespace ImgBrowser
         private void JumpToImage(int index)
         {
             if (!lockImage && currentImg.Path != "")
-                LoadNewImg(new ImageObject(fileEntries[index]), false, true);
+                LoadNewImgFromFile(new ImageObject(fileEntries[index]), false, true);
         }
 
         private void FitImageToWindow()
@@ -986,7 +987,7 @@ namespace ImgBrowser
             if (!File.Exists(tempPath + "//" + tempName))
                 return false;
             
-            LoadNewImg(new ImageObject(tempPath + "//" + tempName), true);
+            LoadNewImgFromFile(new ImageObject(tempPath + "//" + tempName), true);
             //lockImage = true;
             return true;
             
@@ -1109,33 +1110,37 @@ namespace ImgBrowser
         private void MainWindow_Load(object sender, EventArgs e)
         {
             var cmdArgs = Environment.GetCommandLineArgs();
+            
+            ProcessLaunchArguments(cmdArgs);
+        }
 
-            foreach (string i in cmdArgs)
+        private void ProcessLaunchArguments(string[] cmdArgs)
+        {
+            foreach (var i in cmdArgs)
                 Console.WriteLine(i);
 
-            int argsLength = cmdArgs.Length;
-
-            if (argsLength > 1 && cmdArgs[1] != "-noImage")
+            var skipImageFileLoad = cmdArgs.Contains(Definitions.LaunchArguments.SkipImageFileLoading);
+            
+            if (cmdArgs.Length > 1 && !skipImageFileLoad)
             {
                 rootImageFolderChanged?.Invoke(string.Empty);
-                LoadNewImg(new ImageObject(cmdArgs[1]));
+                LoadNewImgFromFile(new ImageObject(cmdArgs[1]));
             }
             else
+            {
                 LoadNewImgFromClipboard();
+            }
             
-            // Process other arguments
-            for (int i = 0; i < cmdArgs.Length; i++)
+            for (var i = 0; i < cmdArgs.Length; i++)
             {
                 switch (cmdArgs[i])
                 {
-                    // Center to mouse
-                    case "-center":
+                    case Definitions.LaunchArguments.CenterWindowToMouse:
                         Top = Cursor.Position.Y - ClientSize.Height / 2;
                         Left = Cursor.Position.X - ClientSize.Width / 2;
                         break;
-                    // Window width and height
-                    case "-size":
-                        string[] sizeValues = cmdArgs[i + 1].Split(',');
+                    case Definitions.LaunchArguments.SetWidthAndHeight:
+                        var sizeValues = cmdArgs[i + 1].Split(',');
 
                         if (sizeValues.Length != 2)
                             return;
@@ -1148,9 +1153,8 @@ namespace ImgBrowser
 
                         ClientSize = new Size(formWidth, formHeight);
                         break;
-                    // Window position
-                    case "-position":
-                        string[] posValues = cmdArgs[i + 1].Split(',');
+                    case Definitions.LaunchArguments.SetWindowPosition:
+                        var posValues = cmdArgs[i + 1].Split(',');
 
                         if (posValues.Length != 2)
                             return;
@@ -1161,37 +1165,32 @@ namespace ImgBrowser
                         Top = posTop;
                         Left = posLeft;
                         break;
-                    // Enable transparency
-                    case "-transparent":
+                    case Definitions.LaunchArguments.HideWindowBackground:
                         TransparencyKey = BackColor;
                         break;
-                    // Rotation
-                    case "-rotate":
-                        if (int.TryParse(cmdArgs[i + 1], out int direction)){
-                            if (direction > 3)
+                    case Definitions.LaunchArguments.SetRotation:
+                        if (int.TryParse(cmdArgs[i + 1], out var direction))
+                        {
+                            if (direction > 3 || direction < 0)
                                 break;
-                        
-                            for (int x = 0; x < direction; x++)
+
+                            for (var x = 0; x < direction; x++)
                             {
                                 RotateImage();
                             }
                         }
                         break;
-                    // FlipX
-                    case "-flip":
+                    case Definitions.LaunchArguments.FlipX:
                         FlipImageX();
                         break;
-                    //Setting for fitting the image to window
-                    case "-borderless":
+                    case Definitions.LaunchArguments.SetBorderless:
                         if (pictureBox1.Image != null)
                             FitImageToWindow();
                         break;
-                    // Lock image
-                    case "-lock":
+                    case Definitions.LaunchArguments.LockImage:
                         lockImage = true;
                         break;
-                    // Always on top
-                    case "-topmost":
+                    case Definitions.LaunchArguments.SetAlwaysOnTop:
                         TopMost = true;
                         break;
                     default:
@@ -1200,31 +1199,33 @@ namespace ImgBrowser
             }
         }
 
-        // Gets the current application settings and converts them into launch arguments
+        /// <summary>
+        /// Gets the current application settings and converts them into launch arguments
+        /// </summary>
+        /// <returns>Current arguments as a string</returns>
         private string GetCurrentArgs()
         {
-            string args = "";
+            var args = "";
 
             if (TransparencyKey == BackColor)
-                args += "-transparent ";
+                args += Definitions.LaunchArguments.HideWindowBackground + " ";
             if (lockImage)
-                args += "-lock ";
+                args += Definitions.LaunchArguments.LockImage + " ";
             if (FormBorderStyle == FormBorderStyle.None)
-                args += "-borderless ";
+                args += Definitions.LaunchArguments.SetBorderless + " ";
             if (TopMost)
-                args += "-topmost ";
+                args += Definitions.LaunchArguments.SetAlwaysOnTop + " ";
             if (imageFlipped)
-                args += $"-flip ";
+                args += Definitions.LaunchArguments.FlipX + " ";
 
-            args += $"-rotate {imageRotation} ";
-            args += $"-size {ClientSize.Width},{ClientSize.Height} ";
+            args += $"{Definitions.LaunchArguments.SetRotation} {imageRotation} ";
+            args += $"{Definitions.LaunchArguments.SetWidthAndHeight} {ClientSize.Width},{ClientSize.Height} ";
 
             return args;
         }
 
         private Color GetColorAt(Point location)
         {
-
             Bitmap screenPixel = new Bitmap(1, 1, PixelFormat.Format32bppArgb);
 
             using (Graphics gdest = Graphics.FromImage(screenPixel))
@@ -1350,7 +1351,7 @@ namespace ImgBrowser
         private void RestoreImage(bool showMessage = true)
         {
             if (currentImg.IsFile)
-                LoadNewImg(new ImageObject(currentImg.FullFilename));
+                LoadNewImgFromFile(new ImageObject(currentImg.FullFilename));
             else
                 LoadImageFromTemp(randString);
 
@@ -1369,7 +1370,7 @@ namespace ImgBrowser
             if (acceptedExtensions.Contains(Path.GetExtension(lowerCase)))
             {
                 rootImageFolderChanged?.Invoke(string.Empty);
-                LoadNewImg(new ImageObject(files[0]));
+                LoadNewImgFromFile(new ImageObject(files[0]));
                 return;
             }
 
@@ -1423,7 +1424,7 @@ namespace ImgBrowser
 
         }
         
-        private void LoadNewImg(ImageObject imgObj, bool removeImagePath = false, bool skipRefresh = false)
+        private void LoadNewImgFromFile(ImageObject imgObj, bool removeImagePath = false, bool skipRefresh = false)
         {
             bool imageError = false;
 
@@ -1880,7 +1881,7 @@ namespace ImgBrowser
         private void MainWindow_ResizeEnd(object sender, EventArgs e)
         {
             // Recenter image when window is being resized
-            if ((pictureBox1.Image != null) && (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) && (windowResizeBegin != Size))
+            if (pictureBox1.Image != null && pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize && windowResizeBegin != Size)
             {
                 // Only recenter, if empty border is shown
                 // TODO This is still buggy, added offset 20 and 40 to prevent image from needlessly centering when scrolled to the corners
