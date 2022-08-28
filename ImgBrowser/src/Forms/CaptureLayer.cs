@@ -79,9 +79,10 @@ namespace ImgBrowser
             captureBox.Refresh();
 
             // Create rectangle from current coordinates
-            Rectangle rect = GetRectangle(new Point(mouseStartX, mouseStartY), Cursor.Position);
+            Rectangle rect = GetRectangle(new Point(mouseStartX, mouseStartY), Cursor.Position + new Size(1, 1));
 
-            if (rect.Width == 0 || rect.Height == 0) { 
+            if (rect.Width == 0 || rect.Height == 0) 
+            {
                 Close();
                 return;
             }
@@ -115,8 +116,8 @@ namespace ImgBrowser
         private void CaptureLayer_Load(object sender, EventArgs e)
         {
             // Fill monitors with the invisible form
-            ClientSize = new System.Drawing.Size(SystemInformation.VirtualScreen.Width, SystemInformation.VirtualScreen.Height);
-            Location = new System.Drawing.Point(GetLeftmostScreenStartPoint(), 0);
+            ClientSize = new Size(SystemInformation.VirtualScreen.Width, SystemInformation.VirtualScreen.Height);
+            Location = new Point(GetLeftmostScreenStartPoint(), 0);
             
             // Cursor = System.Windows.Forms.Cursors.Cross;
         }
@@ -136,14 +137,13 @@ namespace ImgBrowser
         // There's also some weird "feature" where the drawing only works on some form background colors, blue is confirmed to work
         private void captureBox_Paint(object sender, PaintEventArgs e)
         {
-            if (capturing)
-            {
-                Graphics g = e.Graphics;
+            if (!capturing) 
+                return;
+            
+            Graphics g = e.Graphics;
 
-                Rectangle rect = GetRectangle(new Point(mouseStartX - offsetX, mouseStartY), new Point(Cursor.Position.X - offsetX, Cursor.Position.Y));
-                g.DrawRectangle(Pens.Red, rect);
-
-            }
+            Rectangle rect = GetRectangle(new Point(mouseStartX - offsetX, mouseStartY), new Point(Cursor.Position.X - offsetX, Cursor.Position.Y));
+            g.DrawRectangle(Pens.Red, rect);
 
         }
 
