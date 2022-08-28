@@ -29,42 +29,42 @@ namespace ImgBrowser
 {
     public partial class MainWindow : Form
     {
-        private string[] fileEntries = new string[0]{};
+        private string[] fileEntries = Array.Empty<string>();
 
         // Locks current image, so image doesn't change on accidental input
-        private bool lockImage = false;
+        private bool lockImage;
 
         // ScreenCapButton is being held
-        private bool screenCapButtonHeld = false;
+        private bool screenCapButtonHeld;
 
         // Stores window size during resizeStart
         private Size windowResizeBegin;
 
         // Frame position
-        private int frameLeft = 0;
-        private int frameTop = 0;
+        private int frameLeft;
+        private int frameTop;
 
         // Picturebox zoomed in location
         private Point zoomLocation = new Point(0, 0);
 
         // If mouse middle button should restore maximized or normal sized window
-        private bool windowNormal = false;
+        private bool windowNormal;
 
         // If border should reappear when draggin window
-        private bool showBorder = false;
+        private bool showBorder;
 
         // Keeps track of image flipping
-        private bool imageFlipped = false;
+        private bool imageFlipped;
 
         // Keeps track of image rotation
-        private int imageRotation = 0;
+        private int imageRotation;
 
         // Tracks any edits to the bitmap
-        private bool imageEdited = false;
+        private bool imageEdited;
         private readonly string randString = Convert.ToBase64String(Guid.NewGuid().ToByteArray()); // A random string to use with the temp image name
 
         // When text is shown on the screen
-        private bool displayingMessage = false;
+        private bool displayingMessage;
 
         // Stores the folder path if drag and drop is used to open a folder
         private string rootImageFolder = string.Empty;
@@ -77,7 +77,7 @@ namespace ImgBrowser
         private int textTimer;
 
         private readonly string[] acceptedExtensions = new[] {".jpg", ".png", ".gif", ".bmp", ".tif", ".svg", ".jfif", ".jpeg" };
-        
+
         // Commands for moving window with mouse
         private const int WM_NCLBUTTONDOWN = 0xA1;
         private const int HT_CAPTION = 0x2;
@@ -103,18 +103,29 @@ namespace ImgBrowser
             public bool Enabled { get => Token != null; }
             public int AnimSpeed = 1;
             public int Distance { get => Math.Abs(StartX - EndX);}
-            public int StartX = 0;
+            public int StartX;
             public int EndX = 100;
-            public bool StartSet = false;
-            public bool EndSet = false;
+            public bool StartSet;
+            public bool EndSet;
 
             public CancellationTokenSource Token;
+
+            public WindowHover()
+            {
+                EndSet = false;
+            }
         }
 
         public class StoredMousePosition
         {
-            public int X = 0;
-            public int Y = 0;
+            public int X;
+            public int Y;
+
+            public StoredMousePosition()
+            {
+                Y = 0;
+            }
+
             public Point Position { get => new Point(X, Y);
                 set
                 {
@@ -137,8 +148,15 @@ namespace ImgBrowser
             InitializeComponent();
             InitializeMessageBox();
 
-            Application.ApplicationExit += new EventHandler(OnApplicationExit);
-            rootImageFolderChanged = new Action<string>(OnRootImageFolderChange);
+            Application.ApplicationExit += OnApplicationExit;
+            rootImageFolderChanged = OnRootImageFolderChange;
+            displayingMessage = false;
+            imageEdited = false;
+            imageRotation = 0;
+            imageFlipped = false;
+            showBorder = false;
+            frameLeft = 0;
+            screenCapButtonHeld = false;
         }
 
         void InitializeMessageBox()
@@ -310,7 +328,7 @@ namespace ImgBrowser
                     }
                     break;
                 case Inputs.InputActions.OpenCurrentImageLocation:
-                    if (currentImg.HasFile)
+                    if (currentImg.IsFile)
                     {
                         Process.Start("explorer.exe", $"/select,\"{currentImg.Path}\\{currentImg.Name}\"");
                     }
@@ -322,12 +340,12 @@ namespace ImgBrowser
                     if (fileEntries.Length > 0)
                         DisplayMessage("Images reloaded");
                     
-                    if (currentImg.HasFile)
+                    if (currentImg.IsFile)
                         LoadNewImg(currentImg, false, true);
                     break;
                 case Inputs.InputActions.RestoreCurrentImage:
                     if (imageEdited)
-                        RestoreImage(true);
+                        RestoreImage();
                     break;
                 case Inputs.InputActions.ToggleFullScreen:
                     MaxOrNormalizeWindow();
@@ -375,7 +393,7 @@ namespace ImgBrowser
 
                     string args = GetCurrentArgs();
 
-                    if (currentImg.HasFile)
+                    if (currentImg.IsFile)
                     {
                         Process.Start(exePath, $"\"{currentImg.FullFilename}\" {args} -center");
                     }
@@ -426,7 +444,7 @@ namespace ImgBrowser
                     Application.Exit();
                     break;
                 case Inputs.InputActions.DisplayImageName:
-                    if (currentImg.HasFile)
+                    if (currentImg.IsFile)
                         DisplayMessage(currentImg.Name);
                     break;
                 case Inputs.InputActions.DeleteImage:
@@ -442,7 +460,7 @@ namespace ImgBrowser
                     }
                     break;
                 case Inputs.InputActions.CopyImagePathAndDataToClipboard:
-                    if (!currentImg.HasFile)
+                    if (!currentImg.IsFile)
                         return;
 
                     DisplayMessage("Image path and window size added to clipboard");
@@ -644,7 +662,7 @@ namespace ImgBrowser
 
         private void DeleteImage()
         {
-            if (!currentImg.HasFile || pictureBox1.Image == null) return;
+            if (!currentImg.IsFile || pictureBox1.Image == null) return;
             
             // Get info from the image that is going to be deleted
             string delImgPath = currentImg.Path;
@@ -727,8 +745,8 @@ namespace ImgBrowser
             if (fileEntries.Length < 2 || currentImg.Path == "" || lockImage)
                 return new ImageObject("");
 
-            string file = "";
-            int index = 0;
+            var file = "";
+            int index;
 
             switch (direction)
             {
@@ -861,10 +879,14 @@ namespace ImgBrowser
             int y = pictureBox1.Location.Y;
             Point rotate;
 
+            var height = Height;
+            var width = Width;
+            
             // Check that the image is larger than the current window size
-            bool sizeVsFrame = pictureBox1.Image.Width >= ClientSize.Width && pictureBox1.Image.Height >= ClientSize.Height;
+            var sizeVsFrame = pictureBox1.Image.Width >= ClientSize.Width && pictureBox1.Image.Height >= ClientSize.Height;
 
-            if (CCW) { 
+            if (CCW) 
+            { 
                 img.RotateFlip(RotateFlipType.Rotate270FlipNone);
                 imageRotation = imageRotation <= 0 ? 3 : imageRotation - 1;
 
@@ -874,9 +896,12 @@ namespace ImgBrowser
                     pictureBox1.Location = rotate;
                 }
             }
-            else { 
+            else {
                 img.RotateFlip(RotateFlipType.Rotate90FlipNone);
                 imageRotation = imageRotation >= 3 ? 0 : imageRotation + 1;
+                
+                Width = height;
+                Height = width;
 
                 if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize && WindowState != FormWindowState.Maximized && sizeVsFrame)
                 {
@@ -886,6 +911,16 @@ namespace ImgBrowser
                 }
             }
 
+            var isNotMaximizedAndIsZoom = pictureBox1.SizeMode == PictureBoxSizeMode.Zoom &&
+                                               WindowState != FormWindowState.Maximized;
+            
+            // Resize window
+            if (isNotMaximizedAndIsZoom)
+            {
+                Height = width;
+                Width = height;
+            }
+            
             if(pictureBox1.SizeMode == PictureBoxSizeMode.Zoom || WindowState == FormWindowState.Maximized || !sizeVsFrame) {
                 CenterImage();
                 zoomLocation = new Point(0, 0);
@@ -1190,7 +1225,7 @@ namespace ImgBrowser
         private Color GetColorAt(Point location)
         {
 
-            Bitmap screenPixel = new Bitmap(1, 1, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            Bitmap screenPixel = new Bitmap(1, 1, PixelFormat.Format32bppArgb);
 
             using (Graphics gdest = Graphics.FromImage(screenPixel))
             {
@@ -1209,8 +1244,8 @@ namespace ImgBrowser
 
             return grabbedColor;
         }
-
-        void ResizeImage(double multiplier)
+        
+        private void ResizeImage(double multiplier)
         {
             if (pictureBox1.Image == null) 
                 return;
@@ -1314,7 +1349,7 @@ namespace ImgBrowser
         // Restore unedited image from file or from the temp folder
         private void RestoreImage(bool showMessage = true)
         {
-            if (currentImg.HasFile)
+            if (currentImg.IsFile)
                 LoadNewImg(new ImageObject(currentImg.FullFilename));
             else
                 LoadImageFromTemp(randString);
@@ -1392,7 +1427,7 @@ namespace ImgBrowser
         {
             bool imageError = false;
 
-            if (imgObj.Name == "" || !imgObj.HasFile)
+            if (imgObj.Name == "" || !imgObj.IsFile)
                 return;
 
             if (imgObj.ImageData == null) { 
@@ -1485,9 +1520,9 @@ namespace ImgBrowser
             }
 
             Bitmap bm = (Bitmap)pictureBox1.Image;
-            bm = bm.Clone(new Rectangle(Math.Abs(pictureBox1.Location.X), Math.Abs(pictureBox1.Location.Y), ClientSize.Width, ClientSize.Height), System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            bm = bm.Clone(new Rectangle(Math.Abs(pictureBox1.Location.X), Math.Abs(pictureBox1.Location.Y), ClientSize.Width, ClientSize.Height), PixelFormat.Format32bppArgb);
 
-            Clipboard.SetImage((Image)bm);
+            Clipboard.SetImage(bm);
             bm.Dispose();
 
             DisplayMessage("Current display copied to clipboard.");
@@ -1552,7 +1587,7 @@ namespace ImgBrowser
         {
             string file;
 
-            if (!currentImg.HasFile)
+            if (!currentImg.IsFile)
             {
                 SaveImageToTemp("TempImage", true); // Create temp image with clean name
                 file = Path.GetTempPath() + "/" + "TempImage.png";
@@ -1829,8 +1864,6 @@ namespace ImgBrowser
                         DisplayMessage("Color copied to clipboard");
                     }
                     break;
-                default:
-                    break;
             }
         }
 
@@ -1989,7 +2022,7 @@ namespace ImgBrowser
             byte[] dib;
             try
             {
-                dib = ((System.IO.MemoryStream)Clipboard.GetData(DataFormats.Dib)).ToArray();
+                dib = ((MemoryStream)Clipboard.GetData(DataFormats.Dib)).ToArray();
                 byteOffset = VerifyByteOffset(dib, byteOffset);
             }
             catch (Exception ex)
@@ -2009,7 +2042,7 @@ namespace ImgBrowser
             try
             {
                 var ptr = new IntPtr((long)gch.AddrOfPinnedObject() + byteOffset);
-                bmp = new Bitmap(width, height, width * 4, System.Drawing.Imaging.PixelFormat.Format32bppArgb, ptr);
+                bmp = new Bitmap(width, height, width * 4, PixelFormat.Format32bppArgb, ptr);
                 bmp.RotateFlip(RotateFlipType.Rotate180FlipX);
                 return new Bitmap(bmp);
             }
@@ -2018,6 +2051,7 @@ namespace ImgBrowser
                 gch.Free();
                 if (bmp != null) bmp.Dispose();
             }
+            
             return Clipboard.ContainsImage() ? Clipboard.GetImage() : null;
         }
 

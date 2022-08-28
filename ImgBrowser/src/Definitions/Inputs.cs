@@ -96,6 +96,9 @@ namespace ImgBrowser
             {"Escape", InputActions.StopWindowHover},
             {"Add", InputActions.ZoomIn},
             {"Subtract", InputActions.ZoomOut},
+            
+            {"Ctrl+Add", InputActions.ZoomIn},
+            {"Ctrl+Subtract", InputActions.ZoomOut},
 
             {"Left", InputActions.MoveOrBrowseImageLeft},
             {"Right", InputActions.MoveOrBrowseImageRight},
