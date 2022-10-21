@@ -53,7 +53,8 @@ namespace ImgBrowser
             AdjustHoverSpeed,
             Hover,
             AdjustHoverPosition,
-            ShowKeyBinds
+            ShowKeyBinds,
+            ChangeSortOrder,
         }
 
         private static readonly Dictionary<string, InputActions> KeyboardBinds = new Dictionary<string, InputActions>()
@@ -62,6 +63,7 @@ namespace ImgBrowser
             {"F2", InputActions.ToggleTitleBorder},
             {"F3", InputActions.OpenCurrentImageLocation},
             {"F5", InputActions.RefreshImages},
+            {"F6", InputActions.ChangeSortOrder},
             {"F10", InputActions.RestoreCurrentImage},
             {"F11", InputActions.ToggleFullScreen},
             {"F12", InputActions.ShowKeyBinds},

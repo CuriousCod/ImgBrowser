@@ -77,6 +77,8 @@ namespace ImgBrowser
         private int textTimer;
 
         private readonly string[] acceptedExtensions = new[] {".jpg", ".png", ".gif", ".bmp", ".tif", ".svg", ".jfif", ".jpeg" };
+        
+        private Definitions.SortBy sortImagesBy = Definitions.SortBy.NameAscending;
 
         // Commands for moving window with mouse
         private const int WM_NCLBUTTONDOWN = 0xA1;
@@ -356,6 +358,22 @@ namespace ImgBrowser
                         // e.SuppressKeyPress = true;                        
                     }
                     
+                    break;
+                case Inputs.InputActions.ChangeSortOrder:
+                    var index = (int)sortImagesBy;
+                    index++;
+                    
+                    if (index >= Enum.GetNames(typeof(Definitions.SortBy)).Length)
+                        index = 0;
+                    
+                    sortImagesBy = (Definitions.SortBy)index;
+                    
+                    var sortName = sortImagesBy.ToString();
+                    
+                    // add space before capital letters
+                    sortName = System.Text.RegularExpressions.Regex.Replace(sortName, "(\\B[A-Z])", " $1");
+                    
+                    DisplayMessage("Sort order changed to " + sortName.Trim());
                     break;
                 case Inputs.InputActions.CopyToClipboard:
                     if (!mk.Ctrl)
@@ -1026,13 +1044,42 @@ namespace ImgBrowser
             if (path == "" || path == Path.GetTempPath() || !Directory.Exists(path)) 
                 return Array.Empty<string>();
             
-            IEnumerable<string> files = Directory.EnumerateFiles(path + "\\", "*.*", allDirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)
+            var files = Directory.EnumerateFiles(path + "\\", "*.*", allDirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)
                 .Where(s => acceptedExtensions.Contains(Path.GetExtension(s).ToLowerInvariant()));
-
-            files = files.OrderBy(s => s.Length).ThenBy(s => s);
+            
+            files = SortFiles(files);
 
             return files.ToArray();
 
+        }
+        
+        private IEnumerable<string> SortFiles(IEnumerable<string> files)
+        {
+            switch (sortImagesBy)
+            {
+                case Definitions.SortBy.NameAscending:
+                    files = files.OrderBy(s => s.Length).ThenBy(s => s).ToArray();
+                    break;
+                case Definitions.SortBy.NameDescending:
+                    files = files.OrderByDescending(s => s.Length).ThenByDescending(s => s).ToArray();
+                    break;
+                case Definitions.SortBy.DateAscending:
+                    files = files.OrderBy(File.GetLastWriteTime).ToArray();
+                    break;
+                case Definitions.SortBy.DateDescending:
+                    files = files.OrderByDescending(File.GetLastWriteTime).ToArray();
+                    break;
+                case Definitions.SortBy.SizeAscending:
+                    files = files.OrderBy(s => new FileInfo(s).Length).ToArray();
+                    break;
+                case Definitions.SortBy.SizeDescending:
+                    files = files.OrderByDescending(s => new FileInfo(s).Length).ToArray();
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+            
+            return files;
         }
 
         // Used to determine the window quick size adjustment type

@@ -38,5 +38,15 @@
             public const string SkipImageFileLoading = "-noImage";
 
         }
+        
+        public enum SortBy
+        {
+            NameAscending,
+            NameDescending,
+            DateAscending,
+            DateDescending,
+            SizeAscending,
+            SizeDescending
+        }
     }
 }
