@@ -373,7 +373,7 @@ namespace ImgBrowser
                     // add space before capital letters
                     sortName = System.Text.RegularExpressions.Regex.Replace(sortName, "(\\B[A-Z])", " $1");
                     
-                    DisplayMessage("Sort order changed to " + sortName.Trim());
+                    DisplayMessage("Sort order changed to " + sortName);
                     break;
                 case Inputs.InputActions.CopyToClipboard:
                     if (!mk.Ctrl)
