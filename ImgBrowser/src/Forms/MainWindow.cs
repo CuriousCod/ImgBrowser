@@ -1075,6 +1075,9 @@ namespace ImgBrowser
                 case Definitions.SortBy.SizeDescending:
                     files = files.OrderByDescending(s => new FileInfo(s).Length).ToArray();
                     break;
+                case Definitions.SortBy.Randomized:
+                    files = files.OrderBy(s => Guid.NewGuid()).ToArray();
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
