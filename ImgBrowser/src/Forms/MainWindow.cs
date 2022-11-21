@@ -1075,12 +1075,15 @@ namespace ImgBrowser
         
         private void LoadNewImgFromFile(ImageObject imgObj, bool removeImagePath = false, bool skipRefresh = false)
         {
-            bool imageError = false;
+            var imageError = false;
 
             if (imgObj.Name == "" || !imgObj.IsFile)
+            {
                 return;
+            }
 
-            if (imgObj.ImageData == null) { 
+            if (imgObj.ImageData == null) 
+            { 
                 DisplayImageError();
                 imageError = true;
             }
@@ -1094,20 +1097,23 @@ namespace ImgBrowser
                 oldImg.Dispose();
             }
 
-            if (!imageError) { 
+            if (!imageError) 
+            { 
                 // Separate handling for gif files to make the animation work
                 if (!currentImg.Name.EndsWith(".gif"))
                 {
                     // This way files won't be locked to the application
                     pictureBox1.Image = imgObj.ImageData;
                 }
-                else {
+                else 
+                {
                     imgObj.ImageData.Dispose();
                     pictureBox1.Image = new Bitmap(currentImg.FullFilename); // This locks the image to the application
                 }
             }
 
-            if (removeImagePath) {
+            if (removeImagePath) 
+            {
                 currentImg.FullFilename = "";
             }
 
@@ -1284,6 +1290,7 @@ namespace ImgBrowser
 
         private void SizeModeAutoSize()
         {
+            currentImg.CopyImageToMemory();
             pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
             pictureBox1.Dock = DockStyle.None;
 

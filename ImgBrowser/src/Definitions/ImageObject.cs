@@ -1,22 +1,22 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
+using ImgBrowser.Helpers;
 
 namespace ImgBrowser
 {
     public class ImageObject
     {
         public string FullFilename;
-        public Bitmap ImageData { get => VerifyImg(FullFilename); }
-        public string Name { get => FullFilename == "" ? "" : System.IO.Path.GetFileName(FullFilename); }
-        public string Path { get => FullFilename == "" ? "" : System.IO.Path.GetDirectoryName(FullFilename)?.TrimEnd('\\'); }
-        public bool IsFile { get => File.Exists(FullFilename); }
-
+        public Bitmap ImageData => VerifyImg(FullFilename);
+        public string Name => FullFilename == "" ? "" : System.IO.Path.GetFileName(FullFilename);
+        public string Path => FullFilename == "" ? "" : System.IO.Path.GetDirectoryName(FullFilename)?.TrimEnd('\\');
+        public bool IsFile => File.Exists(FullFilename);
+        
+        private bool imageValidated;
+        private IntPtr imagePtr;
+        
         public ImageObject(string file)
         {
             FullFilename = file;
@@ -26,9 +26,7 @@ namespace ImgBrowser
         {
             try
             {
-                // Check if image can be loaded
-                using (var temp = new Bitmap(file))
-                    return new Bitmap(temp);
+                return (Bitmap) GdiApi.GetImage(file, ref imagePtr);
             }
             catch (OutOfMemoryException ex)
             {
@@ -53,6 +51,27 @@ namespace ImgBrowser
                 Console.WriteLine(ex);
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Copies current image to RAM
+        /// Will speed up image rendering (redraws faster) in picture box autosize mode
+        /// </summary>
+        public void CopyImageToMemory()
+        {
+            if (imageValidated)
+            {
+                return;
+            }
+            
+            if (imagePtr == IntPtr.Zero)
+            {
+                return;
+            }
+            
+            GdiApi.ValidateImage(imagePtr);
+            
+            imageValidated = true;
         }
     }
 }
