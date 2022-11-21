@@ -210,23 +210,85 @@ namespace ImgBrowser
             });
         }
 
-        private void SaveCurrentImage()
+        private void SaveCurrentImage(ImageFormat format)
         {
-            if (pictureBox1.Image == null) 
-                return;
-            
-            SaveFileDialog saveDialog = new SaveFileDialog
+            if (pictureBox1.Image == null)
             {
-                Filter = "PNG (*.png)|*.png|All files (*.*)|*.*",
-                FilterIndex = 0,
-                RestoreDirectory = true,
-                FileName = currentImg.Name == "" ? "image" : currentImg.Name
-            };
+                return;
+            }
 
-            if (saveDialog.ShowDialog() == DialogResult.OK)
-                pictureBox1.Image.Save(saveDialog.FileName, ImageFormat.Png);
+            var saveFileDialog = new SaveFileDialog();
+
+            if (Equals(format, ImageFormat.Png))
+            {
+                saveFileDialog.Filter = "PNG (*.png)|*.png|All files (*.*)|*.*";
+            }
+            else if (Equals(format, ImageFormat.Jpeg))
+            {
+                saveFileDialog.Filter = "JPEG (*.jpg)|*.jpg|All files (*.*)|*.*";
+            }
+            else if (Equals(format, ImageFormat.Bmp))
+            {
+                saveFileDialog.Filter = "BMP (*.bmp)|*.bmp|All files (*.*)|*.*";
+            }
+            else if (Equals(format, ImageFormat.Gif))
+            {
+                saveFileDialog.Filter = "GIF (*.gif)|*.gif|All files (*.*)|*.*";
+            }
+            else if (Equals(format, ImageFormat.Tiff))
+            {
+                saveFileDialog.Filter = "TIFF (*.tif)|*.tif|All files (*.*)|*.*";
+            }
+            else
+            {
+                saveFileDialog.Filter = "All files (*.*)|*.*";
+            }
+
+            saveFileDialog.FilterIndex = 0;
+            saveFileDialog.RestoreDirectory = true;
+            saveFileDialog.FileName = currentImg.Name == "" ? "image" : currentImg.Name;
+
+            if (saveFileDialog.ShowDialog() != DialogResult.OK)
+            {
+                return;
+            }
+            
+            if (Equals(format, ImageFormat.Jpeg))
+            {
+                var qualityParamId = Encoder.Quality;
+                var encoderParameters = new EncoderParameters(1);
+                    
+                encoderParameters.Param[0] = new EncoderParameter(qualityParamId, 100L);
+                    
+                var jpegCodec = ImageCodecInfo.GetImageDecoders().FirstOrDefault(codec => codec.FormatID == format.Guid);
+
+                if (jpegCodec == null)
+                {
+                    return;
+                }
+                
+                try
+                {
+                    pictureBox1.Image.Save(saveFileDialog.FileName, jpegCodec, encoderParameters);
+                }
+                catch (ExternalException)
+                {
+                    DisplayMessage("Failed to save image");
+                }
+            }
+            else
+            {
+                try
+                {
+                    pictureBox1.Image.Save(saveFileDialog.FileName, format);
+                }
+                catch (ExternalException)
+                {
+                    DisplayMessage("Failed to save image");
+                }
+            }
         }
-
+        
         // TODO This can make the image transparent as well if the color matches the form's bg
         private void ToggleTransparentBackground()
         {

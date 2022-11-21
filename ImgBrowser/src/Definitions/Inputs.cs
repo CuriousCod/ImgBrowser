@@ -34,7 +34,8 @@ namespace ImgBrowser
             DuplicateImage,
             GetColorAtMousePosition,
             ToggleImageLock,
-            SaveImage,
+            SaveImagePng,
+            SaveImageJpg,
             ActivateSnippingTool,
             ToggleTransparency,
             CloseApplication,
@@ -77,7 +78,7 @@ namespace ImgBrowser
             
             {"Ctrl+C", InputActions.CopyToClipboard},
             {"Ctrl+V", InputActions.PasteFromClipboard},
-            {"Ctrl+S", InputActions.SaveImage},
+            {"Ctrl+S", InputActions.SaveImagePng},
             {"Ctrl+D", InputActions.DuplicateImage},
             {"Ctrl+W", InputActions.CloseApplication},
             {"Ctrl+H", InputActions.Hover},
@@ -89,6 +90,7 @@ namespace ImgBrowser
             {"Alt+Return", InputActions.ToggleFullScreen},
             {"Alt+Pause", InputActions.CopyImagePathAndDataToClipboard},
             {"Ctrl+Shift+W", InputActions.CloseApplication},
+            {"Ctrl+Shift+S", InputActions.SaveImageJpg},
             
             {"Home", InputActions.MoveToFirstImage},
             {"End", InputActions.MoveToLastImage},

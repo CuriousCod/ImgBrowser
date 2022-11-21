@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
@@ -275,8 +276,11 @@ namespace ImgBrowser
                         }
                     }
                     break;
-                case Inputs.InputActions.SaveImage:
-                    SaveCurrentImage();
+                case Inputs.InputActions.SaveImagePng:
+                    SaveCurrentImage(ImageFormat.Png);
+                    break;
+                case Inputs.InputActions.SaveImageJpg:
+                    SaveCurrentImage(ImageFormat.Jpeg);
                     break;
                 case Inputs.InputActions.ActivateSnippingTool:
                     ActivateSnippingTool();
