@@ -19,6 +19,9 @@ namespace ImgBrowser
         private int mouseStartX;
         private int mouseStartY;
         private int offsetX;
+        
+        private Rectangle drawRect;
+        private DateTime lastDraw = DateTime.Now;
 
         // Start screen capture
         private bool capturing = true;
@@ -125,7 +128,18 @@ namespace ImgBrowser
         private void captureBox_MouseMove(object sender, MouseEventArgs e)
         {
             // Refresh picturebox to draw rectangle
-            if (capturing) captureBox.Refresh();
+            if (!capturing)
+            {
+                return;
+            }
+            
+            if (DateTime.Now - lastDraw < TimeSpan.FromMilliseconds(5))
+            {
+                return;
+            }
+                
+            captureBox.Refresh();
+            lastDraw = DateTime.Now;
 
             // Previously used captureBox.CreateGraphics()
             // Don't use that as it causes flickering
@@ -140,11 +154,8 @@ namespace ImgBrowser
             if (!capturing) 
                 return;
             
-            Graphics g = e.Graphics;
-
-            Rectangle rect = GetRectangle(new Point(mouseStartX - offsetX, mouseStartY), new Point(Cursor.Position.X - offsetX, Cursor.Position.Y));
-            g.DrawRectangle(Pens.Red, rect);
-
+            drawRect = GetRectangle(new Point(mouseStartX - offsetX, mouseStartY), new Point(Cursor.Position.X - offsetX, Cursor.Position.Y));
+            e.Graphics.DrawRectangle(Pens.Red, drawRect);
         }
 
         private void CaptureLayer_Deactivate(object sender, EventArgs e)

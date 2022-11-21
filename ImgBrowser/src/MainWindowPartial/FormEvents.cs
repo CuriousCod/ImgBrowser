@@ -545,6 +545,7 @@ namespace ImgBrowser
                     
                     if (WindowState == FormWindowState.Maximized && FormBorderStyle == FormBorderStyle.Sizable)
                     {
+                        // TODO This will overflow the window to other monitors
                         FormBorderStyle = FormBorderStyle.None;
                         showBorder = true;
                         break;
