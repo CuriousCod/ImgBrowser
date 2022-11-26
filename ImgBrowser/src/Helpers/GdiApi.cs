@@ -20,6 +20,9 @@ namespace ImgBrowser.Helpers
         
         [DllImport("gdiplus.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern int GdipImageForceValidation(HandleRef image);
+        
+        [DllImport("gdiplus.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern int GdipCloneImage(HandleRef image, out IntPtr cloneimage);
 
         private enum GdipImageTypeEnum 
         {
@@ -83,6 +86,27 @@ namespace ImgBrowser.Helpers
             if (status != 0)
             {
                 throw new Exception("GdipImageForceValidation failed with error code " + status);
+            }
+        }
+        
+        public static int CloneImage(IntPtr imagePtr, out IntPtr cloneImagePtr)
+        {
+            return GdipCloneImage(new HandleRef(null, imagePtr), out cloneImagePtr);
+        }
+
+        public static Image CreateImageObject(IntPtr nativeImage)
+        {
+            GdipGetImageType(nativeImage, out var imageTypeEnum);
+            
+            switch (imageTypeEnum)
+            {
+                case GdipImageTypeEnum.Bitmap:
+                    return (Bitmap) typeof(Bitmap).InvokeMember("FromGDIplus", BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.InvokeMethod, null, null, new object[] { nativeImage });
+                case GdipImageTypeEnum.Metafile:
+                    return (Metafile) typeof(Metafile).InvokeMember("FromGDIplus", BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.InvokeMethod, null, null, new object[] { nativeImage });
+                case GdipImageTypeEnum.Unknown:
+                default:
+                    return null;
             }
         }
     }
