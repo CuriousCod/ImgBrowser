@@ -12,6 +12,7 @@ using System.Runtime.InteropServices;
 using Microsoft.VisualBasic.FileIO;
 using System.Threading;
 using System.Threading.Tasks;
+using ImgBrowser.Helpers;
 using SearchOption = System.IO.SearchOption;
 
 // TODO Fix slow gif animations
@@ -76,7 +77,7 @@ namespace ImgBrowser
         // Timer for the text display
         private int textTimer;
 
-        private readonly string[] acceptedExtensions = new[] {".jpg", ".png", ".gif", ".bmp", ".tif", ".svg", ".jfif", ".jpeg" };
+        private readonly string[] acceptedExtensions = {".jpg", ".png", ".gif", ".bmp", ".tif", ".svg", ".jfif", ".jpeg", ".webp"};
         
         private Definitions.SortBy sortImagesBy = Definitions.SortBy.NameAscending;
 
@@ -84,21 +85,7 @@ namespace ImgBrowser
         private const int WM_NCLBUTTONDOWN = 0xA1;
         private const int HT_CAPTION = 0x2;
 
-        [DllImport("user32.dll")]
-        public static extern int SendMessage(IntPtr hWnd, int Msg, int wParam, int lParam);
-        [DllImport("user32.dll")]
-        public static extern bool ReleaseCapture();
-
-        [DllImport("user32.dll")]
-        public static extern bool MoveWindow(IntPtr hWnd, int x, int Y, int nWidth, int nHeight, bool bRepaint);
-
-        [DllImport("user32.dll")]
-        static extern IntPtr GetActiveWindow();
-
-        [DllImport("gdi32.dll", CharSet = CharSet.Auto, SetLastError = true, ExactSpelling = true)]
-        public static extern int BitBlt(IntPtr hDC, int x, int y, int nWidth, int nHeight, IntPtr hSrcDC, int xSrc, int ySrc, int dwRop);
-
-        IntPtr thisWindow;
+        private IntPtr thisWindow;
         
         public class WindowHover
         {
@@ -812,7 +799,7 @@ namespace ImgBrowser
                 return;
             }
 
-            thisWindow = GetActiveWindow();
+            thisWindow = NativeMethods.GetActiveWindow();
             //Point originalPos = Location;
 
             windowHover.WindowHoverToken = new CancellationTokenSource();
@@ -827,9 +814,9 @@ namespace ImgBrowser
                         for (int i = 0; i < windowHover.Distance / windowHover.AnimSpeed; i++)
                         {
                             if (i < windowHover.Distance / 2 / windowHover.AnimSpeed)
-                                MoveWindow(thisWindow, Location.X + (1 * windowHover.AnimSpeed), Location.Y, Width, Height, false);
+                                NativeMethods.MoveWindow(thisWindow, Location.X + (1 * windowHover.AnimSpeed), Location.Y, Width, Height, false);
                             else
-                                MoveWindow(thisWindow, Location.X - (1 * windowHover.AnimSpeed), Location.Y, Width, Height, false);
+                                NativeMethods.MoveWindow(thisWindow, Location.X - (1 * windowHover.AnimSpeed), Location.Y, Width, Height, false);
 
                             if (ct.IsCancellationRequested)
                                 ct.ThrowIfCancellationRequested();
@@ -866,7 +853,7 @@ namespace ImgBrowser
                 {
                     IntPtr hSrcDC = gsrc.GetHdc();
                     IntPtr hDC = gdest.GetHdc();
-                    int retval = BitBlt(hDC, 0, 0, 1, 1, hSrcDC, location.X, location.Y, (int)CopyPixelOperation.SourceCopy);
+                    int retval = NativeMethods.BitBlt(hDC, 0, 0, 1, 1, hSrcDC, location.X, location.Y, (int)CopyPixelOperation.SourceCopy);
                     gdest.ReleaseHdc();
                     gsrc.ReleaseHdc();
                 }

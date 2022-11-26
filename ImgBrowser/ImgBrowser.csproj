@@ -86,7 +86,11 @@
     <Compile Include="src\Forms\MainWindow.Designer.cs">
       <DependentUpon>MainWindow.cs</DependentUpon>
     </Compile>
-    <Compile Include="src\Helpers\GdiApi.cs" />
+    <Compile Include="src\Helpers\GDI\GdiApi.cs" />
+    <Compile Include="src\Helpers\NativeMethods.cs" />
+    <Compile Include="src\Helpers\WebpSupport\Native.WebPDecoder.cs" />
+    <Compile Include="src\Helpers\WebpSupport\Utilities.cs" />
+    <Compile Include="src\Helpers\WebpSupport\WebPDecoder.cs" />
     <Compile Include="src\MainWindowPartial\Arguments.cs" />
     <Compile Include="src\MainWindowPartial\DragEvents.cs">
       <SubType>Form</SubType>

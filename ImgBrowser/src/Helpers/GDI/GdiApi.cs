@@ -22,7 +22,7 @@ namespace ImgBrowser.Helpers
         private static extern int GdipImageForceValidation(HandleRef image);
         
         [DllImport("gdiplus.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern int GdipCloneImage(HandleRef image, out IntPtr cloneimage);
+        private static extern int GdipCloneImage(HandleRef image, out IntPtr cloneimage);
 
         private enum GdipImageTypeEnum 
         {

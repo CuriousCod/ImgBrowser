@@ -6,20 +6,21 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using ImgBrowser.Helpers;
+using ImgBrowser.Helpers.WebpSupport;
 
 namespace ImgBrowser
 {
     public class ImageObject
     {
         public string FullFilename;
-        public Bitmap Image => _image ?? (_image = VerifyImg(FullFilename));
+        public Bitmap Image => image ?? (image = LoadFileAsBitmap(FullFilename));
         public string Name => FullFilename == "" ? "" : System.IO.Path.GetFileName(FullFilename);
         public string Path => FullFilename == "" ? "" : System.IO.Path.GetDirectoryName(FullFilename)?.TrimEnd('\\');
         public bool IsFile => File.Exists(FullFilename);
 
-        private Bitmap _image;
-        private bool _imageValidated;
-        private IntPtr _imagePtr;
+        private Bitmap image;
+        private bool imageValidated;
+        private IntPtr imagePtr;
 
         public Bitmap[] Frames = { };
 
@@ -30,11 +31,16 @@ namespace ImgBrowser
             FullFilename = file;
         }
 
-        private Bitmap VerifyImg(string file)
+        private Bitmap LoadFileAsBitmap(string file)
         {
             try
             {
-                return (Bitmap) GdiApi.GetImage(file, ref _imagePtr);
+                if (!file.EndsWith(".webp"))
+                {
+                    return (Bitmap) GdiApi.GetImage(file, ref imagePtr);    
+                }
+
+                return !NativeWebPDecoder.IsDllAvailable() ? null : WebPDecoder.DecodeBGRA(file);
             }
             catch (OutOfMemoryException ex)
             {
@@ -67,19 +73,19 @@ namespace ImgBrowser
         /// </summary>
         public void CopyImageToMemory()
         {
-            if (_imageValidated)
+            if (imageValidated)
             {
                 return;
             }
             
-            if (_imagePtr == IntPtr.Zero)
+            if (imagePtr == IntPtr.Zero)
             {
                 return;
             }
             
-            GdiApi.ValidateImage(_imagePtr);
+            GdiApi.ValidateImage(imagePtr);
             
-            _imageValidated = true;
+            imageValidated = true;
         }
         
         public bool IsAnimated()
@@ -89,12 +95,12 @@ namespace ImgBrowser
         
         public Task<bool> GetFrames(CancellationToken token)
         {
-            if (_imagePtr == IntPtr.Zero)
+            if (this.imagePtr == IntPtr.Zero)
             {
                 return Task.FromResult(false);
             }
             
-            GdiApi.CloneImage(_imagePtr, out var imagePtr);
+            GdiApi.CloneImage(this.imagePtr, out var imagePtr);
             var clone = (Bitmap) GdiApi.CreateImageObject(imagePtr);
             
             return Task.Run(() =>
@@ -126,11 +132,37 @@ namespace ImgBrowser
             }, token);
         }
 
-        public void IncrementFrame()
+        public Bitmap LoadFrameAtIndex(int frameIndex)
+        {
+            if (this.imagePtr == IntPtr.Zero)
+            {
+                return null;
+            }
+            
+            if (Frames.Length == 0)
+            {
+                return null;
+            }
+            
+            if (frameIndex < 0 || frameIndex >= Frames.Length)
+            {
+                return null;
+            }
+            
+            GdiApi.CloneImage(this.imagePtr, out var imagePtr);
+            var clone = (Bitmap) GdiApi.CreateImageObject(imagePtr);
+            
+            clone.SelectActiveFrame(FrameDimension.Time, frameIndex);
+           
+            GdiApi.CloneImage(imagePtr, out var clonePtr);
+            return new Bitmap(GdiApi.CreateImageObject(clonePtr));
+        }
+        
+        public int IncrementFrame()
         {
             if (Frames.Length == 0)
             {
-                return;
+                return 0;
             }
             
             FrameIndex++;
@@ -139,6 +171,8 @@ namespace ImgBrowser
             {
                 FrameIndex = 0;
             }
+            
+            return FrameIndex;
         }
         
         /// <summary>

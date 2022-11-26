@@ -5,6 +5,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
+using ImgBrowser.Helpers;
 
 namespace ImgBrowser
 {
@@ -482,7 +483,7 @@ namespace ImgBrowser
 
         }
         
-                private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
+        private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
         {
             if (e.Button.ToString() != "Left")
                 return;
@@ -527,8 +528,8 @@ namespace ImgBrowser
                 if (useModernWindowDrag)
                 {
                     // Raw commands for moving window with mouse
-                    ReleaseCapture();
-                    SendMessage(Handle, WM_NCLBUTTONDOWN, HT_CAPTION, 0);
+                    NativeMethods.ReleaseCapture();
+                    NativeMethods.SendMessage(Handle, WM_NCLBUTTONDOWN, HT_CAPTION, 0);
                     return;
                 }
                 
