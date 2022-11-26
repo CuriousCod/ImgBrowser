@@ -125,6 +125,20 @@ namespace ImgBrowser
                 case Inputs.InputActions.DecreaseWindowWidth:
                     ArrowKeyAdjustWindowSize(Definitions.Direction.Left, mk);
                     break;
+                case Inputs.InputActions.IncreaseGifSpeed:
+                    if (currentImg.IsAnimated())
+                    {
+                        gifAnimator.Interval = Math.Max(1, gifAnimator.Interval - 10);
+                        DisplayMessage("Delay: " + gifAnimator.Interval + "ms");
+                    }
+                    break;
+                case Inputs.InputActions.DecreaseGifSpeed:
+                    if (currentImg.IsAnimated())
+                    {
+                        gifAnimator.Interval = gifAnimator.Interval > 2 ? Math.Min(1000, gifAnimator.Interval + 10) : 10;
+                        DisplayMessage("Delay: " + gifAnimator.Interval + "ms");   
+                    }
+                    break;
                 case Inputs.InputActions.Hover:
                     // TODO Borderline experimental
                     HoverWindow();
@@ -237,7 +251,7 @@ namespace ImgBrowser
                     if (!File.Exists(exePath))
                         return;
 
-                    string args = GetCurrentArgs();
+                    var args = GetCurrentArgs();
 
                     if (currentImg.IsFile)
                     {
@@ -316,7 +330,7 @@ namespace ImgBrowser
                     break;
                 case Inputs.InputActions.StopWindowHover:
                     if (windowHover.Enabled)
-                        windowHover.Token.Cancel();
+                        windowHover.WindowHoverToken.Cancel();
                     break;
                 case Inputs.InputActions.ZoomIn:
                     ResizeImage(mk.Ctrl ? 1.2 : 1.5);

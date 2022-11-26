@@ -36,6 +36,7 @@
             public const string FlipX = "-flip";
             public const string LockImage = "-lock";
             public const string SkipImageFileLoading = "-noImage";
+            public const string GifDelay = "-gifDelay";
 
         }
         

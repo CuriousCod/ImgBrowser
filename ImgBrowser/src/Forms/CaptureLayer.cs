@@ -12,7 +12,6 @@ using System.Windows.Forms;
 
 namespace ImgBrowser
 {
-
     // Used to create a temporary graphics layer when capturing screen
     public partial class CaptureLayer : Form
     {

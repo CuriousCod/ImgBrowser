@@ -21,6 +21,8 @@ namespace ImgBrowser
             DecreaseWindowHeight,
             IncreaseWindowWidth,
             DecreaseWindowWidth,
+            IncreaseGifSpeed,
+            DecreaseGifSpeed,
             ToggleAlwaysOnTop,
             ToggleTitleBorder,
             OpenCurrentImageLocation,
@@ -96,6 +98,8 @@ namespace ImgBrowser
             {"End", InputActions.MoveToLastImage},
             {"Delete", InputActions.DeleteImage},
             {"Escape", InputActions.StopWindowHover},
+            {"NumPad8", InputActions.IncreaseGifSpeed},
+            {"NumPad2", InputActions.DecreaseGifSpeed},
             {"Add", InputActions.ZoomIn},
             {"Subtract", InputActions.ZoomOut},
             
@@ -165,6 +169,8 @@ namespace ImgBrowser
         
         private static InputActions GetAction(string key, ModifierKeys modifierKeys)
         {
+            UseCommonKeyNames(ref key);
+            
             var ctrl = modifierKeys.Ctrl ? "Ctrl+" : "";
             var shift = modifierKeys.Shift ? "Shift+" : "";
             var alt = modifierKeys.Alt ? "Alt+" : "";
@@ -173,6 +179,20 @@ namespace ImgBrowser
             return KeyboardBinds.ContainsKey(keyString) ? KeyboardBinds[keyString] : InputActions.None;
         }
 
+        /// <summary>
+        /// Replaces the name of the pressed key with the commonly known name
+        /// </summary>
+        /// <param name="key">The to be compared key</param>
+        private static void UseCommonKeyNames(ref string key)
+        {
+            switch (key)
+            {
+                case "Next":
+                    key = "PageDown";
+                    break;
+            }
+        }
+        
         public static string[] GetKeyBinds()
         {
             return KeyboardBinds.Select(key => key.Key.PadRight(15) + " = " + string.Concat(key.Value.ToString().Select(x => char.IsUpper(x) ? " " + x : x.ToString())).TrimStart(' ')).ToArray();
