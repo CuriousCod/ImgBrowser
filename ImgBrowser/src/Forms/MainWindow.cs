@@ -102,7 +102,7 @@ namespace ImgBrowser
         
         public class WindowHover
         {
-            public bool Enabled { get => Token != null; }
+            public bool Enabled { get => WindowHoverToken != null; }
             public int AnimSpeed = 1;
             public int Distance { get => Math.Abs(StartX - EndX);}
             public int StartX;
@@ -110,7 +110,7 @@ namespace ImgBrowser
             public bool StartSet;
             public bool EndSet;
 
-            public CancellationTokenSource Token;
+            public CancellationTokenSource WindowHoverToken;
 
             public WindowHover()
             {
@@ -142,6 +142,11 @@ namespace ImgBrowser
         private readonly WindowHover windowHover = new WindowHover(); 
 
         private StoredMousePosition storedMousePosition = new StoredMousePosition();
+
+        private System.Timers.Timer gifAnimator = new System.Timers.Timer();
+        private CancellationTokenSource gifAnimatorTokenSource = new CancellationTokenSource();
+
+        private int launchArgAnimationDelay = -1;
 
         //-------------------------------------------
 
@@ -422,7 +427,8 @@ namespace ImgBrowser
             messageLabelShadowBottom.Text = text;
             messageLabelShadowTop.Text = text;
 
-            if (!displayingMessage) {
+            if (!displayingMessage) 
+            {
                 displayingMessage = true;
                 while (textTimer < 3)
                 {
@@ -802,15 +808,15 @@ namespace ImgBrowser
         {
             if (windowHover.Enabled)
             {
-                windowHover.Token.Cancel();
+                windowHover.WindowHoverToken.Cancel();
                 return;
             }
 
             thisWindow = GetActiveWindow();
             //Point originalPos = Location;
 
-            windowHover.Token = new CancellationTokenSource();
-            CancellationToken ct = windowHover.Token.Token;
+            windowHover.WindowHoverToken = new CancellationTokenSource();
+            CancellationToken ct = windowHover.WindowHoverToken.Token;
 
             Task.Run(() =>
             {
@@ -841,125 +847,15 @@ namespace ImgBrowser
                 }
                 finally
                 {
-                    windowHover.Token.Dispose();
-                    windowHover.Token = null;
+                    windowHover.WindowHoverToken.Dispose();
+                    windowHover.WindowHoverToken = null;
                     windowHover.StartSet = false;
                     windowHover.EndSet = false;
                 }
 
-            }, windowHover.Token.Token);
+            }, windowHover.WindowHoverToken.Token);
         }
         
-        private void ProcessLaunchArguments(string[] cmdArgs)
-        {
-            foreach (var i in cmdArgs)
-                Console.WriteLine(i);
-
-            var skipImageFileLoad = cmdArgs.Contains(Definitions.LaunchArguments.SkipImageFileLoading);
-            
-            if (cmdArgs.Length > 1 && !skipImageFileLoad)
-            {
-                rootImageFolderChanged?.Invoke(string.Empty);
-                LoadNewImgFromFile(new ImageObject(cmdArgs[1]));
-            }
-            else
-            {
-                LoadNewImgFromClipboard();
-            }
-            
-            for (var i = 0; i < cmdArgs.Length; i++)
-            {
-                switch (cmdArgs[i])
-                {
-                    case Definitions.LaunchArguments.CenterWindowToMouse:
-                        Top = Cursor.Position.Y - ClientSize.Height / 2;
-                        Left = Cursor.Position.X - ClientSize.Width / 2;
-                        break;
-                    case Definitions.LaunchArguments.SetWidthAndHeight:
-                        var sizeValues = cmdArgs[i + 1].Split(',');
-
-                        if (sizeValues.Length != 2)
-                            return;
-
-                        if (!int.TryParse(sizeValues[0], out int formWidth) || !int.TryParse(sizeValues[1], out int formHeight))
-                            return;
-
-                        if (formWidth == 0 || formHeight == 0)
-                            return;
-
-                        ClientSize = new Size(formWidth, formHeight);
-                        break;
-                    case Definitions.LaunchArguments.SetWindowPosition:
-                        var posValues = cmdArgs[i + 1].Split(',');
-
-                        if (posValues.Length != 2)
-                            return;
-
-                        if (!int.TryParse(posValues[0], out int posLeft) || !int.TryParse(posValues[1], out int posTop))
-                            return;
-
-                        Top = posTop;
-                        Left = posLeft;
-                        break;
-                    case Definitions.LaunchArguments.HideWindowBackground:
-                        TransparencyKey = BackColor;
-                        break;
-                    case Definitions.LaunchArguments.SetRotation:
-                        if (int.TryParse(cmdArgs[i + 1], out var direction))
-                        {
-                            if (direction > 3 || direction < 0)
-                                break;
-
-                            for (var x = 0; x < direction; x++)
-                            {
-                                RotateImage();
-                            }
-                        }
-                        break;
-                    case Definitions.LaunchArguments.FlipX:
-                        FlipImageX();
-                        break;
-                    case Definitions.LaunchArguments.SetBorderless:
-                        if (pictureBox1.Image != null)
-                            FitImageToWindow();
-                        break;
-                    case Definitions.LaunchArguments.LockImage:
-                        lockImage = true;
-                        break;
-                    case Definitions.LaunchArguments.SetAlwaysOnTop:
-                        TopMost = true;
-                        break;
-                    default:
-                        break;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Gets the current application settings and converts them into launch arguments
-        /// </summary>
-        /// <returns>Current arguments as a string</returns>
-        private string GetCurrentArgs()
-        {
-            var args = "";
-
-            if (TransparencyKey == BackColor)
-                args += Definitions.LaunchArguments.HideWindowBackground + " ";
-            if (lockImage)
-                args += Definitions.LaunchArguments.LockImage + " ";
-            if (FormBorderStyle == FormBorderStyle.None)
-                args += Definitions.LaunchArguments.SetBorderless + " ";
-            if (TopMost)
-                args += Definitions.LaunchArguments.SetAlwaysOnTop + " ";
-            if (imageFlipped)
-                args += Definitions.LaunchArguments.FlipX + " ";
-
-            args += $"{Definitions.LaunchArguments.SetRotation} {imageRotation} ";
-            args += $"{Definitions.LaunchArguments.SetWidthAndHeight} {ClientSize.Width},{ClientSize.Height} ";
-
-            return args;
-        }
-
         private Color GetColorAt(Point location)
         {
             Bitmap screenPixel = new Bitmap(1, 1, PixelFormat.Format32bppArgb);
@@ -984,8 +880,15 @@ namespace ImgBrowser
         
         private void ResizeImage(double multiplier)
         {
-            if (pictureBox1.Image == null) 
+            if (pictureBox1.Image == null)
+            {
                 return;
+            }
+
+            if (currentImg.IsAnimated())
+            {
+                return;
+            }
             
             // Make a backup of the current image
             if (!imageEdited)
@@ -1144,7 +1047,10 @@ namespace ImgBrowser
                 return;
             }
 
-            if (imgObj.ImageData == null) 
+            gifAnimator?.Dispose();
+            gifAnimatorTokenSource.Cancel();
+            
+            if (imgObj.Image == null) 
             { 
                 DisplayImageError();
                 imageError = true;
@@ -1155,22 +1061,20 @@ namespace ImgBrowser
             if (pictureBox1.Image != null)
             {
                 Image oldImg = pictureBox1.Image;
+
                 pictureBox1.Image = null;
                 oldImg.Dispose();
             }
 
             if (!imageError) 
-            { 
-                // Separate handling for gif files to make the animation work
-                if (!currentImg.Name.EndsWith(".gif"))
+            {
+                if (imgObj.IsAnimated())
                 {
-                    // This way files won't be locked to the application
-                    pictureBox1.Image = imgObj.ImageData;
+                    StartAnimating(imgObj);
                 }
-                else 
+                else
                 {
-                    imgObj.ImageData.Dispose();
-                    pictureBox1.Image = new Bitmap(currentImg.FullFilename); // This locks the image to the application
+                    pictureBox1.Image = imgObj.Image;    
                 }
             }
 
@@ -1202,6 +1106,45 @@ namespace ImgBrowser
             PositionMessageDisplay();
 
             GC.Collect();
+        }
+
+        private void StartAnimating(ImageObject imgObj)
+        {
+            pictureBox1.Image = new Bitmap(imgObj.Image);
+            gifAnimatorTokenSource = new CancellationTokenSource();
+            var task = imgObj.GetFrames(gifAnimatorTokenSource.Token);
+            
+            gifAnimator = new System.Timers.Timer();
+
+            if (launchArgAnimationDelay > 0)
+            {
+                gifAnimator.Interval = launchArgAnimationDelay;
+                launchArgAnimationDelay = -1;
+            }
+            else
+            {
+                gifAnimator.Interval = currentImg.GetFrameDelay();   
+            }
+
+            task.ContinueWith(t =>
+            {
+                if (!t.IsCompleted)
+                {
+                    return;
+                }
+
+                if (!t.Result)
+                {
+                    return;
+                }
+                
+                gifAnimator.Elapsed += (sender, e) =>
+                {
+                    pictureBox1.Image = currentImg.Frames[currentImg.FrameIndex];
+                    currentImg.IncrementFrame();
+                };
+                gifAnimator.Start();
+            });
         }
 
         private void ResetImageModifiers()

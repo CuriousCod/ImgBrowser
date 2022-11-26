@@ -87,6 +87,7 @@
       <DependentUpon>MainWindow.cs</DependentUpon>
     </Compile>
     <Compile Include="src\Helpers\GdiApi.cs" />
+    <Compile Include="src\MainWindowPartial\Arguments.cs" />
     <Compile Include="src\MainWindowPartial\DragEvents.cs">
       <SubType>Form</SubType>
     </Compile>

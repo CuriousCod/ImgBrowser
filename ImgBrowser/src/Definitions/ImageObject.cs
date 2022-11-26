@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 using ImgBrowser.Helpers;
 
 namespace ImgBrowser
@@ -9,14 +12,19 @@ namespace ImgBrowser
     public class ImageObject
     {
         public string FullFilename;
-        public Bitmap ImageData => VerifyImg(FullFilename);
+        public Bitmap Image => _image ?? (_image = VerifyImg(FullFilename));
         public string Name => FullFilename == "" ? "" : System.IO.Path.GetFileName(FullFilename);
         public string Path => FullFilename == "" ? "" : System.IO.Path.GetDirectoryName(FullFilename)?.TrimEnd('\\');
         public bool IsFile => File.Exists(FullFilename);
-        
-        private bool imageValidated;
-        private IntPtr imagePtr;
-        
+
+        private Bitmap _image;
+        private bool _imageValidated;
+        private IntPtr _imagePtr;
+
+        public Bitmap[] Frames = { };
+
+        public int FrameIndex = 0;
+
         public ImageObject(string file)
         {
             FullFilename = file;
@@ -26,7 +34,7 @@ namespace ImgBrowser
         {
             try
             {
-                return (Bitmap) GdiApi.GetImage(file, ref imagePtr);
+                return (Bitmap) GdiApi.GetImage(file, ref _imagePtr);
             }
             catch (OutOfMemoryException ex)
             {
@@ -59,19 +67,88 @@ namespace ImgBrowser
         /// </summary>
         public void CopyImageToMemory()
         {
-            if (imageValidated)
+            if (_imageValidated)
             {
                 return;
             }
             
-            if (imagePtr == IntPtr.Zero)
+            if (_imagePtr == IntPtr.Zero)
             {
                 return;
             }
             
-            GdiApi.ValidateImage(imagePtr);
+            GdiApi.ValidateImage(_imagePtr);
             
-            imageValidated = true;
+            _imageValidated = true;
+        }
+        
+        public bool IsAnimated()
+        {
+            return Name.EndsWith(".gif");
+        }
+        
+        public Task<bool> GetFrames(CancellationToken token)
+        {
+            if (_imagePtr == IntPtr.Zero)
+            {
+                return Task.FromResult(false);
+            }
+            
+            GdiApi.CloneImage(_imagePtr, out var imagePtr);
+            var clone = (Bitmap) GdiApi.CreateImageObject(imagePtr);
+            
+            return Task.Run(() =>
+            {
+                if (clone == null)
+                {
+                    return false;
+                }
+            
+                var numberOfFrames = clone.GetFrameCount(FrameDimension.Time);
+                var frames = new Bitmap[numberOfFrames];
+
+                for (var i = 0; i < numberOfFrames; i++)
+                {
+                    if (token.IsCancellationRequested)
+                    {
+                        return false;
+                    }
+                    
+                    clone.SelectActiveFrame(FrameDimension.Time, i);
+
+                    GdiApi.CloneImage(imagePtr, out var clonePtr);
+                    frames[i] = new Bitmap(GdiApi.CreateImageObject(clonePtr));
+                }
+
+                Frames = frames;
+                return true;
+
+            }, token);
+        }
+
+        public void IncrementFrame()
+        {
+            if (Frames.Length == 0)
+            {
+                return;
+            }
+            
+            FrameIndex++;
+            
+            if (FrameIndex >= Frames.Length)
+            {
+                FrameIndex = 0;
+            }
+        }
+        
+        /// <summary>
+        /// Gets the delay between frames in a gif
+        /// </summary>
+        /// <returns> Delay in milliseconds </returns>
+        public int GetFrameDelay()
+        {
+            var frameDelay = Image.GetPropertyItem (0x5100);
+            return (frameDelay.Value [0] + frameDelay.Value [1] * 256) * 10;
         }
     }
 }
