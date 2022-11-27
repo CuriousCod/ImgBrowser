@@ -129,15 +129,17 @@ namespace ImgBrowser
                 case Inputs.InputActions.IncreaseGifSpeed:
                     if (currentImg.IsAnimated())
                     {
-                        gifAnimator.Interval = Math.Max(1, gifAnimator.Interval - 10);
-                        DisplayMessage("Delay: " + gifAnimator.Interval + "ms");
+                        gifTimer.Interval = Math.Max(1, gifTimer.Interval - 10);
+                        GifAnimator.AnimationDelay = Math.Max(1,  GifAnimator.AnimationDelay - 10);
+                        DisplayMessage("Delay: " + gifTimer.Interval + "ms");
                     }
                     break;
                 case Inputs.InputActions.DecreaseGifSpeed:
                     if (currentImg.IsAnimated())
                     {
-                        gifAnimator.Interval = gifAnimator.Interval > 2 ? Math.Min(1000, gifAnimator.Interval + 10) : 10;
-                        DisplayMessage("Delay: " + gifAnimator.Interval + "ms");   
+                        gifTimer.Interval = gifTimer.Interval > 2 ? Math.Min(1000, gifTimer.Interval + 10) : 10;
+                        GifAnimator.AnimationDelay = GifAnimator.AnimationDelay > 2 ? Math.Min(1000, GifAnimator.AnimationDelay + 10) : 10;
+                        DisplayMessage("Delay: " + gifTimer.Interval + "ms");   
                     }
                     break;
                 case Inputs.InputActions.Hover:
@@ -653,6 +655,8 @@ namespace ImgBrowser
             }
         }
 
+
+        
         private void pictureBox1_Paint(object sender, PaintEventArgs e)
         {
             /*
@@ -731,6 +735,14 @@ namespace ImgBrowser
                 return;
             
             CenterImage();
+        }
+        
+        private void OnAnimationFrameChanged(object sender, EventArgs e)
+        {
+            GifAnimator.UpdateFrames();
+            var prevImage = pictureBox1.Image;
+            pictureBox1.Image = new Bitmap(currentImg.Image);
+            prevImage.Dispose();
         }
     }
 }

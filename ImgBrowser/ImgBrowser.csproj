@@ -86,6 +86,7 @@
     <Compile Include="src\Forms\MainWindow.Designer.cs">
       <DependentUpon>MainWindow.cs</DependentUpon>
     </Compile>
+    <Compile Include="src\Helpers\GifAnimator.cs" />
     <Compile Include="src\Helpers\GDI\GdiApi.cs" />
     <Compile Include="src\Helpers\NativeMethods.cs" />
     <Compile Include="src\Helpers\WebpSupport\Native.WebPDecoder.cs" />

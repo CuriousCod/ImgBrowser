@@ -132,7 +132,7 @@ namespace ImgBrowser
             if (imageFlipped)
                 args += Definitions.LaunchArguments.FlipX + " ";
             if (currentImg.IsAnimated())
-                args += $"{Definitions.LaunchArguments.GifDelay} {gifAnimator.Interval} ";
+                args += $"{Definitions.LaunchArguments.GifDelay} {gifTimer.Interval} ";
 
             args += $"{Definitions.LaunchArguments.SetRotation} {imageRotation} ";
             args += $"{Definitions.LaunchArguments.SetWidthAndHeight} {ClientSize.Width},{ClientSize.Height} ";
