@@ -186,7 +186,7 @@ namespace ImgBrowser
                         DisplayMessage("Images reloaded");
                     
                     if (currentImg.IsFile)
-                        LoadNewImgFromFile(currentImg, false, true);
+                        LoadNewImgFromFile(new ImageObject(currentImg.FullFilename), false, true);
                     break;
                 case Inputs.InputActions.RestoreCurrentImage:
                     if (imageEdited)

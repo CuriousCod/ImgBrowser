@@ -1,8 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Data;
-using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
@@ -13,6 +11,7 @@ using Microsoft.VisualBasic.FileIO;
 using System.Threading;
 using System.Threading.Tasks;
 using ImgBrowser.Helpers;
+using ImgBrowser.Helpers.WebpSupport;
 using SearchOption = System.IO.SearchOption;
 
 // TODO Fix slow gif animations
@@ -77,7 +76,9 @@ namespace ImgBrowser
         // Timer for the text display
         private int textTimer;
 
-        private readonly string[] acceptedExtensions = {".jpg", ".png", ".gif", ".bmp", ".tif", ".svg", ".jfif", ".jpeg", ".webp"};
+        private readonly string[] acceptedExtensions = NativeWebPDecoder.IsDllAvailable()
+            ? new[] {".jpg", ".png", ".gif", ".bmp", ".tif", ".svg", ".jfif", ".jpeg", ".webp"}
+            : new[] {".jpg", ".png", ".gif", ".bmp", ".tif", ".svg", ".jfif", ".jpeg"};
         
         private Definitions.SortBy sortImagesBy = Definitions.SortBy.NameAscending;
 
@@ -134,6 +135,8 @@ namespace ImgBrowser
         private CancellationTokenSource gifAnimatorTokenSource = new CancellationTokenSource();
 
         private int launchArgAnimationDelay = -1;
+        private const int CustomGifResolutionLimit = 2000;
+        private const int CustomGifResolutionTimesFramesLimit = 145000;
 
         //-------------------------------------------
 
@@ -1034,15 +1037,16 @@ namespace ImgBrowser
                 return;
             }
 
+            gifAnimator?.Stop();
             gifAnimator?.Dispose();
             gifAnimatorTokenSource.Cancel();
-            
+
             if (imgObj.Image == null) 
             { 
                 DisplayImageError();
                 imageError = true;
             }
-
+            
             currentImg = imgObj;
 
             if (pictureBox1.Image != null)
@@ -1061,7 +1065,7 @@ namespace ImgBrowser
                 }
                 else
                 {
-                    pictureBox1.Image = imgObj.Image;    
+                    pictureBox1.Image = imgObj.Image;
                 }
             }
 
@@ -1097,9 +1101,26 @@ namespace ImgBrowser
 
         private void StartAnimating(ImageObject imgObj)
         {
+            var resolution = imgObj.Image.Size;
+            
+            if (resolution.Width + resolution.Height > CustomGifResolutionLimit)
+            {
+                pictureBox1.Image = imgObj.Image;    
+                return;
+            }
+            
+            var resWithFrames = (resolution.Width + resolution.Height) * imgObj.FrameCount; 
+            
+            if (resWithFrames > CustomGifResolutionTimesFramesLimit)
+            {
+                pictureBox1.Image = imgObj.Image;    
+                return;
+            }
+            
             pictureBox1.Image = new Bitmap(imgObj.Image);
+
             gifAnimatorTokenSource = new CancellationTokenSource();
-            var task = imgObj.GetFrames(gifAnimatorTokenSource.Token);
+            var task = imgObj.GenerateBitmapsFromFrames(gifAnimatorTokenSource.Token);
             
             gifAnimator = new System.Timers.Timer();
 
@@ -1119,16 +1140,19 @@ namespace ImgBrowser
                 {
                     return;
                 }
-
+            
                 if (!t.Result)
                 {
                     return;
                 }
-                
+            
                 gifAnimator.Elapsed += (sender, e) =>
                 {
-                    pictureBox1.Image = currentImg.Frames[currentImg.FrameIndex];
-                    currentImg.IncrementFrame();
+                    // var prevFrame = pictureBox1.Image;
+                    pictureBox1.Image = currentImg.GetNextFrame();
+                    // pictureBox1.Image = currentImg.LoadPointerFrameAtIndex(currentImg.IncrementFrame());
+                    // pictureBox1.Image = currentImg.LoadFrameAtIndex(currentImg.IncrementFrame());
+                    // prevFrame?.Dispose();
                 };
                 gifAnimator.Start();
             });
@@ -1338,7 +1362,7 @@ namespace ImgBrowser
             FormWindowState org = WindowState;
             var location = Location;
             var screen = Screen.FromControl(this);
-
+            
             base.WndProc(ref m);
 
             if (WindowState != org)

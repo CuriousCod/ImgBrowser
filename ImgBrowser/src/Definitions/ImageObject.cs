@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -22,10 +23,11 @@ namespace ImgBrowser
         private bool imageValidated;
         private IntPtr imagePtr;
 
-        public Bitmap[] Frames = { };
-
-        public int FrameIndex = 0;
-
+        private Bitmap[] bitmapFrames = { };
+        private int frameIndex;
+        
+        public int FrameCount;
+        
         public ImageObject(string file)
         {
             FullFilename = file;
@@ -90,89 +92,139 @@ namespace ImgBrowser
         
         public bool IsAnimated()
         {
-            return Name.EndsWith(".gif");
+            if (!Name.EndsWith(".gif"))
+            {
+                return false;
+            }
+
+            if (FrameCount != 0)
+            {
+                return true;
+            }
+            
+            FrameCount = Image.GetFrameCount(FrameDimension.Time);
+            bitmapFrames = new Bitmap[FrameCount];
+
+            return true;
         }
         
-        public Task<bool> GetFrames(CancellationToken token)
+        public Task<bool> GenerateBitmapsFromFrames(CancellationToken token)
         {
-            if (this.imagePtr == IntPtr.Zero)
+            if (imagePtr == IntPtr.Zero)
             {
                 return Task.FromResult(false);
             }
             
-            GdiApi.CloneImage(this.imagePtr, out var imagePtr);
-            var clone = (Bitmap) GdiApi.CreateImageObject(imagePtr);
+            GdiApi.CloneImage(imagePtr, out var cloneImagePtr);
+            var clonedImage = (Bitmap) GdiApi.CreateImageObject(cloneImagePtr);
             
             return Task.Run(() =>
             {
-                if (clone == null)
+                if (clonedImage == null)
                 {
                     return false;
                 }
-            
-                var numberOfFrames = clone.GetFrameCount(FrameDimension.Time);
-                var frames = new Bitmap[numberOfFrames];
 
-                for (var i = 0; i < numberOfFrames; i++)
+                var frames = new Bitmap[FrameCount];
+                var cloningTasks = new Task[FrameCount];
+
+                for (var i = 0; i < FrameCount; i++)
                 {
                     if (token.IsCancellationRequested)
                     {
                         return false;
                     }
                     
-                    clone.SelectActiveFrame(FrameDimension.Time, i);
-
-                    GdiApi.CloneImage(imagePtr, out var clonePtr);
-                    frames[i] = new Bitmap(GdiApi.CreateImageObject(clonePtr));
+                    GdiApi.CloneImage(cloneImagePtr, out var iterationClonePtr);
+                    var iterationClone = (Bitmap) GdiApi.CreateImageObject(iterationClonePtr);
+                    cloningTasks[i] = CloneBitmapFrameToBitmapArrayAsync(ref frames, i, iterationClone, iterationClonePtr, token);
                 }
-
-                Frames = frames;
+                
+                Task.WaitAll(cloningTasks);
+                
+                bitmapFrames = frames;
                 return true;
 
             }, token);
         }
-
-        public Bitmap LoadFrameAtIndex(int frameIndex)
+        
+        private static Task CloneBitmapFrameToBitmapArrayAsync(ref Bitmap[] targetArray, int arrayIndex, Image sourceImage, IntPtr sourcePtr, CancellationToken token)
         {
-            if (this.imagePtr == IntPtr.Zero)
+            var bitmaps = targetArray;
+            return Task.Run(() =>
             {
-                return null;
+                if (token.IsCancellationRequested)
+                {
+                    return;
+                }
+                
+                sourceImage.SelectActiveFrame(FrameDimension.Time, arrayIndex);
+
+                GdiApi.CloneImage(sourcePtr, out var clonePtr2);
+                bitmaps[arrayIndex] = new Bitmap(GdiApi.CreateImageObject(clonePtr2));
+
+            }, token);
+        }
+
+        public Bitmap GetNextFrame()
+        {
+            if (FrameCount == 0)
+            {
+                return Image;
             }
             
-            if (Frames.Length == 0)
+            var nextFrame = IncrementFrame();
+
+            if (bitmapFrames[nextFrame] != null)
             {
-                return null;
+                return bitmapFrames[nextFrame];
             }
             
-            if (frameIndex < 0 || frameIndex >= Frames.Length)
-            {
-                return null;
-            }
-            
-            GdiApi.CloneImage(this.imagePtr, out var imagePtr);
-            var clone = (Bitmap) GdiApi.CreateImageObject(imagePtr);
-            
-            clone.SelectActiveFrame(FrameDimension.Time, frameIndex);
-           
-            GdiApi.CloneImage(imagePtr, out var clonePtr);
-            return new Bitmap(GdiApi.CreateImageObject(clonePtr));
+            bitmapFrames[nextFrame] = LoadFrameAtIndex(nextFrame);
+
+            return bitmapFrames[nextFrame];
         }
         
-        public int IncrementFrame()
+        public Bitmap LoadFrameAtIndex(int index)
         {
-            if (Frames.Length == 0)
+            if (imagePtr == IntPtr.Zero)
+            {
+                return null;
+            }
+            
+            if (FrameCount == 0)
+            {
+                return null;
+            }
+            
+            if (index < 0 || index >= FrameCount)
+            {
+                return null;
+            }
+            
+            GdiApi.CloneImage(imagePtr, out var clonePtr);
+            var clonedBitmap = (Bitmap) GdiApi.CreateImageObject(clonePtr);
+            
+            clonedBitmap.SelectActiveFrame(FrameDimension.Time, index);
+            
+            return new Bitmap(GdiApi.CreateImageObject(clonePtr));
+        }
+
+        private int IncrementFrame()
+        {
+            if (FrameCount == 0)
             {
                 return 0;
             }
             
-            FrameIndex++;
+            frameIndex++;
             
-            if (FrameIndex >= Frames.Length)
+            if (frameIndex >= FrameCount)
             {
-                FrameIndex = 0;
+                frameIndex = 0;
             }
             
-            return FrameIndex;
+            return frameIndex;
         }
         
         /// <summary>
