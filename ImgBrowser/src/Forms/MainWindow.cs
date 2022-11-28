@@ -14,16 +14,15 @@ using ImgBrowser.Helpers;
 using ImgBrowser.Helpers.WebpSupport;
 using SearchOption = System.IO.SearchOption;
 
-// TODO Fix slow gif animations
+// TODO Fix slow gif animations -> Kinda fixed?
 // TODO Button config
 // TODO Randomized slideshow?
-// TODO Arrow keys to navigate when zoomed in
-// TODO Randomize image array order?
-// BUG Image can slightly overfill the screen when in autosize + fullscreen mode
 // TODO Scale image to screen?
 // TODO Remember rotate position for next image
 // TODO Z-index adjust
+// BUG Fix image rotation and flip issues when playing gif animations
 // BUG Window positioning issues when returning to normal window mode from maximized when initiated by a drag event
+// BUG Image can slightly overfill the screen when in autosize + fullscreen mode
 
 namespace ImgBrowser
 {
