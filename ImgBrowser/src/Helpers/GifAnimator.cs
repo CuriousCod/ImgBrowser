@@ -7,7 +7,7 @@ using System.Threading;
 namespace ImgBrowser.Helpers
 {
     /// <summary>Animates an image that has time-based frames.</summary>
-    public sealed class GifAnimator
+    public static class GifAnimator
     {
         private static List<ImageInfo> _imageInfoList;
         private static bool _anyFrameDirty;
@@ -15,9 +15,7 @@ namespace ImgBrowser.Helpers
         private static readonly ReaderWriterLock RwImgListLock = new ReaderWriterLock();
         [ThreadStatic] private static int _threadWriterLockWaitCount;
 
-        private GifAnimator()
-        {
-        }
+        public static int AnimationDelay = 50;
 
         /// <summary>Advances the frame in the specified image. The new frame is drawn the next time the image is rendered. This method applies only to images with time-based frames.</summary>
         /// <param name="image">The <see cref="T:System.Drawing.Image" /> object for which to update frames.</param>
@@ -76,7 +74,7 @@ namespace ImgBrowser.Helpers
             RwImgListLock.AcquireReaderLock(-1);
             try
             {
-                foreach (var imageInfo in GifAnimator._imageInfoList)
+                foreach (var imageInfo in _imageInfoList)
                 {
                     lock (imageInfo.Image)
                         imageInfo.UpdateFrame();
@@ -248,8 +246,6 @@ namespace ImgBrowser.Helpers
             }
         }
 
-        public static int AnimationDelay = 50;
-
         private static void AnimateImages()
         {
             while (true)
@@ -261,23 +257,26 @@ namespace ImgBrowser.Helpers
                     {
                         var imageInfo = _imageInfoList[index];
                         imageInfo.FrameTimer += 5;
-                        if (imageInfo.FrameTimer >= imageInfo.FrameDelay(imageInfo.Frame))
+                        
+                        if (imageInfo.FrameTimer < imageInfo.FrameDelay(imageInfo.Frame))
                         {
-                            imageInfo.FrameTimer = 0;
+                            continue;
+                        }
+                        
+                        imageInfo.FrameTimer = 0;
                             
-                            if (imageInfo.Frame + 1 < imageInfo.FrameCount)
-                            {
-                                ++imageInfo.Frame;
-                            }
-                            else
-                            {
-                                imageInfo.Frame = 0;
-                            }
+                        if (imageInfo.Frame + 1 < imageInfo.FrameCount)
+                        {
+                            ++imageInfo.Frame;
+                        }
+                        else
+                        {
+                            imageInfo.Frame = 0;
+                        }
                             
-                            if (imageInfo.FrameDirty)
-                            {
-                                _anyFrameDirty = true;
-                            }
+                        if (imageInfo.FrameDirty)
+                        {
+                            _anyFrameDirty = true;
                         }
                     }
                 }
@@ -294,7 +293,6 @@ namespace ImgBrowser.Helpers
         {
             private const int PropertyTagFrameDelay = 20736;
             private int frame;
-            private bool frameDirty;
             private readonly int[] frameDelay;
 
             public ImageInfo(Image image)
@@ -353,12 +351,12 @@ namespace ImgBrowser.Helpers
                     }
                     
                     frame = value;
-                    frameDirty = true;
+                    FrameDirty = true;
                     OnFrameChanged(EventArgs.Empty);
                 }
             }
 
-            public bool FrameDirty => this.frameDirty;
+            public bool FrameDirty { get; private set; }
 
             public EventHandler FrameChangedHandler { get; set; }
 
@@ -372,13 +370,13 @@ namespace ImgBrowser.Helpers
 
             internal void UpdateFrame()
             {
-                if (!frameDirty)
+                if (!FrameDirty)
                 {
                     return;
                 }
                 
                 Image.SelectActiveFrame(FrameDimension.Time, Frame);
-                frameDirty = false;
+                FrameDirty = false;
             }
 
             protected void OnFrameChanged(EventArgs e)

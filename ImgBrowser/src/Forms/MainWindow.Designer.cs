@@ -1,4 +1,6 @@
 ﻿using System.Windows.Forms;
+using ImgBrowser.CustomControls;
+using ImgBrowser.Helpers;
 
 namespace ImgBrowser
 {
@@ -31,7 +33,7 @@ namespace ImgBrowser
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainWindow));
-            this.pictureBox1 = new System.Windows.Forms.PictureBox();
+            this.pictureBox1 = new PictureSquare();
             this.panel1 = new System.Windows.Forms.Panel();
             this.messageLabelShadowTop = new System.Windows.Forms.Label();
             this.messageLabelShadowBottom = new System.Windows.Forms.Label();
@@ -137,7 +139,7 @@ namespace ImgBrowser
 
         #endregion
 
-        private System.Windows.Forms.PictureBox pictureBox1;
+        private PictureSquare pictureBox1;
         private Panel panel1;
         private Label messageLabel;
         private Label messageLabelShadowBottom;
