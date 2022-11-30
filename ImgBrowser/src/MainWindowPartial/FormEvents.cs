@@ -11,84 +11,53 @@ namespace ImgBrowser
 {
     public partial class MainWindow
     {
-        private void MainWindow_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
-        {
-            switch (e.KeyCode)
-            {
-                case Keys.Down:
-                case Keys.Up:
-                    // Enable arrow keys
-                    e.IsInputKey = true;
-                    break;
-            }
-        }
-
         private void MainWindow_MouseWheel(object sender, MouseEventArgs e)
         {
-            if (e.Delta > 0)
+            var scrollingUp = e.Delta > 0;
+            
+            if ((ModifierKeys & Keys.Alt) == Keys.Alt)
             {
-                if ((ModifierKeys & Keys.Alt) == Keys.Alt)
+                // Increase window size
+                if (WindowState != FormWindowState.Normal)
                 {
-                    // Increase window size
-                    if (WindowState != FormWindowState.Normal)
-                    {
-                        return;
-                    }
-                    
-                    Size = Size.Add(Size, GetAdjustmentValue());
-                    if (pictureBox1.SizeMode != PictureBoxSizeMode.AutoSize && FormBorderStyle == FormBorderStyle.None)
-                    {
-                        FitImageToWindow();
-                    }
+                    return;
                 }
-                else if (pictureBox1.SizeMode != PictureBoxSizeMode.AutoSize)
+                
+                Size = scrollingUp ? Size.Add(Size, GetAdjustmentValue()) : Size.Subtract(Size, GetAdjustmentValue());
+                
+                if (pictureBox1.SizeMode != PictureBoxSizeMode.AutoSize && FormBorderStyle == FormBorderStyle.None)
                 {
-                    if ((ModifierKeys & Keys.Control) == Keys.Control)
-                    {
-                        ResizeImage(1.5);
-                    }
-                    else
-                    {
-                        BrowseForward();
-                    }
+                    FitImageToWindow();
                 }
-                else if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
-                {
-                    MovePictureBox(Definitions.MovementType.MouseScroll, Definitions.Direction.Up);
-                }
-
+                
+                return;
             }
-            else if (e.Delta < 0)
+
+            if (pictureBox1.SizeMode != PictureBoxSizeMode.AutoSize)
             {
-                if ((ModifierKeys & Keys.Alt) == Keys.Alt)
+                if ((ModifierKeys & Keys.Control) == Keys.Control)
                 {
-                    // Decrease window size
-                    if (WindowState != FormWindowState.Normal)
-                    {
-                        return;
-                    }
-                    
-                    Size = Size.Subtract(Size, GetAdjustmentValue());
-                    if (pictureBox1.SizeMode != PictureBoxSizeMode.AutoSize && FormBorderStyle == FormBorderStyle.None)
-                    {
-                        FitImageToWindow();
-                    }
+                    ResizeImage(scrollingUp ? 1.5 : 0.75);
                 }
-                else if (pictureBox1.SizeMode != PictureBoxSizeMode.AutoSize)
+                else
                 {
-                    if ((ModifierKeys & Keys.Control) == Keys.Control)
+                    if (scrollingUp)
                     {
-                        ResizeImage(0.75);
+                        BrowseForward();    
                     }
                     else
                     {
                         BrowseBackward();
                     }
                 }
-                else if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
-                {
-                    MovePictureBox(Definitions.MovementType.MouseScroll, Definitions.Direction.Down);
-                }
+                
+                return;
+            }
+
+            if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
+            {
+                MovePictureBox(Definitions.MovementType.MouseScroll, scrollingUp ? Definitions.Direction.Up : Definitions.Direction.Down);
+                return;
             }
         }
 
@@ -269,7 +238,6 @@ namespace ImgBrowser
                     else
                     {
                         // TODO This makes image file size large
-
                         DisplayMessage("Copied to Clipboard");
                         Clipboard.SetImage(pictureBox1.Image);
                     }
@@ -288,6 +256,7 @@ namespace ImgBrowser
                     break;
                 case Inputs.InputActions.DuplicateImage:
                     var exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+                    
                     if (!File.Exists(exePath))
                     {
                         break;
@@ -495,11 +464,13 @@ namespace ImgBrowser
             if (mouseLeftDown)
             {
                 if ((ModifierKeys & Keys.Alt) == Keys.Alt)
+                {
                     if (pictureBox1.Image != null)
                     {
                         DragImageFromApp();
                         return;
                     }
+                }
 
                 // Get mouse position for image scroll
                 storedMousePosition.Position = Cursor.Position;
@@ -521,19 +492,14 @@ namespace ImgBrowser
             {
                 // Check if image scrolling should be activated
                 // Activates when picturebox is autosized and window is bordered and also when autosized and window is borderless and maximized
-                if ((pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) && (FormBorderStyle == FormBorderStyle.Sizable)
-                    || (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize) && (WindowState == FormWindowState.Maximized))
+                if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize && FormBorderStyle == FormBorderStyle.Sizable
+                    || pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize && WindowState == FormWindowState.Maximized)
                 {
                     // Activate image scrolling
                     // Exits this function and starts the MouseMove function
                     pictureBox1.Cursor = Cursors.SizeAll;
                 }
-                
-                else
-                {
-                }
             }
-
         }
         
         private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
@@ -551,8 +517,7 @@ namespace ImgBrowser
             // Activate window drag
             else
             {
-                var useModernWindowDrag =
-                    TransparencyKey != BackColor && (ModifierKeys & Keys.Control) != Keys.Control;
+                var useModernWindowDrag = TransparencyKey != BackColor && (ModifierKeys & Keys.Control) != Keys.Control;
                 
                 if (WindowState == FormWindowState.Maximized)
                 {
@@ -561,9 +526,11 @@ namespace ImgBrowser
 
                     var x = Math.Abs(Math.Abs(Cursor.Position.X) - Math.Abs(storedMousePosition.X)) > resolution.Width * 0.01;
                     var y = Math.Abs(Math.Abs(Cursor.Position.Y) - Math.Abs(storedMousePosition.Y)) > resolution.Height * 0.01;
-                    
+
                     if (!x && !y)
+                    {
                         return;
+                    }
                     
                     // TODO This reverts the window position to the position before the window was maximized
                     WindowState = FormWindowState.Normal;
@@ -588,8 +555,10 @@ namespace ImgBrowser
                 
                 // Classic style window drag anywhere to move feature
                 // Useful when you don't want window to snap to screen edges
-                if (TransparencyKey != BackColor) 
+                if (TransparencyKey != BackColor)
+                {
                     return;
+                }
                 
                 // Keep border hidden when restoring window
                 showBorder = false;
@@ -612,8 +581,10 @@ namespace ImgBrowser
                     break;
                 case "Middle":
                 {
-                    if (pictureBox1.Image == null) 
+                    if (pictureBox1.Image == null)
+                    {
                         break;
+                    }
                     
                     if (WindowState == FormWindowState.Maximized && FormBorderStyle == FormBorderStyle.Sizable)
                     {
@@ -650,10 +621,12 @@ namespace ImgBrowser
             }
         }
         
-                private void MainWindow_Move(object sender, EventArgs e)
+        private void MainWindow_Move(object sender, EventArgs e)
         {
             if (FormBorderStyle == FormBorderStyle.None && showBorder)
+            {
                 FormBorderStyle = FormBorderStyle.Sizable;
+            }
 
             showBorder = false;
         }
@@ -672,7 +645,8 @@ namespace ImgBrowser
             switch (action)
             {
                 case Inputs.InputActions.Hover:
-                    if (windowHover.StartSet) { 
+                    if (windowHover.StartSet) 
+                    { 
                         windowHover.EndX = Location.X;
                         windowHover.StartSet = false;
                     }
@@ -755,20 +729,24 @@ namespace ImgBrowser
         
         private void OnApplicationExit(object sender, EventArgs e)
         {
-            string tempFile = Path.GetTempPath() + "/" + "imgBrowserTemp" + randString + ".png";
-            string tempFile2 = Path.GetTempPath() + "/" + "TempImage.png";
+            var tempFile = Path.GetTempPath() + "/" + "imgBrowserTemp" + randString + ".png";
+            var tempFile2 = Path.GetTempPath() + "/" + "TempImage.png";
 
             // Attempt to delete the temporary files
             try 
-            { 
+            {
                 if (File.Exists(tempFile))
+                {
                     File.Delete(tempFile);
+                }
 
                 if (File.Exists(tempFile2))
+                {
                     File.Delete(tempFile2);
+                }
             }
-            catch (IOException) {
-            }
+            catch (IOException) 
+            { }
         }
         
         private void OnFormWindowStateChanged(FormWindowState previousState)

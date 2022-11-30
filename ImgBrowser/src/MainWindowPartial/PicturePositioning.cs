@@ -38,7 +38,7 @@ namespace ImgBrowser
                         break;
                     case Definitions.MovementType.Keyboard:
                         int newPos;
-                        int multiplier = (int)(pictureBox1.Image.Width * 0.01);
+                        var multiplier = (int)(pictureBox1.Image.Width * 0.01);
                         
                         switch (direction)
                         {

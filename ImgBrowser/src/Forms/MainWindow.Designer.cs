@@ -129,7 +129,6 @@ namespace ImgBrowser
             this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.MainWindow_KeyUp);
             this.MouseWheel += new System.Windows.Forms.MouseEventHandler(this.MainWindow_MouseWheel);
             this.Move += new System.EventHandler(this.MainWindow_Move);
-            this.PreviewKeyDown += new System.Windows.Forms.PreviewKeyDownEventHandler(this.MainWindow_PreviewKeyDown);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();

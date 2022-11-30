@@ -15,9 +15,9 @@ namespace ImgBrowser
     // Used to create a temporary graphics layer when capturing screen
     public partial class CaptureLayer : Form
     {
-        private int mouseStartX;
-        private int mouseStartY;
-        private int offsetX;
+        private readonly int mouseStartX;
+        private readonly int mouseStartY;
+        private readonly int offsetX;
         
         private Rectangle drawRect;
         private DateTime lastDraw = DateTime.Now;
@@ -40,11 +40,14 @@ namespace ImgBrowser
         // TODO This does not take vertical or some weird screen setups into consideration
         private int GetLeftmostScreenStartPoint()
         {
-            int lowestX = 0;
+            var lowestX = 0;
 
-            foreach (Screen screen in Screen.AllScreens)
+            foreach (var screen in Screen.AllScreens)
             {
-                if (screen.Bounds.Left < lowestX) lowestX = screen.Bounds.Left;
+                if (screen.Bounds.Left < lowestX)
+                {
+                    lowestX = screen.Bounds.Left;
+                }
             }
 
             return lowestX;
@@ -81,7 +84,7 @@ namespace ImgBrowser
             captureBox.Refresh();
 
             // Create rectangle from current coordinates
-            Rectangle rect = GetRectangle(new Point(mouseStartX, mouseStartY), Cursor.Position + new Size(1, 1));
+            var rect = GetRectangle(new Point(mouseStartX, mouseStartY), Cursor.Position + new Size(1, 1));
 
             if (rect.Width == 0 || rect.Height == 0) 
             {
@@ -89,12 +92,12 @@ namespace ImgBrowser
                 return;
             }
 
-            using (Bitmap BM = new Bitmap(rect.Width, rect.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
+            using (var bitmap = new Bitmap(rect.Width, rect.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
             {
-                using (Graphics g = Graphics.FromImage(BM))
+                using (var g = Graphics.FromImage(bitmap))
                 {
                     g.CopyFromScreen(rect.Left, rect.Top, 0, 0, rect.Size);
-                    Clipboard.SetImage(BM);
+                    Clipboard.SetImage(bitmap);
                 }
             }
 
@@ -150,8 +153,10 @@ namespace ImgBrowser
         // There's also some weird "feature" where the drawing only works on some form background colors, blue is confirmed to work
         private void captureBox_Paint(object sender, PaintEventArgs e)
         {
-            if (!capturing) 
+            if (!capturing)
+            {
                 return;
+            }
             
             drawRect = GetRectangle(new Point(mouseStartX - offsetX, mouseStartY), new Point(Cursor.Position.X - offsetX, Cursor.Position.Y));
             e.Graphics.DrawRectangle(Pens.Red, drawRect);
@@ -161,6 +166,5 @@ namespace ImgBrowser
         {
             CaptureCurrentSelection();
         }
-        
     }
 }
