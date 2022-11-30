@@ -1006,7 +1006,7 @@ namespace ImgBrowser.CustomControls
             if (localImageStreamReader != null)
             {
                 localImageStreamReader.Dispose();
-                localImageStreamReader = (StreamReader) null;
+                localImageStreamReader = null;
             }
 
             if (uriImageStream == null)
@@ -1015,7 +1015,7 @@ namespace ImgBrowser.CustomControls
             }
             
             uriImageStream.Dispose();
-            localImageStreamReader = (StreamReader) null;
+            localImageStreamReader = null;
         }
 
         // internal Size GetPreferredSizeCore(Size proposedSize) => image == null ? new Size(100,100) : image.Size + (SizeFromClientSize(Size.Empty) + Padding.Size);

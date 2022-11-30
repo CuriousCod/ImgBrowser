@@ -136,6 +136,8 @@ namespace ImgBrowser
         private int launchArgAnimationDelay = -1;
         private const int SmallGifResolutionLimit = 1100;
         private const int SmallGifFrameLimit = 60;
+        
+        private EventHandler onFrameChanged;
 
         //-------------------------------------------
 
@@ -156,7 +158,7 @@ namespace ImgBrowser
             onFrameChanged = OnAnimationFrameChanged;
         }
 
-        void InitializeMessageBox()
+        private void InitializeMessageBox()
         {
             // Adjust message label
             messageLabel.Text = "";
@@ -170,7 +172,6 @@ namespace ImgBrowser
 
             // Offset from offset
             messageLabel.Location = new Point(-3, -2);
-            // Origin
             // Origin
             messageLabelShadowBottom.Location = new Point(11, 8);
             // Offset from origin, not in use, as it makes the font look messy (0,0)
@@ -189,14 +190,15 @@ namespace ImgBrowser
 
             screenCapButtonHeld = true;
 
-            int screenCapPosX = Cursor.Position.X;
-            int screenCapPosY = Cursor.Position.Y;
-            //pictureBox1.Cursor = Cursors.Cross;
+            var screenCapPosX = Cursor.Position.X;
+            var screenCapPosY = Cursor.Position.Y;
 
             Form f = new CaptureLayer();
-            
+
             if (screenCapPosX != Cursor.Position.X && screenCapPosY != Cursor.Position.Y)
+            {
                 DisplayMessage("Selection copied to clipboard");
+            }
 
             Task.Run(async () =>
             {
@@ -340,9 +342,11 @@ namespace ImgBrowser
                     Size = Size.Add(Size, new Size(modifier, 0));
                     break;
             }
-                
+
             if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
+            {
                 CenterImage(false);
+            }
         }
         
         private void ArrowKeyMoveImageOrBrowseImages(Definitions.Direction direction)
@@ -374,11 +378,14 @@ namespace ImgBrowser
 
         private void DeleteImage()
         {
-            if (!currentImg.IsFile || pictureBox1.Image == null) return;
+            if (!currentImg.IsFile || pictureBox1.Image == null)
+            {
+                return;
+            }
             
             // Get info from the image that is going to be deleted
-            string delImgPath = currentImg.Path;
-            string delImgName = currentImg.Name;
+            var delImgPath = currentImg.Path;
+            var delImgName = currentImg.Name;
 
             lockImage = false;
 
@@ -389,7 +396,7 @@ namespace ImgBrowser
             // Remove image from picturebox, if it is the only image in the folder
             if (currentImg.Name == delImgName)
             {
-                Image img = pictureBox1.Image;
+                var img = pictureBox1.Image;
                 pictureBox1.Image = null;
                 img.Dispose();
                 currentImg = new ImageObject("");
@@ -407,7 +414,7 @@ namespace ImgBrowser
             }
         }
 
-        private void DisplayMessage<T>(T message) => DisplayMessage(message.ToString());
+        private void DisplayMessage<T>(T message) => DisplayMessage(message?.ToString());
 
         private async void DisplayMessage(string text)
         {
@@ -453,10 +460,12 @@ namespace ImgBrowser
             LoadNewImgFromFile(GetNextImageFilename(Definitions.Direction.Left), false, true);
         }
 
-        ImageObject GetNextImageFilename(Definitions.Direction direction)
+        private ImageObject GetNextImageFilename(Definitions.Direction direction)
         {
             if (fileEntries.Length < 2 || currentImg.Path == "" || lockImage)
+            {
                 return new ImageObject("");
+            }
 
             var file = "";
             int index;
@@ -482,47 +491,58 @@ namespace ImgBrowser
         private void JumpToImage(int index)
         {
             if (!lockImage && currentImg.Path != "")
+            {
                 LoadNewImgFromFile(new ImageObject(fileEntries[index]), false, true);
+            }
         }
 
         private void FitImageToWindow()
         {
             if (pictureBox1.Image == null)
+            {
                 return;
+            }
             
             FormBorderStyle = FormBorderStyle.None;
-            
-            if (pictureBox1.SizeMode != PictureBoxSizeMode.Zoom) 
+
+            if (pictureBox1.SizeMode != PictureBoxSizeMode.Zoom)
+            {
                 return;
+            }
 
             // Image aspect ratio
-            double aspectRatio = (double)pictureBox1.Image.Width / (double)pictureBox1.Image.Height;
+            var aspectRatio = (double)pictureBox1.Image.Width / (double)pictureBox1.Image.Height;
                     
             // Window frame aspect ratio
-            double windowAspectRatio = (double)ClientSize.Width / (double)ClientSize.Height;
+            var windowAspectRatio = (double)ClientSize.Width / (double)ClientSize.Height;
 
-            int tempHeight = Height;
+            var tempHeight = Height;
 
             // Adjust frame size when there's a big difference between the image and frame aspect ratios
             // This prevent images from getting too large when readjusting frame size to the image
             if (windowAspectRatio + 2 < aspectRatio)
+            {
                 while (windowAspectRatio + 2 < aspectRatio)
                 {
                     tempHeight = (int)(tempHeight * 0.95f);
                     windowAspectRatio = (double)ClientSize.Width / (double)tempHeight;
                 }
-            else if (aspectRatio + 2 < windowAspectRatio)
+                
+            }
+            else if (aspectRatio + 2 < windowAspectRatio){}
+            {
                 while (aspectRatio + 2 < windowAspectRatio)
                 {
                     tempHeight = (int)(tempHeight * 1.05f);
                     windowAspectRatio = (double)ClientSize.Width / (double)tempHeight;
                 }
+                
+            }
 
             Height = tempHeight;
 
             // Set frame size to match the image aspect ratio
             Size = new Size((int)(aspectRatio * Size.Height), Size.Height);
-
         }
 
         private void ToggleAlwaysOnTop()
@@ -534,7 +554,7 @@ namespace ImgBrowser
         private void AdjustTextSize(string text)
         {
             // Make sure the string fits the frame
-            int stringWidth = TextRenderer.MeasureText(text, messageLabel.Font).Width;
+            var stringWidth = TextRenderer.MeasureText(text, messageLabel.Font).Width;
 
             while (stringWidth + 12 > ClientSize.Width)
             {
@@ -556,12 +576,12 @@ namespace ImgBrowser
 
         private void FlipImageX(bool ignoreCurrentViewport = false)
         {
-            Image img = pictureBox1.Image;
+            var img = pictureBox1.Image;
 
             img.RotateFlip(RotateFlipType.RotateNoneFlipX);
             pictureBox1.Image = img;
 
-            bool imageAutoSizeMode = pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize;
+            var imageAutoSizeMode = pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize;
 
             if (!imageFlipped)
             {
@@ -586,10 +606,10 @@ namespace ImgBrowser
 
         private void RotateImage(bool CCW = false)
         {
-            Image img = pictureBox1.Image;
+            var img = pictureBox1.Image;
 
-            int x = pictureBox1.Location.X;
-            int y = pictureBox1.Location.Y;
+            var x = pictureBox1.Location.X;
+            var y = pictureBox1.Location.Y;
             Point rotate;
 
             var height = Height;
@@ -603,13 +623,15 @@ namespace ImgBrowser
                 img.RotateFlip(RotateFlipType.Rotate270FlipNone);
                 imageRotation = imageRotation <= 0 ? 3 : imageRotation - 1;
 
-                if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize && WindowState != FormWindowState.Maximized && sizeVsFrame) { 
+                if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize && WindowState != FormWindowState.Maximized && sizeVsFrame) 
+                { 
                     ClientSize = new Size(ClientSize.Height, ClientSize.Width);
                     rotate = new Point(0 - Math.Abs(y), -pictureBox1.Image.Height + ClientSize.Height + Math.Abs(x));
                     pictureBox1.Location = rotate;
                 }
             }
-            else {
+            else 
+            {
                 img.RotateFlip(RotateFlipType.Rotate90FlipNone);
                 imageRotation = imageRotation >= 3 ? 0 : imageRotation + 1;
                 
@@ -624,8 +646,7 @@ namespace ImgBrowser
                 }
             }
 
-            var isNotMaximizedAndIsZoom = pictureBox1.SizeMode == PictureBoxSizeMode.Zoom &&
-                                               WindowState != FormWindowState.Maximized;
+            var isNotMaximizedAndIsZoom = pictureBox1.SizeMode == PictureBoxSizeMode.Zoom && WindowState != FormWindowState.Maximized;
             
             // Resize window
             if (isNotMaximizedAndIsZoom)
@@ -634,7 +655,8 @@ namespace ImgBrowser
                 Width = height;
             }
             
-            if(pictureBox1.SizeMode == PictureBoxSizeMode.Zoom || WindowState == FormWindowState.Maximized || !sizeVsFrame) {
+            if(pictureBox1.SizeMode == PictureBoxSizeMode.Zoom || WindowState == FormWindowState.Maximized || !sizeVsFrame) 
+            {
                 CenterImage();
                 zoomLocation = new Point(0, 0);
             }
@@ -644,13 +666,17 @@ namespace ImgBrowser
 
         private void SaveTempImage(string ordinalValue)
         {
-            if (pictureBox1.Image == null) 
+            if (pictureBox1.Image == null)
+            {
                 return;
+            }
             
             ordinalValue = NumericInputToNumber(ordinalValue);
-            
+
             if (ordinalValue == null)
+            {
                 return;
+            }
 
             DisplayMessage(!SaveImageToTemp(ordinalValue) ? "Unable to save image" : $"Saved to temp {ordinalValue}");
         }
@@ -658,9 +684,11 @@ namespace ImgBrowser
         private void LoadTempImage(string ordinalValue)
         {
             ordinalValue = NumericInputToNumber(ordinalValue);
-            
+
             if (ordinalValue == null)
+            {
                 return;
+            }
             
             DisplayMessage(!LoadImageFromTemp(ordinalValue) ? "No temp image found" : "Temp image loaded");
         }
@@ -668,16 +696,23 @@ namespace ImgBrowser
         private bool SaveImageToTemp(string ordinalValue, bool overrideName = false)
         {
             if (pictureBox1.Image is null)
+            {
                 return false;
+            }
             
-            try { 
-                string tempPath = Path.GetTempPath();
+            try 
+            { 
+                var tempPath = Path.GetTempPath();
                 string tempName;
 
                 if (!overrideName)
+                {
                     tempName = "imgBrowserTemp" + ordinalValue + ".png";
+                }
                 else
+                {
                     tempName = ordinalValue + ".png";
+                }
 
                 pictureBox1.Image.Save(tempPath + "\\" + tempName, ImageFormat.Png);
 
@@ -693,11 +728,13 @@ namespace ImgBrowser
         
         private bool LoadImageFromTemp(string ordinalValue)
         {
-            string tempPath = Path.GetTempPath();
-            string tempName = "imgBrowserTemp" + ordinalValue + ".png";
+            var tempPath = Path.GetTempPath();
+            var tempName = "imgBrowserTemp" + ordinalValue + ".png";
 
             if (!File.Exists(tempPath + "//" + tempName))
+            {
                 return false;
+            }
             
             LoadNewImgFromFile(new ImageObject(tempPath + "//" + tempName), true);
             //lockImage = true;
@@ -710,23 +747,26 @@ namespace ImgBrowser
         /// </summary>
         /// <param name="ordinalValue"></param>
         /// <returns></returns>
-        private string NumericInputToNumber(string ordinalValue)
+        private static string NumericInputToNumber(string ordinalValue)
         {
             if (ordinalValue.Length != 2 || !ordinalValue.Contains("D"))
+            {
                 return null;
+            }
                     
             return ordinalValue.Replace("D", "0");
         }
         
         private void UpdateWindowTitle()
         {
-            string name = currentImg.Name != "" ? $"{currentImg.Name}" : "Image";
-            string size = pictureBox1.Image != null ? $"{pictureBox1.Image.Width} x {pictureBox1.Image.Height}" : "";
+            var name = currentImg.Name != "" ? $"{currentImg.Name}" : "Image";
+            var size = pictureBox1.Image != null ? $"{pictureBox1.Image.Width} x {pictureBox1.Image.Height}" : "";
 
-            string position = $"";
+            var position = $"";
 
-            if (fileEntries.Length > 0) { 
-                int index = Array.IndexOf(fileEntries, currentImg.FullFilename);
+            if (fileEntries.Length > 0) 
+            { 
+                var index = Array.IndexOf(fileEntries, currentImg.FullFilename);
                 position = $" - {index + 1} / {fileEntries.Length}";
             }
 
@@ -735,8 +775,10 @@ namespace ImgBrowser
 
         private string[] GetImageFiles(string path, bool allDirectories = false)
         {
-            if (path == "" || path == Path.GetTempPath() || !Directory.Exists(path)) 
+            if (path == "" || path == Path.GetTempPath() || !Directory.Exists(path))
+            {
                 return Array.Empty<string>();
+            }
             
             var files = Directory.EnumerateFiles(path + "\\", "*.*", allDirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)
                 .Where(s => acceptedExtensions.Contains(Path.GetExtension(s).ToLowerInvariant()));
@@ -744,7 +786,6 @@ namespace ImgBrowser
             files = SortFiles(files);
 
             return files.ToArray();
-
         }
         
         private IEnumerable<string> SortFiles(IEnumerable<string> files)
@@ -780,21 +821,22 @@ namespace ImgBrowser
         }
 
         // Used to determine the window quick size adjustment type
-        private Size GetAdjustmentValue()
+        private static Size GetAdjustmentValue()
         {
-            Size adjustmentValue;
+            if ((ModifierKeys & Keys.Control) == Keys.Control)
+            {
+                return new Size(1, 0);
+            }
 
-            if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
-                adjustmentValue = new Size(1, 0);
-            else if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift)
-                adjustmentValue = new Size(0, 1);
-            else
-                adjustmentValue = new Size(1, 1);
+            if ((ModifierKeys & Keys.Shift) == Keys.Shift)
+            {
+                return new Size(0, 1);
+            }
 
-            return adjustmentValue;
+            return new Size(1, 1);
         }
 
-        void HoverWindow()
+        private void HoverWindow()
         {
             if (windowHover.Enabled)
             {
@@ -806,7 +848,7 @@ namespace ImgBrowser
             //Point originalPos = Location;
 
             windowHover.WindowHoverToken = new CancellationTokenSource();
-            CancellationToken ct = windowHover.WindowHoverToken.Token;
+            var ct = windowHover.WindowHoverToken.Token;
 
             Task.Run(() =>
             {
@@ -814,15 +856,21 @@ namespace ImgBrowser
                 {
                     for (; ; )
                     {
-                        for (int i = 0; i < windowHover.Distance / windowHover.AnimSpeed; i++)
+                        for (var i = 0; i < windowHover.Distance / windowHover.AnimSpeed; i++)
                         {
                             if (i < windowHover.Distance / 2 / windowHover.AnimSpeed)
-                                NativeMethods.MoveWindow(thisWindow, Location.X + (1 * windowHover.AnimSpeed), Location.Y, Width, Height, false);
+                            {
+                                NativeMethods.MoveWindow(thisWindow, Location.X + 1 * windowHover.AnimSpeed, Location.Y, Width, Height, false);
+                            }
                             else
-                                NativeMethods.MoveWindow(thisWindow, Location.X - (1 * windowHover.AnimSpeed), Location.Y, Width, Height, false);
+                            {
+                                NativeMethods.MoveWindow(thisWindow, Location.X - 1 * windowHover.AnimSpeed, Location.Y, Width, Height, false);
+                            }
 
                             if (ct.IsCancellationRequested)
+                            {
                                 ct.ThrowIfCancellationRequested();
+                            }
 
                             Thread.Sleep(2);
                         }
@@ -846,23 +894,23 @@ namespace ImgBrowser
             }, windowHover.WindowHoverToken.Token);
         }
         
-        private Color GetColorAt(Point location)
+        private static Color GetColorAt(Point location)
         {
-            Bitmap screenPixel = new Bitmap(1, 1, PixelFormat.Format32bppArgb);
+            var screenPixel = new Bitmap(1, 1, PixelFormat.Format32bppArgb);
 
-            using (Graphics gdest = Graphics.FromImage(screenPixel))
+            using (var gdest = Graphics.FromImage(screenPixel))
             {
-                using (Graphics gsrc = Graphics.FromHwnd(IntPtr.Zero))
+                using (var gsrc = Graphics.FromHwnd(IntPtr.Zero))
                 {
-                    IntPtr hSrcDC = gsrc.GetHdc();
-                    IntPtr hDC = gdest.GetHdc();
-                    int retval = NativeMethods.BitBlt(hDC, 0, 0, 1, 1, hSrcDC, location.X, location.Y, (int)CopyPixelOperation.SourceCopy);
+                    var hSrcDC = gsrc.GetHdc();
+                    var hDC = gdest.GetHdc();
+                    var retval = NativeMethods.BitBlt(hDC, 0, 0, 1, 1, hSrcDC, location.X, location.Y, (int)CopyPixelOperation.SourceCopy);
                     gdest.ReleaseHdc();
                     gsrc.ReleaseHdc();
                 }
             }
 
-            Color grabbedColor = screenPixel.GetPixel(0, 0);
+            var grabbedColor = screenPixel.GetPixel(0, 0);
             screenPixel.Dispose();
 
             return grabbedColor;
@@ -884,11 +932,13 @@ namespace ImgBrowser
             if (!imageEdited)
             {
                 if (currentImg.Path == "")
+                {
                     SaveImageToTemp(randString);
+                }
                 imageEdited = true;
             }
             
-            bool zoomOut = multiplier < 1;
+            var zoomOut = multiplier < 1;
             
             // Perform a rough image size check to avoid memory issues
             if (pictureBox1.Image.Width * multiplier + pictureBox1.Image.Height * multiplier > 40000)
@@ -904,11 +954,11 @@ namespace ImgBrowser
                 return;
             }
 
-            //https://stackoverflow.com/questions/1922040/how-to-resize-an-image-c-sharp
+            // https://stackoverflow.com/questions/1922040/how-to-resize-an-image-c-sharp
 
             // Grab current image
-            Image img = pictureBox1.Image;
-            Bitmap resized = new Bitmap(1, 1);
+            var img = pictureBox1.Image;
+            var resized = new Bitmap(1, 1);
 
             // Creating a new resized bitmap
             try
@@ -939,29 +989,37 @@ namespace ImgBrowser
             // Do not rescale images that are over 10 000 pixels, as it will cause memory and performance issues
             if (img.Width + img.Height < 10000)
             {
-                using (Graphics grap = Graphics.FromImage(resized))
+                using (var graphics = Graphics.FromImage(resized))
                 {
-                    grap.CompositingMode = CompositingMode.SourceCopy;
-                    grap.CompositingQuality = CompositingQuality.HighQuality;
-                    grap.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                    graphics.CompositingMode = CompositingMode.SourceCopy;
+                    graphics.CompositingQuality = CompositingQuality.HighQuality;
+                    graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
                     //grap.SmoothingMode = SmoothingMode.HighQuality;
-                    grap.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                    graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
 
                     // This draws the new image on top of the bitmap
-                    grap.DrawImage(img, 0, 0, Convert.ToInt32(img.Width * multiplier), Convert.ToInt32(img.Height * multiplier));
+                    graphics.DrawImage(img, 0, 0, Convert.ToInt32(img.Width * multiplier), Convert.ToInt32(img.Height * multiplier));
                 }
             }
             
             // Calculate new scroll position 
-            double posX = (double)(pictureBox1.Location.X * multiplier);
-            double posY = (double)(pictureBox1.Location.Y * multiplier);
+            var posX = pictureBox1.Location.X * multiplier;
+            var posY = pictureBox1.Location.Y * multiplier;
             if (posX > 0) posX = 0;
             if (posY > 0) posY = 0;
             
-            if (zoomOut){
+            if (zoomOut)
+            {
                 // Check that image stays within the borders
-                if (posX < -resized.Width + Width) posX = -resized.Width + Width;
-                if (posY < -resized.Height + Height) posY = -resized.Height + Height;
+                if (posX < -resized.Width + Width)
+                {
+                    posX = -resized.Width + Width;
+                }
+
+                if (posY < -resized.Height + Height)
+                {
+                    posY = -resized.Height + Height;
+                }
             }
 
             pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
@@ -972,20 +1030,33 @@ namespace ImgBrowser
             CenterImage();
 
             // Set scroll if image fills the screen
-            if (pictureBox1.Image.Width > Width) pictureBox1.Location = new Point((int)posX, pictureBox1.Location.Y);
-            if (pictureBox1.Image.Height > Height) pictureBox1.Location = new Point(pictureBox1.Location.X, (int)posY);
+            if (pictureBox1.Image.Width > Width)
+            {
+                pictureBox1.Location = new Point((int)posX, pictureBox1.Location.Y);
+            }
+
+            if (pictureBox1.Image.Height > Height)
+            {
+                pictureBox1.Location = new Point(pictureBox1.Location.X, (int)posY);
+            }
         }
 
         // Restore unedited image from file or from the temp folder
         private void RestoreImage(bool showMessage = true)
         {
             if (currentImg.IsFile)
+            {
                 LoadNewImgFromFile(new ImageObject(currentImg.FullFilename));
+            }
             else
+            {
                 LoadImageFromTemp(randString);
+            }
 
             if (showMessage)
+            {
                 DisplayMessage("Image restored");
+            }
         }
         
         private void LoadNewImgFromClipboard()
@@ -1004,12 +1075,16 @@ namespace ImgBrowser
             }
 
             if (clipImg == null)
+            {
                 return;
+            }
 
             Image oldImg = null;
 
             if (pictureBox1.Image != null)
+            {
                 oldImg = pictureBox1.Image;
+            }
 
             pictureBox1.Image = clipImg;
             currentImg = new ImageObject("");
@@ -1017,7 +1092,7 @@ namespace ImgBrowser
             pictureBox1.Location = new Point(0, 0);
             SizeModeZoom();
 
-            if (oldImg != null) { oldImg.Dispose(); }
+            oldImg?.Dispose();
 
             rootImageFolderChanged?.Invoke(string.Empty);
             fileEntries = Array.Empty<string>();
@@ -1027,9 +1102,7 @@ namespace ImgBrowser
             ResetImageModifiers();
 
         }
-        
-        private EventHandler onFrameChanged;
-        
+
         private void LoadNewImgFromFile(ImageObject imgObj, bool removeImagePath = false, bool skipRefresh = false)
         {
             var imageError = false;
@@ -1042,7 +1115,7 @@ namespace ImgBrowser
             gifTimer?.Stop();
             gifTimer?.Dispose();
             gifAnimatorTokenSource.Cancel();
-            GifAnimator.StopAnimate(currentImg.Image, onFrameChanged);
+            // GifAnimator.StopAnimate(currentImg.Image, onFrameChanged);
 
             if (imgObj.Image == null) 
             { 
@@ -1054,7 +1127,7 @@ namespace ImgBrowser
 
             if (pictureBox1.Image != null)
             {
-                Image oldImg = pictureBox1.Image;
+                var oldImg = pictureBox1.Image;
 
                 pictureBox1.Image = null;
                 oldImg.Dispose();
@@ -1082,7 +1155,9 @@ namespace ImgBrowser
                 var files = ReloadImageFiles();
 
                 if (files.Length > 0)
+                {
                     fileEntries = files;
+                }
             }
 
             UpdateWindowTitle();
@@ -1168,7 +1243,7 @@ namespace ImgBrowser
         {
             if (pictureBox1.Image != null)
             {
-                Image oldImg = pictureBox1.Image;
+                var oldImg = pictureBox1.Image;
                 pictureBox1.Image = null;
                 oldImg.Dispose();
             }
@@ -1179,18 +1254,23 @@ namespace ImgBrowser
         private void CopyCurrentDisplayToClipboard()
         {
             if (pictureBox1.SizeMode != PictureBoxSizeMode.AutoSize)
+            {
                 return;
+            }
 
             if (pictureBox1.Image.Width < ClientSize.Width || pictureBox1.Image.Height < ClientSize.Height)
+            {
                 return;
+            }
 
             // Make a backup of the current image
-            if (!imageEdited) { 
+            if (!imageEdited) 
+            { 
                 SaveImageToTemp(randString);
                 imageEdited = true;
             }
 
-            Bitmap bm = (Bitmap)pictureBox1.Image;
+            var bm = (Bitmap)pictureBox1.Image;
             bm = bm.Clone(new Rectangle(Math.Abs(pictureBox1.Location.X), Math.Abs(pictureBox1.Location.Y), ClientSize.Width, ClientSize.Height), PixelFormat.Format32bppArgb);
 
             Clipboard.SetImage(bm);
@@ -1200,7 +1280,7 @@ namespace ImgBrowser
         }
         
         // Extra effort to support image drag to other applications
-        void DragImageFromApp()
+        private void DragImageFromApp()
         {
             string file;
 
@@ -1210,16 +1290,19 @@ namespace ImgBrowser
                 file = Path.GetTempPath() + "/" + "TempImage.png";
             }
             else
+            {
                 file = currentImg.FullFilename;
+            }
 
             if (!File.Exists(file))
+            {
                 return;
+            }
 
-            DataObject dataObject = new DataObject();
-            DragFileInfo filesInfo = new DragFileInfo(file);
+            var dataObject = new DataObject();
+            var filesInfo = new DragFileInfo(file);
 
-            using (MemoryStream infoStream = GetFileDescriptor(filesInfo),
-                                contentStream = GetFileContents(filesInfo))
+            using (MemoryStream infoStream = GetFileDescriptor(filesInfo), contentStream = GetFileContents(filesInfo))
             {
                 dataObject.SetData(CFSTR_FILEDESCRIPTORW, infoStream);
                 dataObject.SetData(CFSTR_FILECONTENTS, contentStream);
@@ -1231,13 +1314,14 @@ namespace ImgBrowser
 
         private void MaxOrNormalizeWindow()
         {
-
             if (WindowState == FormWindowState.Maximized)
             {
                 if (FormBorderStyle == FormBorderStyle.None)
                 {
                     if (showBorder)
+                    {
                         FormBorderStyle = FormBorderStyle.Sizable;
+                    }
                     
                     // Reset picturebox style, when returning from full screen
                     pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
@@ -1271,8 +1355,10 @@ namespace ImgBrowser
         
         private bool ShouldMovePictureBox()
         {
-            if(pictureBox1.Image == null)
+            if (pictureBox1.Image == null)
+            {
                 return false;
+            }
             
             var autoSizeMode = pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize;
 
@@ -1284,23 +1370,28 @@ namespace ImgBrowser
         private void SizeModeZoom()
         {
             if (pictureBox1.Image == null)
+            {
                 return;
+            }
 
-            int x = 0;
-            int y = 0;
+            var x = 0;
+            var y = 0;
 
             // Update current zoomed in position
             if (pictureBox1.Image.Width > ClientSize.Width && pictureBox1.Location.X < 0)
+            {
                 x = pictureBox1.Location.X;
+            }
 
             if (pictureBox1.Image.Height > ClientSize.Height && pictureBox1.Location.Y < 0)
+            {
                 y = pictureBox1.Location.Y;
+            }
 
             zoomLocation = new Point(x, y);
 
             pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
             pictureBox1.Dock = DockStyle.Fill;
-
         }
 
         private void SizeModeAutoSize()
@@ -1312,20 +1403,30 @@ namespace ImgBrowser
             CenterImage();
 
             if (zoomLocation.X < -1 && zoomLocation.Y < -1)
+            {
                 pictureBox1.Location = zoomLocation;
-
+            }
         }
         
         // Set the display message position relative to the picturebox
-        private void PositionMessageDisplay() { 
+        private void PositionMessageDisplay() 
+        {
             if (pictureBox1.Width >= Width && pictureBox1.Height >= Height)
+            {
                 messageLabelShadowBottom.Location = new Point(11 + Math.Abs(pictureBox1.Location.X), 3 + Math.Abs(pictureBox1.Location.Y));
+            }
             else if (pictureBox1.Width >= Width)
+            {
                 messageLabelShadowBottom.Location = new Point(11 + Math.Abs(pictureBox1.Location.X), messageLabelShadowBottom.Location.Y);
+            }
             else if (pictureBox1.Height >= Height)
+            {
                 messageLabelShadowBottom.Location = new Point(messageLabelShadowBottom.Location.X, 3 + Math.Abs(pictureBox1.Location.Y));
+            }
             else
+            {
                 messageLabelShadowBottom.Location = new Point(11, 3);
+            }
         }
 
         private void OnRootImageFolderChange(string folderName)
@@ -1358,22 +1459,23 @@ namespace ImgBrowser
         // Catches window events for processing
         protected override void WndProc(ref Message m)
         {
-            FormWindowState org = WindowState;
+            var org = WindowState;
             var location = Location;
             var screen = Screen.FromControl(this);
             
             base.WndProc(ref m);
 
-            if (WindowState != org)
+            if (WindowState == org)
             {
-                if (org == FormWindowState.Normal)
-                {
-                    storedWindowPosition = new Point(location.X - screen.Bounds.Left,
-                        location.Y - screen.Bounds.Top);
-                }
-                
-                OnFormWindowStateChanged(org);
+                return;
             }
+            
+            if (org == FormWindowState.Normal)
+            {
+                storedWindowPosition = new Point(location.X - screen.Bounds.Left, location.Y - screen.Bounds.Top);
+            }
+                
+            OnFormWindowStateChanged(org);
         }
 
         // http://ostack.cn/?qa=95752/
@@ -1381,11 +1483,13 @@ namespace ImgBrowser
         private Image GetAlphaImageFromClipboard()
         {
             if (Clipboard.GetDataObject() == null) return null;
-            
-            if (!Clipboard.GetDataObject().GetDataPresent(DataFormats.Dib))
-                return Clipboard.ContainsImage() ? Clipboard.GetImage() : null;
 
-            int byteOffset = 52; // Offset of the DIB bits. Different software use different offsets when copying image to clipboard
+            if (!Clipboard.GetDataObject().GetDataPresent(DataFormats.Dib))
+            {
+                return Clipboard.ContainsImage() ? Clipboard.GetImage() : null;
+            }
+
+            var byteOffset = 52; // Offset of the DIB bits. Different software use different offsets when copying image to clipboard
             
             // Sometimes getting the image data fails and results in a "System.NullReferenceException" error - probably because clipboard handling also can be messy and complex
             byte[] dib;
@@ -1418,7 +1522,7 @@ namespace ImgBrowser
             finally
             {
                 gch.Free();
-                if (bmp != null) bmp.Dispose();
+                bmp?.Dispose();
             }
             
             return Clipboard.ContainsImage() ? Clipboard.GetImage() : null;
@@ -1440,12 +1544,14 @@ namespace ImgBrowser
             return byteOffset;
         }
 
-        int FindFirstEmptyByteReverse(Byte[] bytes, int startIndex)
+        private static int FindFirstEmptyByteReverse(IReadOnlyList<byte> bytes, int startIndex)
         {
-            for (int i = startIndex; i >= 0; i--)
+            for (var i = startIndex; i >= 0; i--)
             {
                 if (bytes[i] == 0)
+                {
                     return i;
+                }
             }
             return -1;
         }
@@ -1453,10 +1559,10 @@ namespace ImgBrowser
         // Check if the image contains any transparency
         private static bool IsImageTransparent(Image image)
         {
-            Bitmap img = new Bitmap(image);
-            for (int y = 0; y < img.Height; ++y)
+            var img = new Bitmap(image);
+            for (var y = 0; y < img.Height; ++y)
             {
-                for (int x = 0; x < img.Width; ++x)
+                for (var x = 0; x < img.Width; ++x)
                 {
                     if (img.GetPixel(x, y).A != 255)
                     {
