@@ -985,16 +985,17 @@ namespace ImgBrowser
                     graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
 
                     // This draws the new image on top of the bitmap
-                    graphics.DrawImage(img, 0, 0, Convert.ToInt32(img.Width * multiplier), Convert.ToInt32(img.Height * multiplier));
+                    graphics.DrawImage(img, 0, 0, resized.Width, resized.Height);
                 }
             }
             
             // Calculate new scroll position 
             var posX = pictureBox1.Location.X * multiplier;
             var posY = pictureBox1.Location.Y * multiplier;
-            if (posX > 0) posX = 0;
-            if (posY > 0) posY = 0;
             
+            posX = posX > 0 ? 0 : posX;
+            posY = posY > 0 ? 0 : posY;
+
             if (zoomOut)
             {
                 // Check that image stays within the borders

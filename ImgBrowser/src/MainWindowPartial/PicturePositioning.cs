@@ -10,7 +10,9 @@ namespace ImgBrowser
         private void MovePictureBox(Definitions.MovementType movementType, Definitions.Direction direction)
         {
             if (pictureBox1.Image == null)
+            {
                 return;
+            }
 
             // Hide any currently displayed message
             DisplayMessage("");
@@ -57,8 +59,8 @@ namespace ImgBrowser
             
             if (pictureBox1.Image.Height > Height)
             {
-                int borderMin = 0;
-                int borderMax = -pictureBox1.Image.Height + ClientRectangle.Height;
+                const int borderMin = 0;
+                var borderMax = -pictureBox1.Image.Height + ClientRectangle.Height;
                 
                 int newPos;
                 int multiplier;
@@ -116,7 +118,7 @@ namespace ImgBrowser
 
         private Point NewPictureBoxLocationByMouseCoordinates(Definitions.Axis axis, Definitions.MovementType movementType)
         {
-            int borderMin = 0;
+            const int borderMin = 0;
             int borderMax;
             int newPos;
 
@@ -147,22 +149,27 @@ namespace ImgBrowser
         
         private bool CheckMinimumMouseDragDistance(Definitions.Axis axis)
         {
-            int minDistance = (int)((Width + Height) * 0.01);
-            
+            var minDistance = (int)((Width + Height) * 0.01);
+
             if (axis == Definitions.Axis.X)
+            {
                 return Math.Abs(Math.Abs(Cursor.Position.X) - Math.Abs(storedMousePosition.X)) > minDistance;
+            }
             
             return Math.Abs(Math.Abs(Cursor.Position.Y) - Math.Abs(storedMousePosition.Y)) > minDistance;
-            
         }
         
         private static int VerifyBorders(int newPos, int borderMin, int borderMax)
         {
             if (newPos > borderMin)
+            {
                 newPos = borderMin;
-                    
+            }
+
             if (newPos < borderMax)
+            {
                 newPos = borderMax;
+            }
             
             return newPos;
         }
@@ -170,10 +177,13 @@ namespace ImgBrowser
         private void CenterImage(bool updateZoom = true)
         {
             if (pictureBox1.Image == null)
+            {
                 return;
+            }
 
             // Return to zoom mode, if image is smaller than the frame
-            if (Width > pictureBox1.Image.Width && Height > pictureBox1.Image.Height) {
+            if (Width > pictureBox1.Image.Width && Height > pictureBox1.Image.Height) 
+            {
                 SizeModeZoom();
                 return;
             }
@@ -183,28 +193,40 @@ namespace ImgBrowser
             {
                 pictureBox1.Left = (Width - pictureBox1.Image.Width) / 2;
                 // Update zoom location to center image
-                if (!updateZoom) return;
+                if (!updateZoom)
+                {
+                    return;
+                }
                 
                 zoomLocation = new Point(pictureBox1.Left, zoomLocation.Y);
                 pictureBox1.Top = 0;
+                
+                return;
             }
-            else if (ClientSize.Height > pictureBox1.Image.Height)
+
+            if (ClientSize.Height > pictureBox1.Image.Height)
             {
                 pictureBox1.Top = (Height - pictureBox1.Image.Height) / 2;
 
                 // Update zoom location to center image
-                if (!updateZoom) return;
+                if (!updateZoom)
+                {
+                    return;
+                }
                 
                 zoomLocation = new Point(zoomLocation.X, pictureBox1.Top);
                 pictureBox1.Left = 0;
-            }
-            else
-            {
-                if (!updateZoom) return;
                 
-                pictureBox1.Top = 0;
-                pictureBox1.Left = 0;
+                return;
             }
+
+            if (!updateZoom)
+            {
+                return;
+            }
+                
+            pictureBox1.Top = 0;
+            pictureBox1.Left = 0;
             
         }
         
