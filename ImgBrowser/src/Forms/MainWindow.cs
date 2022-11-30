@@ -129,15 +129,8 @@ namespace ImgBrowser
         private readonly WindowHover windowHover = new WindowHover(); 
 
         private StoredMousePosition storedMousePosition = new StoredMousePosition();
-
-        private System.Timers.Timer gifTimer = new System.Timers.Timer();
-        private CancellationTokenSource gifAnimatorTokenSource = new CancellationTokenSource();
-
-        private int launchArgAnimationDelay = -1;
-        private const int SmallGifResolutionLimit = 1100;
-        private const int SmallGifFrameLimit = 60;
         
-        private EventHandler onFrameChanged;
+        private int launchArgAnimationDelay = -1;
 
         //-------------------------------------------
 
@@ -155,7 +148,6 @@ namespace ImgBrowser
             showBorder = false;
             frameLeft = 0;
             screenCapButtonHeld = false;
-            onFrameChanged = OnAnimationFrameChanged;
         }
 
         private void InitializeMessageBox()
@@ -922,11 +914,6 @@ namespace ImgBrowser
             {
                 return;
             }
-
-            if (currentImg.IsAnimated())
-            {
-                return;
-            }
             
             // Make a backup of the current image
             if (!imageEdited)
@@ -1112,11 +1099,6 @@ namespace ImgBrowser
                 return;
             }
 
-            gifTimer?.Stop();
-            gifTimer?.Dispose();
-            gifAnimatorTokenSource.Cancel();
-            // GifAnimator.StopAnimate(currentImg.Image, onFrameChanged);
-
             if (imgObj.Image == null) 
             { 
                 DisplayImageError();
@@ -1135,7 +1117,7 @@ namespace ImgBrowser
 
             if (!imageError) 
             {
-                if (imgObj.IsAnimated())
+                if (GifAnimator.CanAnimate(imgObj.Image))
                 {
                     StartAnimating(imgObj);
                 }
@@ -1179,57 +1161,16 @@ namespace ImgBrowser
 
         private void StartAnimating(ImageObject imgObj)
         {
-            var resolution = imgObj.Image.Size;
-
-            var useGifAnimator = resolution.Width + resolution.Height > SmallGifResolutionLimit || imgObj.FrameCount > SmallGifFrameLimit;
+            pictureBox1.Image = imgObj.Image;
             
-            if (useGifAnimator)
+            if (launchArgAnimationDelay > 0)
             {
-                pictureBox1.Image = new Bitmap(imgObj.Image);
-                GifAnimator.AnimationDelay = 25;
-                GifAnimator.Animate(currentImg.Image, onFrameChanged);
+                GifAnimator.AnimationDelay = launchArgAnimationDelay;
+                launchArgAnimationDelay = -1;
                 return;
             }
             
-            pictureBox1.Image = new Bitmap(imgObj.Image);
-
-            gifAnimatorTokenSource = new CancellationTokenSource();
-            var task = imgObj.GenerateBitmapsFromFrames(gifAnimatorTokenSource.Token);
-            
-            gifTimer = new System.Timers.Timer();
-
-            if (launchArgAnimationDelay > 0)
-            {
-                gifTimer.Interval = launchArgAnimationDelay;
-                launchArgAnimationDelay = -1;
-            }
-            else
-            {
-                gifTimer.Interval = currentImg.GetFrameDelay();   
-            }
-
-            task.ContinueWith(t =>
-            {
-                if (!t.IsCompleted)
-                {
-                    return;
-                }
-            
-                if (!t.Result)
-                {
-                    return;
-                }
-            
-                gifTimer.Elapsed += (sender, e) =>
-                {
-                    // var prevFrame = pictureBox1.Image;
-                    pictureBox1.Image = currentImg.GetNextFrame();
-                    // pictureBox1.Image = currentImg.LoadPointerFrameAtIndex(currentImg.IncrementFrame());
-                    // pictureBox1.Image = currentImg.LoadFrameAtIndex(currentImg.IncrementFrame());
-                    // prevFrame?.Dispose();
-                };
-                gifTimer.Start();
-            });
+            GifAnimator.AnimationDelay = 25;
         }
 
         private void ResetImageModifiers()

@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using ImgBrowser.Helpers;
 
 namespace ImgBrowser
 {
@@ -131,8 +132,8 @@ namespace ImgBrowser
                 args += Definitions.LaunchArguments.SetAlwaysOnTop + " ";
             if (imageFlipped)
                 args += Definitions.LaunchArguments.FlipX + " ";
-            if (currentImg.IsAnimated())
-                args += $"{Definitions.LaunchArguments.GifDelay} {gifTimer.Interval} ";
+            if (GifAnimator.CanAnimate(currentImg.Image))
+                args += $"{Definitions.LaunchArguments.GifDelay} {GifAnimator.AnimationDelay} ";
 
             args += $"{Definitions.LaunchArguments.SetRotation} {imageRotation} ";
             args += $"{Definitions.LaunchArguments.SetWidthAndHeight} {ClientSize.Width},{ClientSize.Height} ";

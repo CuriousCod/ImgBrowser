@@ -30,22 +30,32 @@ namespace ImgBrowser
                 if ((ModifierKeys & Keys.Alt) == Keys.Alt)
                 {
                     // Increase window size
-                    if (WindowState != FormWindowState.Normal) 
+                    if (WindowState != FormWindowState.Normal)
+                    {
                         return;
+                    }
                     
                     Size = Size.Add(Size, GetAdjustmentValue());
-                    if ((pictureBox1.SizeMode != PictureBoxSizeMode.AutoSize) && (FormBorderStyle == FormBorderStyle.None))
+                    if (pictureBox1.SizeMode != PictureBoxSizeMode.AutoSize && FormBorderStyle == FormBorderStyle.None)
+                    {
                         FitImageToWindow();
+                    }
                 }
                 else if (pictureBox1.SizeMode != PictureBoxSizeMode.AutoSize)
                 {
                     if ((ModifierKeys & Keys.Control) == Keys.Control)
+                    {
                         ResizeImage(1.5);
+                    }
                     else
+                    {
                         BrowseForward();
+                    }
                 }
                 else if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
+                {
                     MovePictureBox(Definitions.MovementType.MouseScroll, Definitions.Direction.Up);
+                }
 
             }
             else if (e.Delta < 0)
@@ -53,24 +63,33 @@ namespace ImgBrowser
                 if ((ModifierKeys & Keys.Alt) == Keys.Alt)
                 {
                     // Decrease window size
-                    if (WindowState != FormWindowState.Normal) 
+                    if (WindowState != FormWindowState.Normal)
+                    {
                         return;
+                    }
                     
                     Size = Size.Subtract(Size, GetAdjustmentValue());
-                    if ((pictureBox1.SizeMode != PictureBoxSizeMode.AutoSize) && (FormBorderStyle == FormBorderStyle.None))
+                    if (pictureBox1.SizeMode != PictureBoxSizeMode.AutoSize && FormBorderStyle == FormBorderStyle.None)
+                    {
                         FitImageToWindow();
+                    }
                 }
                 else if (pictureBox1.SizeMode != PictureBoxSizeMode.AutoSize)
                 {
                     if ((ModifierKeys & Keys.Control) == Keys.Control)
+                    {
                         ResizeImage(0.75);
+                    }
                     else
+                    {
                         BrowseBackward();
+                    }
                 }
                 else if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize)
+                {
                     MovePictureBox(Definitions.MovementType.MouseScroll, Definitions.Direction.Down);
+                }
             }
-
         }
 
         private void MainWindow_KeyDown(object sender, KeyEventArgs e)
@@ -127,20 +146,24 @@ namespace ImgBrowser
                     ArrowKeyAdjustWindowSize(Definitions.Direction.Left, mk);
                     break;
                 case Inputs.InputActions.IncreaseGifSpeed:
-                    if (currentImg.IsAnimated())
+                    if (!GifAnimator.CanAnimate(currentImg.Image))
                     {
-                        gifTimer.Interval = Math.Max(1, gifTimer.Interval - 10);
-                        GifAnimator.AnimationDelay = Math.Max(1,  GifAnimator.AnimationDelay - 10);
-                        DisplayMessage("Delay: " + gifTimer.Interval + "ms");
+                        break;
                     }
+                    
+                    GifAnimator.AnimationDelay = Math.Max(1,  GifAnimator.AnimationDelay - 10);
+                    DisplayMessage("Delay: " + GifAnimator.AnimationDelay + "ms");
+                    
                     break;
                 case Inputs.InputActions.DecreaseGifSpeed:
-                    if (currentImg.IsAnimated())
+                    if (!GifAnimator.CanAnimate(currentImg.Image))
                     {
-                        gifTimer.Interval = gifTimer.Interval > 2 ? Math.Min(1000, gifTimer.Interval + 10) : 10;
-                        GifAnimator.AnimationDelay = GifAnimator.AnimationDelay > 2 ? Math.Min(1000, GifAnimator.AnimationDelay + 10) : 10;
-                        DisplayMessage("Delay: " + gifTimer.Interval + "ms");   
+                        break;
                     }
+
+                    GifAnimator.AnimationDelay = GifAnimator.AnimationDelay > 2 ? Math.Min(1000, GifAnimator.AnimationDelay + 10) : 10;
+                    DisplayMessage("Delay: " + GifAnimator.AnimationDelay + "ms");   
+                    
                     break;
                 case Inputs.InputActions.Hover:
                     // TODO Borderline experimental
@@ -183,16 +206,22 @@ namespace ImgBrowser
                 case Inputs.InputActions.RefreshImages:
                     fileEntries = ReloadImageFiles();
                     UpdateWindowTitle();
-                    
+
                     if (fileEntries.Length > 0)
+                    {
                         DisplayMessage("Images reloaded");
-                    
+                    }
+
                     if (currentImg.IsFile)
+                    {
                         LoadNewImgFromFile(new ImageObject(currentImg.FullFilename), false, true);
+                    }
                     break;
                 case Inputs.InputActions.RestoreCurrentImage:
                     if (imageEdited)
+                    {
                         RestoreImage();
+                    }
                     break;
                 case Inputs.InputActions.ToggleFullScreen:
                     MaxOrNormalizeWindow();
@@ -207,9 +236,11 @@ namespace ImgBrowser
                 case Inputs.InputActions.ChangeSortOrder:
                     var index = (int)sortImagesBy;
                     index++;
-                    
+
                     if (index >= Enum.GetNames(typeof(Definitions.SortBy)).Length)
+                    {
                         index = 0;
+                    }
                     
                     sortImagesBy = (Definitions.SortBy)index;
                     
@@ -222,10 +253,14 @@ namespace ImgBrowser
                     break;
                 case Inputs.InputActions.CopyToClipboard:
                     if (!mk.Ctrl)
+                    {
                         break;
-                    
+                    }
+
                     if (pictureBox1.Image == null)
+                    {
                         break;
+                    }
                 
                     if (mk.Shift) 
                     {
@@ -241,7 +276,9 @@ namespace ImgBrowser
                     break;
                 case Inputs.InputActions.PasteFromClipboard:
                     if (mk.Ctrl)
+                    {
                         LoadNewImgFromClipboard();
+                    }
                     break;
                 case Inputs.InputActions.RotateImage:
                     RotateImage(mk.Ctrl);
@@ -252,7 +289,9 @@ namespace ImgBrowser
                 case Inputs.InputActions.DuplicateImage:
                     var exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
                     if (!File.Exists(exePath))
-                        return;
+                    {
+                        break;
+                    }
 
                     var args = GetCurrentArgs();
 
@@ -277,7 +316,9 @@ namespace ImgBrowser
                     break;
                 case Inputs.InputActions.ToggleImageLock:
                     if (pictureBox1.Image == null)
+                    {
                         break;
+                    }
                 
                     if (lockImage)
                     {
@@ -326,14 +367,18 @@ namespace ImgBrowser
                     break;
                 case Inputs.InputActions.CopyImagePathAndDataToClipboard:
                     if (!currentImg.IsFile)
+                    {
                         return;
+                    }
 
                     DisplayMessage("Image path and window size added to clipboard");
                     Clipboard.SetText($"{currentImg.Path}\\{currentImg.Name} {Top},{Left},{Height},{Width}");
                     break;
                 case Inputs.InputActions.StopWindowHover:
                     if (windowHover.Enabled)
+                    {
                         windowHover.WindowHoverToken.Cancel();
+                    }
                     break;
                 case Inputs.InputActions.ZoomIn:
                     ResizeImage(mk.Ctrl ? 1.2 : 1.5);
@@ -350,16 +395,20 @@ namespace ImgBrowser
                 // TODO Experimental
                 case Inputs.InputActions.AdjustHoverSpeed:
                     var digit = e.KeyCode.ToString();
-                    
+
                     if (digit.Length != 2 || !digit.Contains("D"))
+                    {
                         break;
+                    }
                     
                     digit = digit.Replace("D", "");
                     
                     var acceptedValues = new[] { "1", "2", "3", "4", "5" };
-                    
+
                     if (!acceptedValues.Contains(digit))
+                    {
                         break;
+                    }
 
                     var value = int.Parse(digit);
 
@@ -377,9 +426,11 @@ namespace ImgBrowser
                     File.WriteAllLines(tempFile, keyBinds);
 
                     var process = Process.Start(tempFile);
-                    
+
                     if (process == null)
+                    {
                         break;
+                    }
                     
                     process.EnableRaisingEvents = true;
                     
@@ -408,11 +459,11 @@ namespace ImgBrowser
         
         private void MainWindow_DragDrop(object sender, DragEventArgs e)
         {
-            string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+            var files = (string[])e.Data.GetData(DataFormats.FileDrop);
 
             if (files == null) return;
             
-            string lowerCase = files[0].ToLower();
+            var lowerCase = files[0].ToLower();
 
             if (acceptedExtensions.Contains(Path.GetExtension(lowerCase)))
             {
@@ -731,18 +782,12 @@ namespace ImgBrowser
                 Location = location;
             }
 
-            if(pictureBox1.SizeMode == PictureBoxSizeMode.Zoom)
+            if (pictureBox1.SizeMode == PictureBoxSizeMode.Zoom)
+            {
                 return;
+            }
             
             CenterImage();
-        }
-        
-        private void OnAnimationFrameChanged(object sender, EventArgs e)
-        {
-            GifAnimator.UpdateFrames();
-            var prevImage = pictureBox1.Image;
-            pictureBox1.Image = new Bitmap(currentImg.Image);
-            prevImage.Dispose();
         }
     }
 }

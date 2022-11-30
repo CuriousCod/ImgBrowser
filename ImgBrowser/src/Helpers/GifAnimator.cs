@@ -9,7 +9,8 @@ namespace ImgBrowser.Helpers
     /// <summary>Animates an image that has time-based frames.</summary>
     public static class GifAnimator
     {
-        private static List<ImageInfo> _imageInfoList;
+        // private static List<ImageInfo> _imageInfoList;
+        private static ImageInfo[] _imageInfoListArray;
         private static bool _anyFrameDirty;
         private static Thread _animationThread;
         private static readonly ReaderWriterLock RwImgListLock = new ReaderWriterLock();
@@ -21,7 +22,7 @@ namespace ImgBrowser.Helpers
         /// <param name="image">The <see cref="T:System.Drawing.Image" /> object for which to update frames.</param>
         public static void UpdateFrames(Image image)
         {
-            if (!_anyFrameDirty || image == null || _imageInfoList == null || _threadWriterLockWaitCount > 0)
+            if (!_anyFrameDirty || image == null || _imageInfoListArray?[0] == null || _threadWriterLockWaitCount > 0)
             {
                 return;
             }
@@ -30,7 +31,7 @@ namespace ImgBrowser.Helpers
             {
                 var flag1 = false;
                 var flag2 = false;
-                foreach (var imageInfo in _imageInfoList)
+                foreach (var imageInfo in _imageInfoListArray)
                 {
                     if (imageInfo.Image == image)
                     {
@@ -67,17 +68,19 @@ namespace ImgBrowser.Helpers
         /// <summary>Advances the frame in all images currently being animated. The new frame is drawn the next time the image is rendered.</summary>
         public static void UpdateFrames()
         {
-            if (!_anyFrameDirty || _imageInfoList == null || _threadWriterLockWaitCount > 0)
+            if (!_anyFrameDirty || _imageInfoListArray?[0] == null || _threadWriterLockWaitCount > 0)
             {
                 return;
             }
             RwImgListLock.AcquireReaderLock(-1);
             try
             {
-                foreach (var imageInfo in _imageInfoList)
+                foreach (var imageInfo in _imageInfoListArray)
                 {
                     lock (imageInfo.Image)
+                    {
                         imageInfo.UpdateFrame();
+                    }
                 }
 
                 _anyFrameDirty = false;
@@ -98,6 +101,7 @@ namespace ImgBrowser.Helpers
                 return;
             }
             ImageInfo imageInfo;
+            
             lock (image)
             {
                 imageInfo = new ImageInfo(image);
@@ -131,12 +135,14 @@ namespace ImgBrowser.Helpers
                     return;
                 }
 
-                if (_imageInfoList == null)
+                if (_imageInfoListArray == null)
                 {
-                    _imageInfoList = new List<ImageInfo>();
+                    _imageInfoListArray = new ImageInfo[1];
                 }
+                
                 imageInfo.FrameChangedHandler = onFrameChangedHandler;
-                _imageInfoList.Add(imageInfo);
+                _imageInfoListArray[0] = imageInfo;
+                
                 if (_animationThread != null)
                 {
                     return;
@@ -190,13 +196,15 @@ namespace ImgBrowser.Helpers
         /// <param name="onFrameChangedHandler">An <see langword="EventHandler" /> object that specifies the method that is called when the animation frame changes.</param>
         public static void StopAnimate(Image image, EventHandler onFrameChangedHandler)
         {
-            if (image == null || _imageInfoList == null)
+            if (image == null || _imageInfoListArray?[0] == null)
             {
                 return;
             }
+            
             var isReaderLockHeld = RwImgListLock.IsReaderLockHeld;
             var lockCookie = new LockCookie();
             ++_threadWriterLockWaitCount;
+            
             try
             {
                 if (isReaderLockHeld)
@@ -215,9 +223,15 @@ namespace ImgBrowser.Helpers
 
             try
             {
-                for (var index = 0; index < _imageInfoList.Count; ++index)
+                for (var index = 0; index < _imageInfoListArray.Length; ++index)
                 {
-                    var imageInfo = _imageInfoList[index];
+                    var imageInfo = _imageInfoListArray[index];
+
+                    if (imageInfo?.Image == null)
+                    {
+                        continue;
+                    }
+                    
                     if (image != imageInfo.Image)
                     {
                         continue;
@@ -229,7 +243,7 @@ namespace ImgBrowser.Helpers
                     {
                         break;
                     }
-                    _imageInfoList.Remove(imageInfo);
+                    _imageInfoListArray[index] = null;
                     break;
                 }
             }
@@ -253,9 +267,15 @@ namespace ImgBrowser.Helpers
                 RwImgListLock.AcquireReaderLock(-1);
                 try
                 {
-                    for (var index = 0; index < _imageInfoList.Count; ++index)
+                    for (var index = 0; index < _imageInfoListArray.Length; ++index)
                     {
-                        var imageInfo = _imageInfoList[index];
+                        var imageInfo = _imageInfoListArray[index];
+                        
+                        if (imageInfo?.Image == null)
+                        {
+                            continue;
+                        }
+                        
                         imageInfo.FrameTimer += 5;
                         
                         if (imageInfo.FrameTimer < imageInfo.FrameDelay(imageInfo.Frame))
@@ -299,22 +319,11 @@ namespace ImgBrowser.Helpers
             {
                 Image = image;
                 Animated = CanAnimate(image);
+                
                 if (Animated)
                 {
                     FrameCount = image.GetFrameCount(FrameDimension.Time);
-                    var propertyItem = image.GetPropertyItem(20736);
-                    if (propertyItem != null)
-                    {
-                        var numArray = propertyItem.Value;
-                        frameDelay = new int[FrameCount];
-                        for (var index = 0; index < FrameCount; ++index)
-                        {
-                            frameDelay[index] = numArray[index * 4] + 256 * numArray[index * 4 + 1] +
-                                             65536 * numArray[index * 4 + 2] +
-                                             16777216 * numArray[index * 4 + 3];
-                            
-                        }
-                    }
+                    frameDelay = GetImageFrameDelays(image, FrameCount);
                 }
                 else
                 {
@@ -379,9 +388,39 @@ namespace ImgBrowser.Helpers
                 FrameDirty = false;
             }
 
-            protected void OnFrameChanged(EventArgs e)
+            private void OnFrameChanged(EventArgs e)
             {
                 FrameChangedHandler?.Invoke(Image, e);
+            }
+
+            /// <summary>
+            /// Gets the frame delays for an animated image.
+            /// </summary>
+            /// <param name="image"> Image to get frame delays from </param>
+            /// <param name="frameCount"> Number of frames in the image</param>
+            /// <returns> An array of integers that contains the delay, in milliseconds, for each frame in the image.</returns>
+            private static int[] GetImageFrameDelays(Image image, int frameCount)
+            {
+                var frameDelay = new int[frameCount];
+                
+                var propertyItem = image.GetPropertyItem(PropertyTagFrameDelay);
+                
+                if (propertyItem == null)
+                {
+                    return frameDelay;
+                }
+                
+                var numArray = propertyItem.Value;
+                frameDelay = new int[frameCount];
+                
+                for (var index = 0; index < frameCount; ++index)
+                {
+                    frameDelay[index] = numArray[index * 4] + 256 * numArray[index * 4 + 1] +
+                                        65536 * numArray[index * 4 + 2] +
+                                        16777216 * numArray[index * 4 + 3];
+                }
+
+                return frameDelay;
             }
         }
     }
