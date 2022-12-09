@@ -9,55 +9,40 @@ namespace ImgBrowser.Helpers
     /// <summary>Animates an image that has time-based frames.</summary>
     public static class GifAnimator
     {
-        // private static List<ImageInfo> _imageInfoList;
-        private static ImageInfo[] _imageInfoListArray;
+        private static ImageInfo _currentImageInfo;
         private static bool _anyFrameDirty;
         private static Thread _animationThread;
         private static readonly ReaderWriterLock RwImgListLock = new ReaderWriterLock();
         [ThreadStatic] private static int _threadWriterLockWaitCount;
 
         public static int AnimationDelay = 50;
+        
+        public static bool IsAnimated => _currentImageInfo?.Animated ?? false; 
 
         /// <summary>Advances the frame in the specified image. The new frame is drawn the next time the image is rendered. This method applies only to images with time-based frames.</summary>
         /// <param name="image">The <see cref="T:System.Drawing.Image" /> object for which to update frames.</param>
         public static void UpdateFrames(Image image)
         {
-            if (!_anyFrameDirty || image == null || _imageInfoListArray?[0] == null || _threadWriterLockWaitCount > 0)
+            if (!_anyFrameDirty || image == null || _currentImageInfo == null || _threadWriterLockWaitCount > 0)
             {
                 return;
             }
+            
             RwImgListLock.AcquireReaderLock(-1);
             try
             {
-                var flag1 = false;
-                var flag2 = false;
-                foreach (var imageInfo in _imageInfoListArray)
+                lock (_currentImageInfo.Image)
                 {
-                    if (imageInfo.Image == image)
+                    if (_currentImageInfo.Image == image)
                     {
-                        if (imageInfo.FrameDirty)
+                        if (_currentImageInfo.FrameDirty)
                         {
-                            lock (imageInfo.Image)
-                            {
-                                imageInfo.UpdateFrame();
-                            }
+                            _currentImageInfo.UpdateFrame();
                         }
-
-                        flag2 = true;
                     }
-
-                    if (imageInfo.FrameDirty)
-                    {
-                        flag1 = true;
-                    }
-
-                    if (flag1 & flag2)
-                    {
-                        break;
-                    }
+                    
+                    _anyFrameDirty = _currentImageInfo.FrameDirty;
                 }
-
-                _anyFrameDirty = flag1;
             }
             finally
             {
@@ -68,19 +53,16 @@ namespace ImgBrowser.Helpers
         /// <summary>Advances the frame in all images currently being animated. The new frame is drawn the next time the image is rendered.</summary>
         public static void UpdateFrames()
         {
-            if (!_anyFrameDirty || _imageInfoListArray?[0] == null || _threadWriterLockWaitCount > 0)
+            if (!_anyFrameDirty || _currentImageInfo == null || _threadWriterLockWaitCount > 0)
             {
                 return;
             }
             RwImgListLock.AcquireReaderLock(-1);
             try
             {
-                foreach (var imageInfo in _imageInfoListArray)
+                lock (_currentImageInfo)
                 {
-                    lock (imageInfo.Image)
-                    {
-                        imageInfo.UpdateFrame();
-                    }
+                    _currentImageInfo.UpdateFrame();
                 }
 
                 _anyFrameDirty = false;
@@ -135,23 +117,24 @@ namespace ImgBrowser.Helpers
                     return;
                 }
 
-                if (_imageInfoListArray == null)
-                {
-                    _imageInfoListArray = new ImageInfo[1];
-                }
-                
                 imageInfo.FrameChangedHandler = onFrameChangedHandler;
-                _imageInfoListArray[0] = imageInfo;
                 
+                if (_currentImageInfo == null)
+                {
+                    _currentImageInfo = imageInfo;
+                }
+
                 if (_animationThread != null)
                 {
                     return;
                 }
+                
                 _animationThread = new Thread(AnimateImages)
                 {
                     Name = nameof(GifAnimator),
                     IsBackground = true
                 };
+                
                 _animationThread.Start();
             }
             finally
@@ -196,7 +179,7 @@ namespace ImgBrowser.Helpers
         /// <param name="onFrameChangedHandler">An <see langword="EventHandler" /> object that specifies the method that is called when the animation frame changes.</param>
         public static void StopAnimate(Image image, EventHandler onFrameChangedHandler)
         {
-            if (image == null || _imageInfoListArray?[0] == null)
+            if (image == null || _currentImageInfo == null)
             {
                 return;
             }
@@ -223,28 +206,19 @@ namespace ImgBrowser.Helpers
 
             try
             {
-                for (var index = 0; index < _imageInfoListArray.Length; ++index)
+                if (_currentImageInfo.Image == null)
                 {
-                    var imageInfo = _imageInfoListArray[index];
+                    return;
+                }
 
-                    if (imageInfo?.Image == null)
-                    {
-                        continue;
-                    }
-                    
-                    if (image != imageInfo.Image)
-                    {
-                        continue;
-                    }
-
-                    if (onFrameChangedHandler != imageInfo.FrameChangedHandler &&
-                        (onFrameChangedHandler == null ||
-                         !onFrameChangedHandler.Equals(imageInfo.FrameChangedHandler)))
-                    {
-                        break;
-                    }
-                    _imageInfoListArray[index] = null;
-                    break;
+                if (_currentImageInfo.Image != image)
+                {
+                    return;
+                }
+                
+                if (onFrameChangedHandler == _currentImageInfo.FrameChangedHandler && (onFrameChangedHandler != null || onFrameChangedHandler.Equals(_currentImageInfo.FrameChangedHandler)))
+                {
+                    _currentImageInfo = null;
                 }
             }
             finally
@@ -267,38 +241,32 @@ namespace ImgBrowser.Helpers
                 RwImgListLock.AcquireReaderLock(-1);
                 try
                 {
-                    for (var index = 0; index < _imageInfoListArray.Length; ++index)
+                    if (_currentImageInfo?.Image == null)
                     {
-                        var imageInfo = _imageInfoListArray[index];
+                        continue;
+                    }
+
+                    _currentImageInfo.FrameTimer += 5;
+                    
+                    if (_currentImageInfo.FrameTimer > _currentImageInfo.FrameDelay(_currentImageInfo.Frame))
+                    {
+                        _currentImageInfo.FrameTimer = 0;
                         
-                        if (imageInfo?.Image == null)
+                        if (_currentImageInfo.Frame + 1 < _currentImageInfo.FrameCount)
                         {
-                            continue;
-                        }
-                        
-                        imageInfo.FrameTimer += 5;
-                        
-                        if (imageInfo.FrameTimer < imageInfo.FrameDelay(imageInfo.Frame))
-                        {
-                            continue;
-                        }
-                        
-                        imageInfo.FrameTimer = 0;
-                            
-                        if (imageInfo.Frame + 1 < imageInfo.FrameCount)
-                        {
-                            ++imageInfo.Frame;
+                            ++_currentImageInfo.Frame;
                         }
                         else
                         {
-                            imageInfo.Frame = 0;
+                            _currentImageInfo.Frame = 0;
                         }
-                            
-                        if (imageInfo.FrameDirty)
+                        
+                        if (_currentImageInfo.FrameDirty)
                         {
                             _anyFrameDirty = true;
                         }
                     }
+                    
                 }
                 finally
                 {
