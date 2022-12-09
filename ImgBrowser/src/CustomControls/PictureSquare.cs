@@ -62,6 +62,9 @@ namespace ImgBrowser.CustomControls
         private Stream uriImageStream;
         private static readonly object EVENT_SIZEMODECHANGED = new object();
 
+        public bool ImageXFlipped;
+        public int ImageRotation;
+        
         /// <summary>Initializes a new instance of the <see cref="T:ImgBrowser.Helpers.PictureBox" /> class.</summary>
         public PictureSquare()
         {
@@ -336,9 +339,14 @@ namespace ImgBrowser.CustomControls
         
         private Rectangle ImageRectangleFromSizeMode(PictureBoxSizeMode mode)
         {
+            return ImageRectangleFromSizeMode(mode, image);
+        }
+
+        private Rectangle ImageRectangleFromSizeMode(PictureBoxSizeMode mode, Image targetImage)
+        {
             var rectangle = ControlUtils.DeflateRect(ClientRectangle, Padding);
             
-            if (image == null)
+            if (targetImage == null)
             {
                 return rectangle;
             }
@@ -347,36 +355,36 @@ namespace ImgBrowser.CustomControls
             {
                 case PictureBoxSizeMode.Normal:
                 case PictureBoxSizeMode.AutoSize:
-                    rectangle.Size = image.Size;
+                    rectangle.Size = targetImage.Size;
                     Size = rectangle.Size; // Added
                     break;
                 case PictureBoxSizeMode.CenterImage:
-                    rectangle.X += (rectangle.Width - image.Width) / 2;
-                    rectangle.Y += (rectangle.Height - image.Height) / 2;
-                    rectangle.Size = image.Size;
+                    rectangle.X += (rectangle.Width - targetImage.Width) / 2;
+                    rectangle.Y += (rectangle.Height - targetImage.Height) / 2;
+                    rectangle.Size = targetImage.Size;
                     break;
                 case PictureBoxSizeMode.Zoom:
-                    Size size = image.Size;
-                    double val1 = (double) ClientRectangle.Width / (double) size.Width;
-                    Rectangle clientRectangle = ClientRectangle;
-                    double val2 = (double) clientRectangle.Height / (double) size.Height;
-                    float num1 = Math.Min((float) val1, (float) val2);
-                    rectangle.Width = (int) ((double) size.Width * (double) num1);
-                    rectangle.Height = (int) ((double) size.Height * (double) num1);
-                    ref Rectangle local1 = ref rectangle;
+                    var imageSize = targetImage.Size;
+                    var clientToImageWidthRatio = ClientRectangle.Width / (double) imageSize.Width;
+                    var clientRectangle = ClientRectangle;
+                    var clientToImageHeightRatio = clientRectangle.Height / (double) imageSize.Height;
+                    var shorterDimension = Math.Min((float) clientToImageWidthRatio, (float) clientToImageHeightRatio);
+                    rectangle.Width = (int) ((double) imageSize.Width * shorterDimension);
+                    rectangle.Height = (int) ((double) imageSize.Height * shorterDimension);
+                    ref var local1 = ref rectangle;
                     clientRectangle = ClientRectangle;
-                    int num2 = (clientRectangle.Width - rectangle.Width) / 2;
+                    var num2 = (clientRectangle.Width - rectangle.Width) / 2;
                     local1.X = num2;
-                    ref Rectangle local2 = ref rectangle;
+                    ref var local2 = ref rectangle;
                     clientRectangle = ClientRectangle;
-                    int num3 = (clientRectangle.Height - rectangle.Height) / 2;
+                    var num3 = (clientRectangle.Height - rectangle.Height) / 2;
                     local2.Y = num3;
                     break;
             }
 
             return rectangle;
         }
-
+        
         /// <summary>Gets or sets the image displayed in the <see cref="T:ImgBrowser.Helpers.PictureBox" /> control when the main image is loading.</summary>
         /// <returns>The <see cref="T:System.Drawing.Image" /> displayed in the picture box control when the main image is loading.</returns>
         /// <filterpriority>1</filterpriority>
@@ -1115,20 +1123,93 @@ namespace ImgBrowser.CustomControls
                 }
             }
 
-            if (image != null)
+            if (image == null)
             {
-                Animate();
-                GifAnimator.UpdateFrames(Image);
+                base.OnPaint(pe);
+                return;
+            }
+            
+            Animate();
+            
+            GifAnimator.UpdateFrames(Image);
 
-                var rect = imageInstallationType == ImageInstallationType.ErrorOrInitial
-                    ? ImageRectangleFromSizeMode(PictureBoxSizeMode.CenterImage)
-                    : ImageRectangle;
-                pe.Graphics.DrawImage(image, rect);
+            var rect = imageInstallationType == ImageInstallationType.ErrorOrInitial
+                ? ImageRectangleFromSizeMode(PictureBoxSizeMode.CenterImage)
+                : ImageRectangle;
+
+            // Flip and/or rotate the frame if needed
+            if (GifAnimator.IsAnimated && ImageXFlipped || GifAnimator.IsAnimated && ImageRotation > 0)
+            {
+                var transformedImage = TransformImage(image, ImageXFlipped, ImageRotation);
+                
+                if (ImageRotation % 2 == 1)
+                {
+                    rect = ImageRectangleFromSizeMode(sizeMode, transformedImage);
+                }
+
+                pe.Graphics.DrawImage(transformedImage, rect);
+            
+                transformedImage.Dispose();
+                
+                base.OnPaint(pe);
+                return;
             }
 
+            pe.Graphics.DrawImage(image, rect);
             base.OnPaint(pe);
         }
+        
+        private static Bitmap TransformImage(Image image, bool flipX, int rotationIndex)
+        {
+            if (image == null)
+            {
+                return null;
+            }
+            
+            var transformedImage = new Bitmap(image);
 
+            if (flipX)
+            {
+                transformedImage.RotateFlip(RotateFlipType.RotateNoneFlipX);
+            }
+
+            if (rotationIndex <= 0)
+            {
+                return transformedImage;
+            }
+
+            switch (rotationIndex)
+            {
+                case 1:
+                    transformedImage.RotateFlip(RotateFlipType.Rotate90FlipNone);
+                    break;
+                case 2:
+                    transformedImage.RotateFlip(RotateFlipType.Rotate180FlipNone);
+                    break;
+                case 3:
+                    transformedImage.RotateFlip(RotateFlipType.Rotate270FlipNone);
+                    break;
+            }
+
+            return transformedImage;
+        }
+        
+        public double GetImageAspectRatio()
+        {
+            if (image == null)
+            {
+                return 1;
+            }
+            
+            // Swap width and height if image is rotated in gif animation, since the actual image is not rotated
+            if (GifAnimator.IsAnimated && ImageRotation % 2 == 1)
+            {
+                return (double) image.Height / image.Width;
+            }
+            
+            return (double) image.Width / image.Height;
+        }
+        
         /// <param name="e">An <see cref="T:System.EventArgs" /> that contains the event data. </param>
         protected override void OnVisibleChanged(EventArgs e)
         {

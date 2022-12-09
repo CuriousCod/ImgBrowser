@@ -130,12 +130,12 @@ namespace ImgBrowser
                 args += Definitions.LaunchArguments.SetBorderless + " ";
             if (TopMost)
                 args += Definitions.LaunchArguments.SetAlwaysOnTop + " ";
-            if (imageFlipped)
+            if (pictureBox1.ImageXFlipped)
                 args += Definitions.LaunchArguments.FlipX + " ";
             if (GifAnimator.CanAnimate(currentImg.Image))
                 args += $"{Definitions.LaunchArguments.GifDelay} {GifAnimator.AnimationDelay} ";
 
-            args += $"{Definitions.LaunchArguments.SetRotation} {imageRotation} ";
+            args += $"{Definitions.LaunchArguments.SetRotation} {pictureBox1.ImageRotation} ";
             args += $"{Definitions.LaunchArguments.SetWidthAndHeight} {ClientSize.Width},{ClientSize.Height} ";
 
             return args;

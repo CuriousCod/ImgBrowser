@@ -14,13 +14,11 @@ using ImgBrowser.Helpers;
 using ImgBrowser.Helpers.WebpSupport;
 using SearchOption = System.IO.SearchOption;
 
-// TODO Fix slow gif animations -> Kinda fixed?
 // TODO Button config
 // TODO Randomized slideshow?
 // TODO Scale image to screen?
 // TODO Remember rotate position for next image
 // TODO Z-index adjust
-// BUG Fix image rotation and flip issues when playing gif animations
 // BUG Window positioning issues when returning to normal window mode from maximized when initiated by a drag event
 // BUG Image can slightly overfill the screen when in autosize + fullscreen mode
 
@@ -49,15 +47,9 @@ namespace ImgBrowser
         // If mouse middle button should restore maximized or normal sized window
         private bool windowNormal;
 
-        // If border should reappear when draggin window
+        // If border should reappear when dragging window
         private bool showBorder;
-
-        // Keeps track of image flipping
-        private bool imageFlipped;
-
-        // Keeps track of image rotation
-        private int imageRotation;
-
+        
         // Tracks any edits to the bitmap
         private bool imageEdited;
         private readonly string randString = Convert.ToBase64String(Guid.NewGuid().ToByteArray()); // A random string to use with the temp image name
@@ -89,9 +81,9 @@ namespace ImgBrowser
         
         public class WindowHover
         {
-            public bool Enabled { get => WindowHoverToken != null; }
+            public bool Enabled => WindowHoverToken != null;
             public int AnimSpeed = 1;
-            public int Distance { get => Math.Abs(StartX - EndX);}
+            public int Distance => Math.Abs(StartX - EndX);
             public int StartX;
             public int EndX = 100;
             public bool StartSet;
@@ -143,8 +135,6 @@ namespace ImgBrowser
             rootImageFolderChanged = OnRootImageFolderChange;
             displayingMessage = false;
             imageEdited = false;
-            imageRotation = 0;
-            imageFlipped = false;
             showBorder = false;
             frameLeft = 0;
             screenCapButtonHeld = false;
@@ -503,30 +493,30 @@ namespace ImgBrowser
             }
 
             // Image aspect ratio
-            var aspectRatio = (double)pictureBox1.Image.Width / (double)pictureBox1.Image.Height;
+            var imageAspectRatio = pictureBox1.GetImageAspectRatio();
                     
             // Window frame aspect ratio
-            var windowAspectRatio = (double)ClientSize.Width / (double)ClientSize.Height;
+            var windowAspectRatio = (double) ClientSize.Width / ClientSize.Height;
 
             var tempHeight = Height;
 
             // Adjust frame size when there's a big difference between the image and frame aspect ratios
             // This prevent images from getting too large when readjusting frame size to the image
-            if (windowAspectRatio + 2 < aspectRatio)
+            if (windowAspectRatio + 2 < imageAspectRatio)
             {
-                while (windowAspectRatio + 2 < aspectRatio)
+                while (windowAspectRatio + 2 < imageAspectRatio)
                 {
                     tempHeight = (int)(tempHeight * 0.95f);
-                    windowAspectRatio = (double)ClientSize.Width / (double)tempHeight;
+                    windowAspectRatio = (double) ClientSize.Width / tempHeight;
                 }
                 
             }
-            else if (aspectRatio + 2 < windowAspectRatio){}
+            else if (imageAspectRatio + 2 < windowAspectRatio)
             {
-                while (aspectRatio + 2 < windowAspectRatio)
+                while (imageAspectRatio + 2 < windowAspectRatio)
                 {
                     tempHeight = (int)(tempHeight * 1.05f);
-                    windowAspectRatio = (double)ClientSize.Width / (double)tempHeight;
+                    windowAspectRatio = (double) ClientSize.Width / tempHeight;
                 }
                 
             }
@@ -534,7 +524,7 @@ namespace ImgBrowser
             Height = tempHeight;
 
             // Set frame size to match the image aspect ratio
-            Size = new Size((int)(aspectRatio * Size.Height), Size.Height);
+            Size = new Size((int)(imageAspectRatio * Size.Height), Size.Height);
         }
 
         private void ToggleAlwaysOnTop()
@@ -568,14 +558,20 @@ namespace ImgBrowser
 
         private void FlipImageX(bool ignoreCurrentViewport = false)
         {
-            var img = pictureBox1.Image;
+            if (pictureBox1.Image == null)
+            {
+                return;
+            }
 
-            img.RotateFlip(RotateFlipType.RotateNoneFlipX);
-            pictureBox1.Image = img;
-
+            // Workaround to allow gifs to keep their animation frames when flipped
+            if (!GifAnimator.IsAnimated)
+            {
+                pictureBox1.Image.RotateFlip(RotateFlipType.RotateNoneFlipX);    
+            }
+            
             var imageAutoSizeMode = pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize;
 
-            if (!imageFlipped)
+            if (!pictureBox1.ImageXFlipped)
             {
                 // Flip image only based on current viewport, unless ctrl is held
                 if (imageAutoSizeMode && !ignoreCurrentViewport && WindowState != FormWindowState.Maximized && pictureBox1.Image.Width >= ClientSize.Width)
@@ -583,7 +579,7 @@ namespace ImgBrowser
                     pictureBox1.Location = new Point(-pictureBox1.Image.Width + ClientSize.Width + Math.Abs(pictureBox1.Location.X), pictureBox1.Location.Y);
                     PositionMessageDisplay();
                 }
-                imageFlipped = true;
+                pictureBox1.ImageXFlipped = true;
             }
             else
             {
@@ -592,7 +588,7 @@ namespace ImgBrowser
                     pictureBox1.Location = new Point(0 - pictureBox1.Image.Width - pictureBox1.Location.X + ClientSize.Width, pictureBox1.Location.Y);
                     PositionMessageDisplay();
                 }
-                imageFlipped = false;
+                pictureBox1.ImageXFlipped = false;
             }
         }
 
@@ -611,9 +607,13 @@ namespace ImgBrowser
             var sizeVsFrame = pictureBox1.Image.Width >= ClientSize.Width && pictureBox1.Image.Height >= ClientSize.Height;
 
             if (CCW) 
-            { 
-                img.RotateFlip(RotateFlipType.Rotate270FlipNone);
-                imageRotation = imageRotation <= 0 ? 3 : imageRotation - 1;
+            {
+                if (!GifAnimator.IsAnimated)
+                {
+                    img.RotateFlip(RotateFlipType.Rotate270FlipNone);
+                }
+                
+                pictureBox1.ImageRotation = pictureBox1.ImageRotation <= 0 ? 3 : pictureBox1.ImageRotation - 1;
 
                 if (pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize && WindowState != FormWindowState.Maximized && sizeVsFrame) 
                 { 
@@ -624,8 +624,12 @@ namespace ImgBrowser
             }
             else 
             {
-                img.RotateFlip(RotateFlipType.Rotate90FlipNone);
-                imageRotation = imageRotation >= 3 ? 0 : imageRotation + 1;
+                if (!GifAnimator.IsAnimated)
+                {
+                    img.RotateFlip(RotateFlipType.Rotate90FlipNone);
+                }
+                
+                pictureBox1.ImageRotation = pictureBox1.ImageRotation >= 3 ? 0 : pictureBox1.ImageRotation + 1;
                 
                 Width = height;
                 Height = width;
@@ -1177,7 +1181,7 @@ namespace ImgBrowser
         private void ResetImageModifiers()
         {
             // Reset image modifiers
-            imageFlipped = false;
+            pictureBox1.ImageXFlipped = false;
             imageEdited = false;
         }
 
