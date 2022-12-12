@@ -173,18 +173,7 @@ namespace ImgBrowser
                     }
                     break;
                 case Inputs.InputActions.RefreshImages:
-                    fileEntries = ReloadImageFiles();
-                    UpdateWindowTitle();
-
-                    if (fileEntries.Length > 0)
-                    {
-                        DisplayMessage("Images reloaded");
-                    }
-
-                    if (currentImg.IsFile)
-                    {
-                        LoadNewImgFromFile(new ImageObject(currentImg.FullFilename), false, true);
-                    }
+                    ReloadImages();
                     break;
                 case Inputs.InputActions.RestoreCurrentImage:
                     if (imageEdited)
@@ -217,8 +206,11 @@ namespace ImgBrowser
                     
                     // add space before capital letters
                     sortName = System.Text.RegularExpressions.Regex.Replace(sortName, "(\\B[A-Z])", " $1");
-                    
+
                     DisplayMessage("Sort order changed to " + sortName);
+                        
+                    ReloadImages(true);
+                    
                     break;
                 case Inputs.InputActions.CopyToClipboard:
                     if (!mk.Ctrl)
@@ -413,7 +405,23 @@ namespace ImgBrowser
                     throw new ArgumentOutOfRangeException();
             }
         }
-        
+
+        private void ReloadImages(bool suppressMessage = false)
+        {
+            fileEntries = ReloadImageFiles();
+            UpdateWindowTitle();
+
+            if (fileEntries.Length > 0 && !suppressMessage)
+            {
+                DisplayMessage("Images reloaded");
+            }
+
+            if (currentImg.IsFile)
+            {
+                LoadNewImgFromFile(new ImageObject(currentImg.FullFilename), false, true);
+            }
+        }
+
         private void pictureBox1_Click(object sender, EventArgs e)
         {
             // MouseEventArgs me = (MouseEventArgs)e;
