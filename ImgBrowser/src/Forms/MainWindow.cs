@@ -566,7 +566,8 @@ namespace ImgBrowser
             // Workaround to allow gifs to keep their animation frames when flipped
             if (!GifAnimator.IsAnimated)
             {
-                pictureBox1.Image.RotateFlip(RotateFlipType.RotateNoneFlipX);    
+                pictureBox1.Image.RotateFlip(RotateFlipType.RotateNoneFlipX);
+                pictureBox1.Refresh();
             }
             
             var imageAutoSizeMode = pictureBox1.SizeMode == PictureBoxSizeMode.AutoSize;
