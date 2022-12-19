@@ -1167,8 +1167,9 @@ namespace ImgBrowser
 
         private void StartAnimating(ImageObject imgObj)
         {
+            pictureBox1.IsTransparentGif = IsImageTransparent(imgObj.Image);
             pictureBox1.Image = imgObj.Image;
-            
+
             if (launchArgAnimationDelay > 0)
             {
                 GifAnimator.AnimationDelay = launchArgAnimationDelay;
@@ -1503,15 +1504,29 @@ namespace ImgBrowser
             return -1;
         }
 
-        // Check if the image contains any transparency
-        private static bool IsImageTransparent(Image image)
+        private static bool IsImageTransparent(Bitmap image, bool lazyCheck = true)
         {
-            var img = new Bitmap(image);
-            for (var y = 0; y < img.Height; ++y)
+            if (lazyCheck)
             {
-                for (var x = 0; x < img.Width; ++x)
+                for (var x = 0; x < image.Width; x += 2)
                 {
-                    if (img.GetPixel(x, y).A != 255)
+                    for (var y = 0; y < image.Height; y += 2)
+                    {
+                        if (image.GetPixel(x, y).A < 255)
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+
+            for (var y = 0; y < image.Height; ++y)
+            {
+                for (var x = 0; x < image.Width; ++x)
+                {
+                    if (image.GetPixel(x, y).A != 255)
                     {
                         return true;
                     }

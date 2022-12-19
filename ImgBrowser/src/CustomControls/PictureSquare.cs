@@ -64,7 +64,8 @@ namespace ImgBrowser.CustomControls
 
         public bool ImageXFlipped;
         public int ImageRotation;
-        
+        public bool IsTransparentGif;
+
         /// <summary>Initializes a new instance of the <see cref="T:ImgBrowser.Helpers.PictureBox" /> class.</summary>
         public PictureSquare()
         {
@@ -1137,25 +1138,39 @@ namespace ImgBrowser.CustomControls
                 ? ImageRectangleFromSizeMode(PictureBoxSizeMode.CenterImage)
                 : ImageRectangle;
 
+            Bitmap modifiedImage = null;
+
             // Flip and/or rotate the frame if needed
             if (GifAnimator.IsAnimated && ImageXFlipped || GifAnimator.IsAnimated && ImageRotation > 0)
             {
-                var transformedImage = TransformImage(image, ImageXFlipped, ImageRotation);
+                modifiedImage = TransformImage(image, ImageXFlipped, ImageRotation);
                 
                 if (ImageRotation % 2 == 1)
                 {
-                    rect = ImageRectangleFromSizeMode(sizeMode, transformedImage);
+                    rect = ImageRectangleFromSizeMode(sizeMode, modifiedImage);
+                }
+            }
+
+            if (GifAnimator.IsAnimated)
+            {
+                if (IsTransparentGif)
+                {
+                    GdiApi.DrawTransparentBitmapToRectangle(pe.Graphics, modifiedImage ?? (Bitmap) image, rect);
+                }
+                else
+                {
+                    GdiApi.DrawAndResizeBitmapToRectangle(pe.Graphics, modifiedImage ?? (Bitmap) image, rect);
                 }
 
-                pe.Graphics.DrawImage(transformedImage, rect);
-            
-                transformedImage.Dispose();
-                
+                modifiedImage?.Dispose();
                 base.OnPaint(pe);
+
                 return;
             }
 
-            pe.Graphics.DrawImage(image, rect);
+            pe.Graphics.DrawImage(modifiedImage ?? image, rect);
+
+            modifiedImage?.Dispose();
             base.OnPaint(pe);
         }
         
@@ -1193,7 +1208,7 @@ namespace ImgBrowser.CustomControls
 
             return transformedImage;
         }
-        
+
         public double GetImageAspectRatio()
         {
             if (image == null)
@@ -1209,7 +1224,7 @@ namespace ImgBrowser.CustomControls
             
             return (double) image.Width / image.Height;
         }
-        
+
         /// <param name="e">An <see cref="T:System.EventArgs" /> that contains the event data. </param>
         protected override void OnVisibleChanged(EventArgs e)
         {
