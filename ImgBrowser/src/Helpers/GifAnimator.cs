@@ -243,6 +243,7 @@ namespace ImgBrowser.Helpers
                 {
                     if (_currentImageInfo?.Image == null)
                     {
+                        Thread.Sleep(75);
                         continue;
                     }
 
