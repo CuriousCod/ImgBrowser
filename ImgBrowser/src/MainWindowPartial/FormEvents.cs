@@ -512,12 +512,21 @@ namespace ImgBrowser
         
         private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
         {
-            if (e.Button.ToString() != "Left")
+            if ((e.Button & MouseButtons.Left) == 0)
+            {
                 return;
-            
+            }
+
             if (e.Clicks == 2)
+            {
                 return;
-            
+            }
+
+            if (storedMousePosition.Position == Cursor.Position)
+            {
+                return;
+            }
+
             if (ShouldMovePictureBox())
             {
                 MovePictureBox(Definitions.MovementType.MouseDrag, Definitions.Direction.None);
@@ -756,7 +765,7 @@ namespace ImgBrowser
             catch (IOException) 
             { }
         }
-        
+
         private void OnFormWindowStateChanged(FormWindowState previousState)
         {
             if (WindowState == FormWindowState.Normal && storedWindowPosition != Point.Empty)

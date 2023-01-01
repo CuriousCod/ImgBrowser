@@ -77,6 +77,11 @@ namespace ImgBrowser
         private const int WM_NCLBUTTONDOWN = 0xA1;
         private const int HT_CAPTION = 0x2;
 
+        /// <summary>
+        /// Mouse double click message
+        /// </summary>
+        const int WM_NCLBUTTONDBLCLK = 0x00A3;
+
         private IntPtr thisWindow;
         
         public class WindowHover
@@ -1226,8 +1231,11 @@ namespace ImgBrowser
 
             DisplayMessage("Current display copied to clipboard.");
         }
-        
-        // Extra effort to support image drag to other applications
+
+        /// <summary>
+        /// Drags image from the picture box to other applications
+        /// <para> Extra effort implemented to support image drag to other applications </para>
+        /// </summary>
         private void DragImageFromApp()
         {
             string file;
@@ -1403,7 +1411,7 @@ namespace ImgBrowser
             
             fileEntries = files;
         }
-        
+
         // Catches window events for processing
         protected override void WndProc(ref Message m)
         {
@@ -1413,16 +1421,23 @@ namespace ImgBrowser
             
             base.WndProc(ref m);
 
+            // Stores the mouse position when the title bar is double clicked to maximize or restore the window
+            // This is used to prevent the window from being moved when the title bar is double clicked
+            if (m.Msg == WM_NCLBUTTONDBLCLK)
+            {
+                storedMousePosition.Position = Cursor.Position;
+            }
+
             if (WindowState == org)
             {
                 return;
             }
-            
+
             if (org == FormWindowState.Normal)
             {
                 storedWindowPosition = new Point(location.X - screen.Bounds.Left, location.Y - screen.Bounds.Top);
             }
-                
+
             OnFormWindowStateChanged(org);
         }
 
@@ -1438,7 +1453,7 @@ namespace ImgBrowser
             }
 
             var byteOffset = 52; // Offset of the DIB bits. Different software use different offsets when copying image to clipboard
-            
+
             // Sometimes getting the image data fails and results in a "System.NullReferenceException" error - probably because clipboard handling also can be messy and complex
             byte[] dib;
             try
