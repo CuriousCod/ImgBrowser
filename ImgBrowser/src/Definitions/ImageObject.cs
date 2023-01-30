@@ -34,7 +34,7 @@ namespace ImgBrowser
             {
                 if (!file.EndsWith(".webp"))
                 {
-                    return (Bitmap) GdiApi.GetImage(file, ref imagePtr);    
+                    return (Bitmap) GdiApi.GetImageWithoutLock(file, ref imagePtr);
                 }
 
                 return !NativeWebPDecoder.IsDllAvailable() ? null : WebPDecoder.DecodeBGRA(file);

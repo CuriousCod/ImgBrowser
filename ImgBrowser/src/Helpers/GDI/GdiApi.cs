@@ -4,6 +4,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
 
 namespace ImgBrowser.Helpers
 {
@@ -17,7 +18,11 @@ namespace ImgBrowser.Helpers
 
         [DllImport("gdiplus.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern int GdipCreateBitmapFromFile(string filename, out IntPtr bitmap);
-        
+
+        // from stream
+        [DllImport("gdiplus.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern int GdipCreateBitmapFromStream(IStream stream, out IntPtr bitmap);
+
         [DllImport("gdiplus.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern int GdipImageForceValidation(HandleRef image);
         
@@ -52,6 +57,12 @@ namespace ImgBrowser.Helpers
             int nWidthDest, int nHeightDest,
             IntPtr hdcSrc, int nXOriginSrc, int nYOriginSrc, int nWidthSrc, int nHeightSrc,
             BLENDFUNCTION blendFunction);
+
+        [DllImport("gdi32.dll", CharSet = CharSet.Auto, SetLastError = true, ExactSpelling = true)]
+        public static extern int BitBlt(IntPtr hDC, int x, int y, int nWidth, int nHeight, IntPtr hSrcDC, int xSrc, int ySrc, int dwRop);
+
+        [DllImport("shlwapi.dll", CharSet = CharSet.Unicode, ExactSpelling = true, PreserveSig = false, EntryPoint = "SHCreateStreamOnFileEx")]
+        private static extern void SHCreateStreamOnFileEx(string fileName, uint grfmode, uint dwAttributes, bool fCreate, IStream streamNull, ref IStream stream);
 
         public enum TernaryRasterOperations : uint {
             SRCCOPY     = 0x00CC0020,
@@ -155,7 +166,52 @@ namespace ImgBrowser.Helpers
                     // throw new Exception("Unknown image type");
             }
         }
-        
+
+        /// <summary>
+        /// Loads an image using GDI+ directly
+        /// <para> Skips copying image into memory which reduces image load time by around 90 %</para>
+        /// <para> Variant method that does not lock the image </para>
+        /// </summary>
+        /// <param name="filename">Full path to the image</param>
+        /// <param name="imagePtr">Stores the pointer to the image</param>
+        /// <returns>Image. Null if image could not be loaded</returns>
+        public static Image GetImageWithoutLock(string filename, ref IntPtr imagePtr)
+        {
+            filename = Path.GetFullPath(filename);
+
+            IStream bitmapStream = null;
+
+            SHCreateStreamOnFileEx(filename, 0, 0, false, null, ref bitmapStream);
+
+            var bitmapFromStream = GdipCreateBitmapFromStream(bitmapStream, out var bitmap);
+
+            if (bitmapFromStream != 0)
+            {
+                return null;
+                // throw new Exception("GdipCreateBitmapFromFile failed with error code " + bitmapFromFile);
+            }
+
+            // Optional
+            if ( GdipGetImageType(bitmap, out var imageType) != 0 )
+            {
+                return null;
+            }
+
+            imagePtr = bitmap;
+
+            switch(imageType)
+            {
+                case GdipImageTypeEnum.Bitmap:
+                    return (Bitmap) typeof(Bitmap).InvokeMember("FromGDIplus", BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.InvokeMethod, null, null, new object[] { bitmap });
+                case GdipImageTypeEnum.Metafile:
+                    return (Metafile) typeof(Metafile).InvokeMember("FromGDIplus", BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.InvokeMethod, null, null, new object[] { bitmap });
+                case GdipImageTypeEnum.Unknown:
+                default:
+                    return null;
+                    // throw new Exception("Unknown image type");
+            }
+        }
+
         /// <summary>
         /// Loads image into memory
         /// <para> Optional, Images are loaded really fast without this, but image repaint speed is slower</para>
