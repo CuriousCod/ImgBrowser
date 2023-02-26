@@ -243,7 +243,16 @@ namespace ImgBrowser
             {
                 return;
             }
-            
+
+            var image = pictureBox1.Image;
+            var savingCurrentImage = currentImg.FullFilename == saveFileDialog.FileName;
+
+            if (savingCurrentImage)
+            {
+                // If saving current image, load it cleanly to prevent any ExternalException errors
+                image = new Bitmap(pictureBox1.Image);
+            }
+
             var extension = Path.GetExtension(saveFileDialog.FileName);
 
             if (extension != null && jpgExtensions.Contains(extension.ToLower()))
@@ -265,7 +274,7 @@ namespace ImgBrowser
                 
                 try
                 {
-                    pictureBox1.Image.Save(saveFileDialog.FileName, jpegCodec, encoderParameters);
+                    image.Save(saveFileDialog.FileName, jpegCodec, encoderParameters);
                 }
                 catch (ExternalException)
                 {
@@ -276,12 +285,17 @@ namespace ImgBrowser
             {
                 try
                 {
-                    pictureBox1.Image.Save(saveFileDialog.FileName, format);
+                    image.Save(saveFileDialog.FileName, format);
                 }
                 catch (ExternalException)
                 {
                     DisplayMessage("Failed to save image");
                 }
+            }
+
+            if (savingCurrentImage)
+            {
+                image.Dispose();
             }
         }
         

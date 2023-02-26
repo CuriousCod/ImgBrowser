@@ -66,7 +66,7 @@ namespace ImgBrowser
 
         /// <summary>
         /// Copies current image to RAM
-        /// Will speed up image rendering (redraws faster) in picture box autosize mode
+        /// <para> Will speed up image rendering (redraws faster) in picture box autosize mode </para>
         /// </summary>
         public void CopyImageToMemory()
         {
