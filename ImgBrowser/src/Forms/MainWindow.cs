@@ -72,6 +72,10 @@ namespace ImgBrowser
             : new[] {".jpg", ".png", ".gif", ".bmp", ".tif", ".svg", ".jfif", ".jpeg"};
         
         private Definitions.SortBy sortImagesBy = Definitions.SortBy.NameAscending;
+        
+        private readonly string[] jpgExtensions = {".jpg", ".jpeg", ".jfif", ".jpe", ".jif", ".jfi"};
+        
+        private DateTime lastImageChange = DateTime.Now;
 
         // Commands for moving window with mouse
         private const int WM_NCLBUTTONDOWN = 0xA1;
@@ -125,7 +129,7 @@ namespace ImgBrowser
         private ImageObject currentImg = new ImageObject("");
         private readonly WindowHover windowHover = new WindowHover(); 
 
-        private StoredMousePosition storedMousePosition = new StoredMousePosition();
+        private readonly StoredMousePosition storedMousePosition = new StoredMousePosition();
         
         private int launchArgAnimationDelay = -1;
 
@@ -205,21 +209,21 @@ namespace ImgBrowser
 
             if (Equals(format, ImageFormat.Png))
             {
-                saveFileDialog.Filter = "PNG (*.png)|*.png|All files (*.*)|*.*";
+                saveFileDialog.Filter = "PNG (*.png)|*.png|JPEG (*.jpg)|*.jpg|All files (*.*)|*.*";
             }
             else if (Equals(format, ImageFormat.Jpeg))
             {
-                saveFileDialog.Filter = "JPEG (*.jpg)|*.jpg|All files (*.*)|*.*";
+                saveFileDialog.Filter = "JPEG (*.jpg)|*.jpg|PNG (*.png)|*.png|All files (*.*)|*.*";
             }
-            else if (Equals(format, ImageFormat.Bmp))
+            else if (Equals(format, ImageFormat.Bmp)) // Not used
             {
                 saveFileDialog.Filter = "BMP (*.bmp)|*.bmp|All files (*.*)|*.*";
             }
-            else if (Equals(format, ImageFormat.Gif))
+            else if (Equals(format, ImageFormat.Gif)) // Not used
             {
                 saveFileDialog.Filter = "GIF (*.gif)|*.gif|All files (*.*)|*.*";
             }
-            else if (Equals(format, ImageFormat.Tiff))
+            else if (Equals(format, ImageFormat.Tiff)) // Not used
             {
                 saveFileDialog.Filter = "TIFF (*.tif)|*.tif|All files (*.*)|*.*";
             }
@@ -230,19 +234,27 @@ namespace ImgBrowser
 
             saveFileDialog.FilterIndex = 0;
             saveFileDialog.RestoreDirectory = true;
-            saveFileDialog.FileName = currentImg.Name == "" ? "image" : currentImg.Name;
+
+            var date = imageEdited ? $"Image {DateTime.Now:yyyy-MM-dd HH.mm.ss}" : lastImageChange.ToString("yyyy-MM-dd HH.mm.ss");
+
+            saveFileDialog.FileName = currentImg.Name == "" ? $"Image {date}" : currentImg.Name;
 
             if (saveFileDialog.ShowDialog() != DialogResult.OK)
             {
                 return;
             }
             
-            if (Equals(format, ImageFormat.Jpeg))
+            var extension = Path.GetExtension(saveFileDialog.FileName);
+
+            if (extension != null && jpgExtensions.Contains(extension.ToLower()))
             {
                 var qualityParamId = Encoder.Quality;
                 var encoderParameters = new EncoderParameters(1);
-                    
-                encoderParameters.Param[0] = new EncoderParameter(qualityParamId, 100L);
+                
+                // If saving as jpeg, set quality to 90
+                var quality = Equals(format, ImageFormat.Png) ? 100L : 90L;
+                
+                encoderParameters.Param[0] = new EncoderParameter(qualityParamId, quality);
                     
                 var jpegCodec = ImageCodecInfo.GetImageDecoders().FirstOrDefault(codec => codec.FormatID == format.Guid);
 
@@ -1087,18 +1099,12 @@ namespace ImgBrowser
             pictureBox1.Image = clipImg;
             currentImg = new ImageObject("");
 
-            pictureBox1.Location = new Point(0, 0);
-            SizeModeZoom();
-
             oldImg?.Dispose();
 
             rootImageFolderChanged?.Invoke(string.Empty);
             fileEntries = Array.Empty<string>();
             
-            UpdateWindowTitle();
-
-            ResetImageModifiers();
-
+            NewImageLoaded();
         }
 
         private void LoadNewImgFromFile(ImageObject imgObj, bool removeImagePath = false, bool skipRefresh = false)
@@ -1153,11 +1159,18 @@ namespace ImgBrowser
                 }
             }
 
+            NewImageLoaded();
+        }
+
+        private void NewImageLoaded()
+        {
             UpdateWindowTitle();
 
             // Reset zoomed in position
             pictureBox1.Location = new Point(0, 0);
             lockImage = false;
+            
+            lastImageChange = DateTime.Now;
 
             ResetImageModifiers();
 
@@ -1169,7 +1182,7 @@ namespace ImgBrowser
 
             GC.Collect();
         }
-
+        
         private void StartAnimating(ImageObject imgObj)
         {
             pictureBox1.IsTransparentGif = IsImageTransparent(imgObj.Image);
