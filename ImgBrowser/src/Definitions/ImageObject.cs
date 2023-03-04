@@ -17,6 +17,7 @@ namespace ImgBrowser
         public Bitmap Image => image ?? (image = LoadFileAsBitmap(FullFilename));
         public string Name => FullFilename == "" ? "" : System.IO.Path.GetFileName(FullFilename);
         public string Path => FullFilename == "" ? "" : System.IO.Path.GetDirectoryName(FullFilename)?.TrimEnd('\\');
+        public string Extension => FullFilename == "" ? "" : System.IO.Path.GetExtension(FullFilename);
         public bool IsFile => File.Exists(FullFilename);
 
         private Bitmap image;

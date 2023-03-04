@@ -237,7 +237,7 @@ namespace ImgBrowser
 
             var date = imageEdited ? $"Image {DateTime.Now:yyyy-MM-dd HH.mm.ss}" : lastImageChange.ToString("yyyy-MM-dd HH.mm.ss");
 
-            saveFileDialog.FileName = currentImg.Name == "" ? $"Image {date}" : currentImg.Name;
+            saveFileDialog.FileName = currentImg.Name == "" ? $"Image {date}" : currentImg.Name.Replace(currentImg.Extension, "");
 
             if (saveFileDialog.ShowDialog() != DialogResult.OK)
             {
