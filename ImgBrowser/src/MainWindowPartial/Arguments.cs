@@ -126,7 +126,7 @@ namespace ImgBrowser
                 args += Definitions.LaunchArguments.HideWindowBackground + " ";
             if (lockImage)
                 args += Definitions.LaunchArguments.LockImage + " ";
-            if (FormBorderStyle == FormBorderStyle.None)
+            if (FormBorderStyle == FormBorderStyle.None && WindowState != FormWindowState.Maximized)
                 args += Definitions.LaunchArguments.SetBorderless + " ";
             if (TopMost)
                 args += Definitions.LaunchArguments.SetAlwaysOnTop + " ";
@@ -136,7 +136,7 @@ namespace ImgBrowser
                 args += $"{Definitions.LaunchArguments.GifDelay} {GifAnimator.AnimationDelay} ";
 
             args += $"{Definitions.LaunchArguments.SetRotation} {pictureBox1.ImageRotation} ";
-            args += $"{Definitions.LaunchArguments.SetWidthAndHeight} {ClientSize.Width},{ClientSize.Height} ";
+            args += $"{Definitions.LaunchArguments.SetWidthAndHeight} {RestoreBounds.Width},{RestoreBounds.Height} ";
 
             return args;
         }
