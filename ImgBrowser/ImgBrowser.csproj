@@ -27,6 +27,7 @@
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>x64</PlatformTarget>
@@ -71,6 +72,19 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="src\AdditionalImageFormats\Jxl\JXL.cs" />
+    <Compile Include="src\AdditionalImageFormats\Jxl\JxlDecoder.cs" />
+    <Compile Include="src\AdditionalImageFormats\Jxl\JxlEncoder.cs" />
+    <Compile Include="src\AdditionalImageFormats\Jxl\JxlTypes.cs" />
+    <Compile Include="src\AdditionalImageFormats\Jxl\UnsafeNativeJXL.cs" />
+    <Compile Include="src\AdditionalImageFormats\Jxl\UnsafeNativeJxl_additional_functions.cs" />
+    <Compile Include="src\AdditionalImageFormats\Jxl\UnsafeNativeJxl_copyfields.cs" />
+    <Compile Include="src\AdditionalImageFormats\Jxl\UnsafeNativeJXL_decoder_wrapper.cs" />
+    <Compile Include="src\AdditionalImageFormats\Jxl\UnsafeNativeJXL_encoder_wrapper.cs" />
+    <Compile Include="src\AdditionalImageFormats\Jxl\UnsafeNativeJxl_static_constructor.cs" />
+    <Compile Include="src\AdditionalImageFormats\Webp\Native.WebPDecoder.cs" />
+    <Compile Include="src\AdditionalImageFormats\Webp\Utilities.cs" />
+    <Compile Include="src\AdditionalImageFormats\Webp\WebPDecoder.cs" />
     <Compile Include="src\CustomControls\PictureSquare.cs" />
     <Compile Include="src\Definitions\Definitions.cs" />
     <Compile Include="src\Definitions\ImageObject.cs" />
@@ -90,9 +104,6 @@
     <Compile Include="src\Helpers\GifAnimator.cs" />
     <Compile Include="src\Helpers\GDI\GdiApi.cs" />
     <Compile Include="src\Helpers\NativeMethods.cs" />
-    <Compile Include="src\Helpers\WebpSupport\Native.WebPDecoder.cs" />
-    <Compile Include="src\Helpers\WebpSupport\Utilities.cs" />
-    <Compile Include="src\Helpers\WebpSupport\WebPDecoder.cs" />
     <Compile Include="src\MainWindowPartial\Arguments.cs" />
     <Compile Include="src\MainWindowPartial\DragEvents.cs">
       <SubType>Form</SubType>
@@ -142,6 +153,9 @@
       <ProductName>.NET Framework 3.5 SP1</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="src\AdditionalImageFormats\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -10,8 +10,8 @@ using System.Runtime.InteropServices;
 using Microsoft.VisualBasic.FileIO;
 using System.Threading;
 using System.Threading.Tasks;
+using ImgBrowser.AdditionalImageFormats.Webp;
 using ImgBrowser.Helpers;
-using ImgBrowser.Helpers.WebpSupport;
 using SearchOption = System.IO.SearchOption;
 
 // TODO Button config
@@ -67,9 +67,7 @@ namespace ImgBrowser
         // Timer for the text display
         private int textTimer;
 
-        private readonly string[] acceptedExtensions = NativeWebPDecoder.IsDllAvailable()
-            ? new[] {".jpg", ".png", ".gif", ".bmp", ".tif", ".svg", ".jfif", ".jpeg", ".webp"}
-            : new[] {".jpg", ".png", ".gif", ".bmp", ".tif", ".svg", ".jfif", ".jpeg"};
+        private readonly string[] acceptedExtensions = GetAcceptedExtensions();
         
         private Definitions.SortBy sortImagesBy = Definitions.SortBy.NameAscending;
         
@@ -1575,6 +1573,23 @@ namespace ImgBrowser
                 }
             }
             return false;
+        }
+
+        private static string[] GetAcceptedExtensions()
+        {
+            var defaultExtensions = new List<string>{".jpg", ".png", ".gif", ".bmp", ".tif", ".svg", ".jfif", ".jpeg"};
+
+            if (NativeWebPDecoder.IsDllAvailable())
+            {
+                defaultExtensions.Add(".webp");
+            }
+
+            if (JxlSharp.UnsafeNativeJxl.AreLibrariesLoaded())
+            {
+                defaultExtensions.Add(".jxl");
+            }
+
+            return defaultExtensions.ToArray();
         }
     }
 }

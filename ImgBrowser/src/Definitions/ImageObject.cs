@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Tasks;
+using ImgBrowser.AdditionalImageFormats.Webp;
 using ImgBrowser.Helpers;
-using ImgBrowser.Helpers.WebpSupport;
+using JxlSharp;
 
 namespace ImgBrowser
 {
@@ -33,12 +30,17 @@ namespace ImgBrowser
         {
             try
             {
-                if (!file.EndsWith(".webp"))
+                if (file.EndsWith(".jxl"))
                 {
-                    return (Bitmap) GdiApi.GetImageWithoutLock(file, ref imagePtr);
+                    return JXL.LoadImage(file);
                 }
 
-                return !NativeWebPDecoder.IsDllAvailable() ? null : WebPDecoder.DecodeBGRA(file);
+                if (file.EndsWith(".webp"))
+                {
+                    return WebPDecoder.DecodeBGRA(file);;
+                }
+
+                return (Bitmap) GdiApi.GetImageWithoutLock(file, ref imagePtr);
             }
             catch (OutOfMemoryException ex)
             {

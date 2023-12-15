@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace ImgBrowser.Helpers.WebpSupport
+namespace ImgBrowser.AdditionalImageFormats.Webp
 {
 	public static class NativeWebPDecoder
 	{
-		private const string DllName = "libwebp";
+		private const string DllName = "dependencies/webp/libwebp";
 		
         /// <summary>
         /// Return the decoder's version number

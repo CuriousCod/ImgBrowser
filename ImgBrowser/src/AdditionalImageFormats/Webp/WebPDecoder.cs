@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 // https://github.com/NKnusperer/libwebp-sharp
 
-namespace ImgBrowser.Helpers.WebpSupport
+namespace ImgBrowser.AdditionalImageFormats.Webp
 {
     public class WebPDecoder
     {
