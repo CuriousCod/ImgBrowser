@@ -246,6 +246,16 @@ namespace ImgBrowser
                 case Inputs.InputActions.MirrorImageHorizontally:
                     FlipImageX(mk.Ctrl);
                     break;
+                case Inputs.InputActions.NewWindow:
+                    var executable = System.Reflection.Assembly.GetExecutingAssembly().Location;
+
+                    if (!File.Exists(executable))
+                    {
+                        break;
+                    }
+
+                    Process.Start(executable, Definitions.LaunchArguments.CenterWindowToMouse);
+                    break;
                 case Inputs.InputActions.DuplicateImage:
                     var exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
                     
