@@ -839,6 +839,8 @@ namespace ImgBrowser
                 case Definitions.SortBy.Randomized:
                     files = files.OrderBy(s => Guid.NewGuid()).ToArray();
                     break;
+                case Definitions.SortBy.None:
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }

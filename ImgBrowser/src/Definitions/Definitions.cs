@@ -47,7 +47,8 @@
             DateDescending,
             SizeAscending,
             SizeDescending,
-            Randomized
+            Randomized,
+            None
         }
     }
 }
