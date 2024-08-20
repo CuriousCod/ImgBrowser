@@ -1146,7 +1146,7 @@ namespace ImgBrowser
                 oldImg.Dispose();
             }
 
-            if (!imageError) 
+            if (!imageError)
             {
                 if (GifAnimator.CanAnimate(imgObj.Image))
                 {
@@ -1194,9 +1194,11 @@ namespace ImgBrowser
 
             PositionMessageDisplay();
 
+            // ProcessMetadata(currentImg.Image);
+
             GC.Collect();
         }
-        
+
         private void StartAnimating(ImageObject imgObj)
         {
             pictureBox1.IsTransparentGif = IsImageTransparent(imgObj.Image);
@@ -1592,6 +1594,42 @@ namespace ImgBrowser
             }
 
             return defaultExtensions.ToArray();
+        }
+
+        private static void ProcessMetadata(Image image)
+        {
+            switch (GetExifRotationValue(image))
+            {
+                case 1:
+                    break;
+                case 3:
+                    image.RotateFlip(RotateFlipType.Rotate180FlipNone);
+                    break;
+                case 6:
+                    image.RotateFlip(RotateFlipType.Rotate90FlipNone);
+                    break;
+                case 8:
+                    image.RotateFlip(RotateFlipType.Rotate270FlipNone);
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Checks if image has Exif metadata for rotation
+        /// </summary>
+        /// <param name="image"> Image to check </param>
+        /// <returns> 0 = no data, 1 = normal, 3 = 180, 6 = 90, 8 = 270</returns>
+        private static int GetExifRotationValue(Image image)
+        {
+            const int orientationId = 0x0112; // Orientation tag in Exif metadata
+
+            if (!Array.Exists(image.PropertyIdList, p => p == orientationId))
+            {
+                return 0;
+            }
+
+            var orientation = image.GetPropertyItem(orientationId);
+            return BitConverter.ToInt16(orientation.Value, 0);
         }
     }
 }
