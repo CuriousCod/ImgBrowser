@@ -108,6 +108,12 @@ namespace ImgBrowser
                     case Definitions.LaunchArguments.SetAlwaysOnTop:
                         TopMost = true;
                         break;
+                    case Definitions.LaunchArguments.Fullscreen:
+                        if (WindowState != FormWindowState.Maximized)
+                        {
+                            MaxOrNormalizeWindow();
+                        }
+                        break;
                     default:
                         break;
                 }
